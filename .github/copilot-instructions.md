@@ -1,4 +1,4 @@
-tolong gunakan pendekatan reusable component dan clean code. gunakan shadcn sebagai component utama , jika tidak memungkinkan baru bikin component sendiri.  saya juga ingin connect menggunakan database postgressql dengan url seperti ini POSTGRES_URL=postgres://postgres:yoontae93@127.0.0.1:5432/siger
+tolong gunakan pendekatan reusable component dan clean code. selalu gunakan shadcn, jika tidak memungkinkan baru bikin component sendiri.  saya juga ingin connect menggunakan database postgressql dengan url seperti ini POSTGRES_URL=postgres://postgres:yoontae93@127.0.0.1:5432/siger
  
 
 Technology stack yang digunakan
