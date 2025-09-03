@@ -52,8 +52,8 @@ const StatusBadge: React.FC<{ status: ProjectData['status'] }> = ({ status }) =>
 
   return (
     <div className="flex items-center gap-1">
-      <Icon className="h-3 w-3 lg:h-3.5 lg:w-3.5 xl:h-5 xl:w-5" />
-      <span className={cn('text-[10px] font-normal lg:text-xs xl:text-sm', config.color)}>
+      <Icon className="h-2.5 w-2.5 lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
+      <span className={cn('text-[9px] font-normal lg:text-[10px] xl:text-xs', config.color)}>
         {config.label}
       </span>
     </div>
@@ -68,16 +68,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
           {/* Project Info */}
           <div className="flex-1 space-y-1.5 lg:space-y-2">
             <div className="space-y-0.5 lg:space-y-1">
-              <h3 className="text-xs font-medium leading-snug text-gray-700 lg:text-sm xl:text-base">
+              <h3 className="text-[10px] font-medium leading-snug text-gray-700 lg:text-xs xl:text-sm">
                 {project.title}
               </h3>
-              <div className="flex flex-col gap-1.5 text-[10px] text-gray-700 sm:flex-row sm:items-center sm:gap-3 lg:text-xs">
+              <div className="flex flex-col gap-1.5 text-[9px] text-gray-700 sm:flex-row sm:items-center sm:gap-3 lg:text-[10px]">
                 <div className="flex items-center gap-1">
-                  <MapPinIcon className="h-2.5 w-2.5 lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
+                  <MapPinIcon className="h-2 w-2 lg:h-2.5 lg:w-2.5 xl:h-3 xl:w-3" />
                   <span>{project.location}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <CurrencyDollarIcon className="h-2.5 w-2.5 lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
+                  <CurrencyDollarIcon className="h-2 w-2 lg:h-2.5 lg:w-2.5 xl:h-3 xl:w-3" />
                   <span className="truncate">{project.budget}</span>
                 </div>
               </div>
@@ -87,7 +87,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
 
           {/* Progress Section */}
           <div className="flex-1 space-y-1.5 lg:min-w-0 lg:space-y-2">
-            <div className="grid grid-cols-3 gap-1.5 text-[10px] lg:gap-3 lg:text-xs xl:text-sm">
+            <div className="grid grid-cols-3 gap-1.5 text-[9px] lg:gap-3 lg:text-[10px] xl:text-xs">
               <div className="flex flex-col lg:flex-row lg:items-center lg:gap-1.5">
                 <span className="text-gray-500">Progress</span>
                 <span className="font-medium text-emerald-500">{project.progress}%</span>
@@ -112,7 +112,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
           <div className="flex flex-shrink-0 justify-end lg:block">
             <Button
               size="sm"
-              className="bg-blue-500 px-2.5 text-[10px] text-white hover:bg-blue-600 lg:px-3 lg:text-xs xl:px-4 xl:text-sm"
+              className="bg-blue-500 px-2 text-[9px] text-white hover:bg-blue-600 lg:px-2.5 lg:text-[10px] xl:px-3 xl:text-xs"
             >
               Detail
             </Button>
