@@ -57,3 +57,41 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Responsive text utilities */
+  .text-responsive-sm {
+    @apply text-xs sm:text-sm;
+  }
+  
+  .text-responsive-base {
+    @apply text-sm sm:text-base;
+  }
+  
+  .text-responsive-lg {
+    @apply text-base sm:text-lg;
+  }
+  
+  /* Responsive spacing utilities */
+  .p-responsive {
+    @apply p-3 sm:p-4 lg:p-6;
+  }
+  
+  .px-responsive {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .py-responsive {
+    @apply py-3 sm:py-4 lg:py-5;
+  }
+  
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
