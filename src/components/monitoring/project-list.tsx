@@ -5,6 +5,7 @@ import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import { ProgressBar } from '../ui/progress-bar'
 import { useRouter } from 'next/navigation'
+import { useProjects, useProjectsLoadingState } from '@/hooks/useProjectQueries'
 import {
   MapPinIcon,
   CurrencyDollarIcon,
@@ -139,55 +140,56 @@ interface ProjectListProps {
 }
 
 export const ProjectList: React.FC<ProjectListProps> = ({ className }) => {
-  const projects: ProjectData[] = [
-    {
-      id: '1',
-      title:
-        'Rehabilitasi/Peningkatan Bangunan, Pintu Air dan Jaringan Irigasi DIR Rawa Mesuji Atas di Kabupaten Mesuji',
-      location: 'Sumatra',
-      budget: 'Rp19.211.000.000',
-      status: 'at-risk',
-      progress: 68,
-      deviation: 2.06,
-      target: 100,
-    },
-    {
-      id: '2',
-      title: 'Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Lampung (Paket I)',
-      location: 'Sumatra',
-      budget: 'Rp19.211.000.000',
-      status: 'on-track',
-      progress: 80,
-      deviation: 0.08,
-      target: 100,
-    },
-    {
-      id: '3',
-      title:
-        'Rehabilitasi/Peningkatan Bangunan, Pintu Air dan jaringan Irigasi DIR Rawa Jitu dan Rawa Pitu di Kabupaten',
-      location: 'Sumatra',
-      budget: 'Rp29.900.973.824',
-      status: 'delayed',
-      progress: 20,
-      deviation: 35,
-      target: 100,
-    },
-    {
-      id: '4',
-      title:
-        'Rehabilitasi/Peningkatan Bangunan, Pintu Air dan Jaringan IrigasiDIR Rawa Jitu Di Kabupaten Mesuji',
-      location: 'Sumatra',
-      budget: 'Rp28.902.316.373',
-      status: 'at-risk',
-      progress: 68,
-      deviation: 2.06,
-      target: 100,
-    },
-  ]
+  const { data, isLoading, error } = useProjects({
+    limit: 20, // Get more projects for demo
+  })
+
+  if (isLoading) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        {[...Array(4)].map((_, index) => (
+          <Card key={index} className="border border-gray-200 shadow-sm">
+            <CardContent className="p-2 lg:p-3 xl:p-4">
+              <div className="animate-pulse">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6 xl:gap-12">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-3/4 rounded bg-gray-200"></div>
+                    <div className="h-3 w-1/2 rounded bg-gray-200"></div>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-full rounded bg-gray-200"></div>
+                    <div className="h-2 w-full rounded bg-gray-200"></div>
+                  </div>
+                  <div className="h-8 w-16 rounded bg-gray-200"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        <Card className="border border-red-200 shadow-sm">
+          <CardContent className="p-4 text-center">
+            <p className="text-sm text-red-600">Error: {error.message}</p>
+            <Button className="mt-2 text-xs" onClick={() => window.location.reload()}>
+              Reload
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const projects = data?.projects || []
 
   return (
     <div className={cn('space-y-4', className)}>
-      {projects.map(project => (
+      {projects.map((project: ProjectData) => (
         <ProjectCard key={project.id} project={project} />
       ))}
     </div>

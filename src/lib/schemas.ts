@@ -1,5 +1,198 @@
 import { z } from 'zod'
 
+// Project schemas
+export const ProjectStatusSchema = z.enum(['on-track', 'at-risk', 'delayed'])
+
+export const ProjectSchema = z.object({
+  id: z.any(), // Temporary: allow any type for id
+
+  // Informasi Umum Proyek
+  penyediaJasa: z
+    .string()
+    .min(1, 'Penyedia jasa wajib diisi')
+    .max(255, 'Penyedia jasa maksimal 255 karakter')
+    .nullable(),
+  pekerjaan: z
+    .string()
+    .min(1, 'Nama pekerjaan wajib diisi')
+    .max(500, 'Nama pekerjaan maksimal 500 karakter')
+    .nullable(),
+  jenisPaket: z
+    .string()
+    .min(1, 'Jenis paket wajib diisi')
+    .max(100, 'Jenis paket maksimal 100 karakter')
+    .nullable(),
+  jenisPengadaan: z
+    .string()
+    .min(1, 'Jenis pengadaan wajib diisi')
+    .max(100, 'Jenis pengadaan maksimal 100 karakter')
+    .nullable(),
+
+  // Informasi Kontrak & Anggaran
+  paguAnggaran: z
+    .string()
+    .regex(/^Rp[\d.,]+$/, 'Format pagu anggaran tidak valid')
+    .nullable(),
+  nilaiKontrak: z
+    .string()
+    .regex(/^Rp[\d.,]+$/, 'Format nilai kontrak tidak valid')
+    .nullable(),
+  nomorKontrak: z
+    .string()
+    .min(1, 'Nomor kontrak wajib diisi')
+    .max(100, 'Nomor kontrak maksimal 100 karakter')
+    .nullable(),
+  spmk: z.string().max(200, 'SPMK maksimal 200 karakter').nullable(),
+  masaKontrak: z.string().max(100, 'Masa kontrak maksimal 100 karakter').nullable(),
+  tanggalKontrak: z.string().max(50, 'Tanggal kontrak maksimal 50 karakter').nullable(),
+  akhirKontrak: z.string().max(50, 'Akhir kontrak maksimal 50 karakter').nullable(),
+  pembayaranTerakhir: z.string().max(200, 'Pembayaran terakhir maksimal 200 karakter').nullable(),
+
+  // Progress data
+  fisikProgress: z
+    .number()
+    .min(0, 'Progress fisik minimal 0')
+    .max(100, 'Progress fisik maksimal 100')
+    .nullable(),
+  fisikDeviasi: z
+    .number()
+    .min(-100, 'Deviasi fisik minimal -100')
+    .max(100, 'Deviasi fisik maksimal 100')
+    .nullable(),
+  fisikTarget: z
+    .number()
+    .min(0, 'Target fisik minimal 0')
+    .max(100, 'Target fisik maksimal 100')
+    .nullable(),
+
+  saluranProgress: z.number().min(0, 'Progress saluran minimal 0').nullable(),
+  saluranDeviasi: z
+    .number()
+    .min(-1000000, 'Deviasi saluran terlalu kecil')
+    .max(1000000, 'Deviasi saluran terlalu besar')
+    .nullable(),
+  saluranTarget: z.number().min(0, 'Target saluran minimal 0').nullable(),
+
+  bangunanProgress: z.number().min(0, 'Progress bangunan minimal 0').nullable(),
+  bangunanDeviasi: z
+    .number()
+    .min(-1000, 'Deviasi bangunan terlalu kecil')
+    .max(1000, 'Deviasi bangunan terlalu besar')
+    .nullable(),
+  bangunanTarget: z.number().min(0, 'Target bangunan minimal 0').nullable(),
+
+  keuanganProgress: z
+    .number()
+    .min(0, 'Progress keuangan minimal 0')
+    .max(100, 'Progress keuangan maksimal 100')
+    .nullable(),
+  keuanganDeviasi: z
+    .number()
+    .min(-100, 'Deviasi keuangan minimal -100')
+    .max(100, 'Deviasi keuangan maksimal 100')
+    .nullable(),
+  keuanganTarget: z
+    .number()
+    .min(0, 'Target keuangan minimal 0')
+    .max(100, 'Target keuangan maksimal 100')
+    .nullable(),
+
+  // Realisasi data (JSON)
+  outputData: z
+    .array(
+      z.object({
+        label: z.string().min(1, 'Label output wajib diisi'),
+        value: z.string().min(1, 'Value output wajib diisi'),
+      })
+    )
+    .nullable(),
+
+  tenagaKerjaData: z
+    .array(
+      z.object({
+        label: z.string().min(1, 'Label tenaga kerja wajib diisi'),
+        value: z.string().min(1, 'Value tenaga kerja wajib diisi'),
+      })
+    )
+    .nullable(),
+
+  alatData: z
+    .array(
+      z.object({
+        label: z.string().min(1, 'Label alat wajib diisi'),
+        value: z.string().min(1, 'Value alat wajib diisi'),
+      })
+    )
+    .nullable(),
+
+  materialData: z
+    .array(
+      z.object({
+        label: z.string().min(1, 'Label material wajib diisi'),
+        value: z.string().min(1, 'Value material wajib diisi'),
+      })
+    )
+    .nullable(),
+
+  // Metadata
+  createdAt: z.any(), // Temporary: allow any type for createdAt
+  updatedAt: z.any(), // Temporary: allow any type for updatedAt
+})
+
+export const CreateProjectSchema = ProjectSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+})
+
+export const UpdateProjectSchema = ProjectSchema.partial().omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+})
+
+// Project update field schema
+export const UpdateProjectFieldSchema = z.object({
+  projectId: z.any(), // Temporary: allow any type for projectId
+  fieldName: z.enum(
+    [
+      'penyediaJasa',
+      'pekerjaan',
+      'jenisPaket',
+      'jenisPengadaan',
+      'paguAnggaran',
+      'nilaiKontrak',
+      'nomorKontrak',
+      'spmk',
+      'masaKontrak',
+      'tanggalKontrak',
+      'akhirKontrak',
+      'pembayaranTerakhir',
+    ],
+    { errorMap: () => ({ message: 'Field name tidak valid' }) }
+  ),
+  value: z.string().max(500, 'Value maksimal 500 karakter'),
+})
+
+// Project list query schema
+export const ProjectListQuerySchema = z.object({
+  page: z.number().min(1, 'Page minimal 1').default(1),
+  limit: z.number().min(1, 'Limit minimal 1').max(100, 'Limit maksimal 100').default(10),
+  search: z.string().max(255, 'Search maksimal 255 karakter').optional(),
+})
+
+// Transformed project data for list view
+export const ProjectListItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  location: z.string(),
+  budget: z.string(),
+  status: ProjectStatusSchema,
+  progress: z.number(),
+  deviation: z.number(),
+  target: z.number(),
+})
+
 // User schemas
 export const UserRoleSchema = z.enum(['admin', 'operator', 'viewer'])
 
@@ -19,8 +212,8 @@ export const VisibilitySchema = z.enum(['public', 'internal', 'restricted'])
 export const ReportMetadataSchema = z.object({
   source: z.string().min(1, 'Source tidak boleh kosong'),
   period: z.object({
-    start: z.date(),
-    end: z.date(),
+    start: z.any(), // Temporary: allow any type for date
+    end: z.any(), // Temporary: allow any type for date
   }),
   tags: z.array(z.string()),
   visibility: VisibilitySchema,
@@ -57,10 +250,12 @@ export const DashboardWidgetSchema = z.object({
 
 // Filter schemas
 export const FilterOptionsSchema = z.object({
-  dateRange: z.object({
-    start: z.date(),
-    end: z.date(),
-  }).optional(),
+  dateRange: z
+    .object({
+      start: z.any(), // Temporary: allow any type for date
+      end: z.any(), // Temporary: allow any type for date
+    })
+    .optional(),
   department: z.array(z.string()).optional(),
   region: z.array(z.string()).optional(),
   category: z.array(z.string()).optional(),

@@ -1,5 +1,7 @@
 tolong ikuti aturan ini:
--selalu gunakan tools yang terdapat pada List Technology stack terlebih dahulu, jika tidak memungkinkan maka gunakan yang lain
+-untuk implementasi kodenya tolong selalu implementasikan tools yang terdapat pada List Technology stack terlebih dahulu, jika tidak memungkinkan maka gunakan yang lain
+-gunakan tanstack react query 
+-buat validasi menggunakan zod
 -buat tampilannya responsive dan konsisten menggunakan aturan ini:
 Mobile:    < 640px   (sm)
 Tablet:    640-1023px (sm-lg)
@@ -7,7 +9,9 @@ Laptop:    1024-1279px (lg)
 Desktop:   ≥ 1280px (xl)
 
 -gunakan pendekatan reusable component dan clean code. selalu gunakan shadcn, jika tidak memungkinkan baru bikin component sendiri.
+-gunakan referensi kode yang sudah ada supaya kodenya konsisten
 -saya juga ingin connect menggunakan database postgressql dengan url seperti ini POSTGRES_URL=postgres://postgres:yoontae93@127.0.0.1:5432/siger
+
 
 
  
