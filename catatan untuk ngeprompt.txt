@@ -20,3 +20,4 @@ others:
 pada bagian informasi umum proyek dan inforamasi kontrak & anggaran nya itu bisa diisi dan otomatis akan menyimpan data tersebut otomatis ke db(tanpa perlu diki)
 
 
+pada table tambah kegiatan, Ketika tombol tambah kegiatan diklik maka akan memunculkan modal dengan input field      nilai nya bisa diisi

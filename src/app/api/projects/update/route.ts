@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Daftar field yang diizinkan untuk diupdate
     const allowedFields = [
       'penyediaJasa',
-      'pekerjaan', 
+      'pekerjaan',
       'jenisPaket',
       'jenisPengadaan',
       'paguAnggaran',
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       'masaKontrak',
       'tanggalKontrak',
       'akhirKontrak',
-      'pembayaranTerakhir'
+      'pembayaranTerakhir',
     ]
 
     if (!allowedFields.includes(fieldName)) {
@@ -109,16 +109,12 @@ export async function POST(request: NextRequest) {
         fieldName,
         value,
         oldValue: oldValue || null,
-        updatedAt: projectData.updatedAt || new Date().toISOString()
-      }
+        updatedAt: projectData.updatedAt || new Date().toISOString(),
+      },
     })
-
   } catch (error) {
     console.error('Error updating project:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -128,10 +124,7 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId')
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: 'Missing projectId parameter' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing projectId parameter' }, { status: 400 })
     }
 
     // === SIMULASI DATABASE (untuk demo) ===
@@ -148,7 +141,7 @@ export async function GET(request: NextRequest) {
       masaKontrak: '120 Hari Kalender',
       tanggalKontrak: '22 Mei 2025',
       akhirKontrak: '19 September 2025',
-      pembayaranTerakhir: '-'
+      pembayaranTerakhir: '-',
     }
 
     // === IMPLEMENTASI DENGAN POSTGRESQL + PRISMA (uncomment untuk produksi) ===
@@ -193,12 +186,8 @@ export async function GET(request: NextRequest) {
       data: projectData,
       // auditLogs: project.auditLogs // uncomment untuk audit trail
     })
-
   } catch (error) {
     console.error('Error fetching project:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

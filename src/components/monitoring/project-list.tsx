@@ -188,10 +188,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({ className }) => {
   return (
     <div className={cn('space-y-4', className)}>
       {projects.map(project => (
-        <ProjectCard 
-          key={project.id} 
-          project={project}
-        />
+        <ProjectCard key={project.id} project={project} />
       ))}
     </div>
   )

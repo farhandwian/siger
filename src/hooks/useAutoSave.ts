@@ -19,44 +19,47 @@ export function useAutoSave({
   projectId,
   fieldName,
   initialValue,
-  debounceMs = 1000
+  debounceMs = 1000,
 }: UseAutoSaveOptions): UseAutoSaveReturn {
   const [value, setLocalValue] = useState(initialValue)
   const [isLoading, setIsLoading] = useState(false)
   const [isSaved, setIsSaved] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const saveToDatabase = useCallback(async (valueToSave: string) => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const response = await fetch('/api/projects/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          projectId,
-          fieldName,
-          value: valueToSave,
-        }),
-      })
+  const saveToDatabase = useCallback(
+    async (valueToSave: string) => {
+      setIsLoading(true)
+      setError(null)
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save data')
+      try {
+        const response = await fetch('/api/projects/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            projectId,
+            fieldName,
+            value: valueToSave,
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to save data')
+        }
+
+        setIsSaved(true)
+        console.log(`Auto-saved ${fieldName}: ${valueToSave}`)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error occurred')
+        console.error('Auto-save failed:', err)
+      } finally {
+        setIsLoading(false)
       }
-
-      setIsSaved(true)
-      console.log(`Auto-saved ${fieldName}: ${valueToSave}`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred')
-      console.error('Auto-save failed:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [projectId, fieldName])
+    },
+    [projectId, fieldName]
+  )
 
   const setValue = useCallback((newValue: string) => {
     setLocalValue(newValue)
@@ -79,7 +82,7 @@ export function useAutoSave({
     setValue,
     isLoading,
     isSaved,
-    error
+    error,
   }
 }
 
@@ -103,49 +106,52 @@ export function useProjectAutoSave(projectId: string, initialData: ProjectData) 
   const [data, setData] = useState(initialData)
   const [savingFields, setSavingFields] = useState<Set<string>>(new Set())
 
-  const updateField = useCallback(async (fieldName: keyof ProjectData, value: string) => {
-    // Update local state immediately
-    setData(prev => ({ ...prev, [fieldName]: value }))
-    
-    // Add to saving fields
-    setSavingFields(prev => new Set(prev).add(fieldName))
+  const updateField = useCallback(
+    async (fieldName: keyof ProjectData, value: string) => {
+      // Update local state immediately
+      setData(prev => ({ ...prev, [fieldName]: value }))
 
-    // Debounce the save operation
-    setTimeout(async () => {
-      try {
-        const response = await fetch('/api/projects/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            projectId,
-            fieldName,
-            value,
-          }),
-        })
+      // Add to saving fields
+      setSavingFields(prev => new Set(prev).add(fieldName))
 
-        if (!response.ok) {
-          throw new Error('Failed to save')
+      // Debounce the save operation
+      setTimeout(async () => {
+        try {
+          const response = await fetch('/api/projects/update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              projectId,
+              fieldName,
+              value,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to save')
+          }
+
+          console.log(`Auto-saved ${fieldName}: ${value}`)
+        } catch (error) {
+          console.error('Auto-save failed:', error)
+        } finally {
+          // Remove from saving fields
+          setSavingFields(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(fieldName)
+            return newSet
+          })
         }
-
-        console.log(`Auto-saved ${fieldName}: ${value}`)
-      } catch (error) {
-        console.error('Auto-save failed:', error)
-      } finally {
-        // Remove from saving fields
-        setSavingFields(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(fieldName)
-          return newSet
-        })
-      }
-    }, 1000)
-  }, [projectId])
+      }, 1000)
+    },
+    [projectId]
+  )
 
   return {
     data,
     updateField,
-    savingFields
+    savingFields,
   }
 }
