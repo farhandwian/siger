@@ -73,20 +73,20 @@ const SidebarItemComponent: React.FC<{
     <div className="w-full">
       <div
         className={cn(
-          'relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 lg:gap-3 lg:rounded-lg lg:px-3 lg:py-2 xl:px-4',
+          'relative flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 lg:gap-2 lg:px-2.5 lg:py-1.5 xl:gap-3 xl:px-4 xl:py-2',
           item.active ? 'bg-yellow-400 text-blue-900' : 'text-gray-500 hover:bg-gray-100',
-          isChild && 'ml-2 lg:ml-3 xl:ml-4'
+          isChild && 'ml-2 lg:ml-2.5 xl:ml-4'
         )}
       >
         {item.active && !isChild && (
-          <div className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 transform rounded-r-full bg-blue-900 lg:h-7 xl:h-8" />
+          <div className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 transform rounded-r-full bg-blue-900 lg:h-6 xl:h-8" />
         )}
-        <Icon className={cn('h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6', isChild && 'opacity-0')} />
-        <span className="truncate text-xs font-medium lg:text-sm">{item.label}</span>
+        <Icon className={cn('h-3.5 w-3.5 lg:h-4 lg:w-4 xl:h-6 xl:w-6', isChild && 'opacity-0')} />
+        <span className="truncate text-[10px] font-medium lg:text-xs xl:text-sm">{item.label}</span>
       </div>
 
       {item.children && (
-        <div className="mt-1">
+        <div className="mt-0.5 lg:mt-1">
           {item.children.map(child => (
             <SidebarItemComponent key={child.id} item={child} isChild={true} />
           ))}
@@ -100,20 +100,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   return (
     <div
       className={cn(
-        'scrollbar-hide flex h-full w-48 flex-col overflow-y-auto border-r border-gray-200 bg-white lg:w-56 xl:w-64',
+        'scrollbar-hide flex h-screen w-40 flex-col overflow-y-auto border-r border-gray-200 bg-white lg:w-44 xl:w-64',
         className
       )}
     >
       {/* Logo Section */}
-      <div className="flex-shrink-0 border-b border-gray-100 p-3 lg:p-4 xl:p-6">
-        <div className="flex items-center gap-2">
-          <SigerLogo className="h-6 w-6 lg:h-7 lg:w-7 xl:h-8 xl:w-8" />
-          <span className="text-lg font-bold text-blue-900 lg:text-xl xl:text-2xl">SIGER</span>
+      <div className="flex-shrink-0 border-b border-gray-100 p-2 lg:p-3 xl:p-6">
+        <div className="flex items-center gap-1.5 lg:gap-2">
+          <SigerLogo className="h-5 w-5 lg:h-6 lg:w-6 xl:h-8 xl:w-8" />
+          <span className="text-sm font-bold text-blue-900 lg:text-base xl:text-2xl">SIGER</span>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 space-y-1 overflow-y-auto p-2 lg:space-y-2 lg:p-3 xl:p-4">
+      <div className="flex-1 space-y-0.5 overflow-y-auto p-1.5 lg:space-y-1 lg:p-2 xl:p-4">
         {sidebarItems.map(item => (
           <SidebarItemComponent key={item.id} item={item} />
         ))}

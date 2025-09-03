@@ -20,10 +20,10 @@ export default function MonitoringEvaluasiPage() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Full height */}
       <div
         className={`
-        fixed left-0 top-0 z-50 h-full transform transition-transform duration-300 ease-in-out
+        fixed left-0 top-0 z-50 h-screen transform transition-transform duration-300 ease-in-out
         lg:relative lg:z-auto lg:transform-none
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}
@@ -33,15 +33,15 @@ export default function MonitoringEvaluasiPage() {
 
       {/* Main Content */}
       <div className="min-w-0 flex-1 lg:ml-0">
-        {/* Mobile Menu Button */}
-        <div className="border-b border-gray-200 bg-white p-4 lg:hidden">
+        {/* Mobile Menu Button - Reduced padding */}
+        <div className="border-b border-gray-200 bg-white p-2 lg:hidden">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2"
+            className="p-1"
           >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -60,24 +60,24 @@ export default function MonitoringEvaluasiPage() {
           }}
         />
 
-        {/* Content */}
-        <main className="p-4 lg:p-6 xl:p-8">
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm lg:p-6">
+        {/* Content - Reduced padding, enlarged card content */}
+        <main className="p-2 lg:p-3 xl:p-6">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm lg:p-5 xl:p-8">
             {/* Summary Section */}
-            <div className="space-y-4 lg:space-y-6">
+            <div className="space-y-3 lg:space-y-4 xl:space-y-6">
               <div>
-                <h2 className="mb-3 text-base font-medium text-gray-900 lg:mb-4 lg:text-lg">
+                <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
                   Rangkuman Evaluasi
                 </h2>
                 <SummaryCards />
               </div>
 
               {/* Divider */}
-              <div className="my-6 border-t border-gray-200 lg:my-8" />
+              <div className="my-3 border-t border-gray-200 lg:my-4 xl:my-6" />
 
               {/* Project List Section */}
               <div>
-                <h2 className="mb-3 text-base font-medium text-gray-900 lg:mb-4 lg:text-lg">
+                <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
                   Daftar Pekerjaan
                 </h2>
                 <ProjectList />

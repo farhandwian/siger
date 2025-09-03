@@ -52,8 +52,10 @@ const StatusBadge: React.FC<{ status: ProjectData['status'] }> = ({ status }) =>
 
   return (
     <div className="flex items-center gap-1">
-      <Icon className="h-4 w-4 lg:h-5 lg:w-5" />
-      <span className={cn('text-xs font-normal lg:text-sm', config.color)}>{config.label}</span>
+      <Icon className="h-3 w-3 lg:h-3.5 lg:w-3.5 xl:h-5 xl:w-5" />
+      <span className={cn('text-[10px] font-normal lg:text-xs xl:text-sm', config.color)}>
+        {config.label}
+      </span>
     </div>
   )
 }
@@ -61,21 +63,21 @@ const StatusBadge: React.FC<{ status: ProjectData['status'] }> = ({ status }) =>
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
   return (
     <Card className={cn('relative border border-gray-200 shadow-sm', className)}>
-      <CardContent className="p-3 lg:p-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-8 xl:gap-12">
+      <CardContent className="p-2 lg:p-3 xl:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6 xl:gap-12">
           {/* Project Info */}
-          <div className="flex-1 space-y-2">
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium leading-snug text-gray-700 lg:text-base">
+          <div className="flex-1 space-y-1.5 lg:space-y-2">
+            <div className="space-y-0.5 lg:space-y-1">
+              <h3 className="text-xs font-medium leading-snug text-gray-700 lg:text-sm xl:text-base">
                 {project.title}
               </h3>
-              <div className="flex flex-col gap-2 text-xs text-gray-700 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex flex-col gap-1.5 text-[10px] text-gray-700 sm:flex-row sm:items-center sm:gap-3 lg:text-xs">
                 <div className="flex items-center gap-1">
-                  <MapPinIcon className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <MapPinIcon className="h-2.5 w-2.5 lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
                   <span>{project.location}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <CurrencyDollarIcon className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <CurrencyDollarIcon className="h-2.5 w-2.5 lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
                   <span className="truncate">{project.budget}</span>
                 </div>
               </div>
@@ -84,17 +86,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
           </div>
 
           {/* Progress Section */}
-          <div className="flex-1 space-y-2 lg:min-w-0">
-            <div className="grid grid-cols-3 gap-2 text-xs lg:gap-4 lg:text-sm">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:gap-2">
+          <div className="flex-1 space-y-1.5 lg:min-w-0 lg:space-y-2">
+            <div className="grid grid-cols-3 gap-1.5 text-[10px] lg:gap-3 lg:text-xs xl:text-sm">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:gap-1.5">
                 <span className="text-gray-500">Progress</span>
                 <span className="font-medium text-emerald-500">{project.progress}%</span>
               </div>
-              <div className="flex flex-col lg:flex-row lg:items-center lg:gap-2">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:gap-1.5">
                 <span className="text-gray-500">Deviasi</span>
                 <span className="font-medium text-amber-500">{project.deviation}%</span>
               </div>
-              <div className="flex flex-col lg:flex-row lg:items-center lg:gap-2">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:gap-1.5">
                 <span className="text-gray-500">Target</span>
                 <span className="font-medium text-gray-700">{project.target}%</span>
               </div>
@@ -110,7 +112,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
           <div className="flex flex-shrink-0 justify-end lg:block">
             <Button
               size="sm"
-              className="bg-blue-500 px-3 text-xs text-white hover:bg-blue-600 lg:px-4 lg:text-sm"
+              className="bg-blue-500 px-2.5 text-[10px] text-white hover:bg-blue-600 lg:px-3 lg:text-xs xl:px-4 xl:text-sm"
             >
               Detail
             </Button>
@@ -118,6 +120,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
         </div>
 
         {/* Bottom accent border */}
+        <div className="absolute bottom-0 left-1/2 h-1.5 w-[calc(100%-12px)] -translate-x-1/2 transform bg-yellow-400 lg:w-[calc(100%-24px)] xl:w-[calc(100%-32px)]" />
         <div className="absolute bottom-0 left-1/2 h-1.5 w-[calc(100%-16px)] -translate-x-1/2 transform bg-yellow-400 lg:w-[calc(100%-32px)]" />
       </CardContent>
     </Card>

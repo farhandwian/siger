@@ -21,15 +21,17 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header
       className={cn(
-        'border-b border-gray-200 bg-white px-4 py-3 lg:px-6 lg:py-4 xl:px-8 xl:py-5',
+        'border-b border-gray-200 bg-white px-3 py-2 lg:px-4 lg:py-3 xl:px-8 xl:py-5',
         className
       )}
     >
       <div className="flex items-center justify-between">
         {/* Title and Breadcrumb */}
-        <div className="min-w-0 flex-1 space-y-1">
-          <h1 className="truncate text-sm font-medium text-gray-900 lg:text-base">{title}</h1>
-          <nav className="flex items-center space-x-2 text-xs lg:text-sm">
+        <div className="min-w-0 flex-1 space-y-0.5 lg:space-y-1">
+          <h1 className="truncate text-xs font-medium text-gray-900 lg:text-sm xl:text-base">
+            {title}
+          </h1>
+          <nav className="flex items-center space-x-1.5 text-[10px] lg:space-x-2 lg:text-xs xl:text-sm">
             <span className="truncate text-gray-500">{breadcrumb.level1}</span>
             {breadcrumb.level2 && (
               <>
@@ -41,13 +43,13 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* User Info and AI Assistant */}
-        <div className="flex flex-shrink-0 items-center gap-3 lg:gap-4 xl:gap-6">
+        <div className="flex flex-shrink-0 items-center gap-2 lg:gap-3 xl:gap-6">
           {/* User Profile */}
-          <div className="hidden items-center gap-2 md:flex lg:gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300 lg:h-9 lg:w-9 xl:h-10 xl:w-10">
-              <div className="h-3 w-3 rounded-full bg-gray-600 lg:h-3.5 lg:w-3.5 xl:h-4 xl:w-4" />
+          <div className="hidden items-center gap-1.5 md:flex lg:gap-2 xl:gap-3">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-300 lg:h-7 lg:w-7 xl:h-10 xl:w-10">
+              <div className="h-2.5 w-2.5 rounded-full bg-gray-600 lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
             </div>
-            <div className="hidden text-xs lg:block lg:text-sm">
+            <div className="hidden text-[10px] lg:block lg:text-xs xl:text-sm">
               <div className="font-medium text-black">BBWS Mesuji Sekampung</div>
               <div className="text-gray-600">Admin</div>
             </div>
@@ -56,10 +58,10 @@ export const Header: React.FC<HeaderProps> = ({
           {/* AI Assistant Button */}
           <Button
             size="sm"
-            className="bg-gradient-to-r from-blue-600 via-purple-600 to-yellow-500 px-2 text-xs text-white hover:opacity-90 lg:px-4 lg:text-sm"
+            className="bg-gradient-to-r from-blue-600 via-purple-600 to-yellow-500 px-2 text-[10px] text-white hover:opacity-90 lg:px-3 lg:text-xs xl:px-4 xl:text-sm"
           >
             <svg
-              className="mr-1 h-3 w-3 lg:mr-2 lg:h-4 lg:w-4 xl:h-5 xl:w-5"
+              className="mr-1 h-2.5 w-2.5 lg:mr-1.5 lg:h-3 lg:w-3 xl:mr-2 xl:h-5 xl:w-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

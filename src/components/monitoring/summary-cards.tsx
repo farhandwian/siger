@@ -25,15 +25,15 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
         className
       )}
     >
-      <CardContent className="p-3 lg:p-4">
-        <div className="space-y-1 lg:space-y-2">
-          <div className="text-xs font-normal text-gray-700 lg:text-sm">{title}</div>
-          <div className="text-lg font-bold text-gray-700 lg:text-xl">{value}</div>
+      <CardContent className="p-2 lg:p-3 xl:p-4">
+        <div className="space-y-0.5 lg:space-y-1 xl:space-y-2">
+          <div className="text-[10px] font-normal text-gray-700 lg:text-xs xl:text-sm">{title}</div>
+          <div className="text-sm font-bold text-gray-700 lg:text-base xl:text-xl">{value}</div>
         </div>
         {/* Left border accent */}
         <div
           className={cn(
-            'absolute left-0 top-1/2 h-16 w-1.5 -translate-y-1/2 transform rounded-r lg:h-20',
+            'absolute left-0 top-1/2 h-12 w-1.5 -translate-y-1/2 transform rounded-r lg:h-14 xl:h-20',
             variant === 'success' ? 'bg-emerald-500' : 'bg-blue-900'
           )}
         />
