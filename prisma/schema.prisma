@@ -14,47 +14,47 @@ model Project {
   id                  String   @id @default(cuid())
   
   // Informasi Umum Proyek
-  penyediaJasa        String?
+  penyediaJasa        String?  @map("penyedia_jasa")
   pekerjaan           String?
-  jenisPaket          String?
-  jenisPengadaan      String?
+  jenisPaket          String?  @map("jenis_paket")
+  jenisPengadaan      String?  @map("jenis_pengadaan")
   
   // Informasi Kontrak & Anggaran
-  paguAnggaran        String?
-  nilaiKontrak        String?
-  nomorKontrak        String?
+  paguAnggaran        String?  @map("pagu_anggaran")
+  nilaiKontrak        String?  @map("nilai_kontrak")
+  nomorKontrak        String?  @map("nomor_kontrak")
   spmk                String?
-  masaKontrak         String?
-  tanggalKontrak      String?
-  akhirKontrak        String?
-  pembayaranTerakhir  String?
+  masaKontrak         String?  @map("masa_kontrak")
+  tanggalKontrak      String?  @map("tanggal_kontrak")
+  akhirKontrak        String?  @map("akhir_kontrak")
+  pembayaranTerakhir  String?  @map("pembayaran_terakhir")
   
   // Progress data
-  fisikProgress       Float?   @default(0)
-  fisikDeviasi        Float?   @default(0)
-  fisikTarget         Float?   @default(100)
+  fisikProgress       Float?   @default(0) @map("fisik_progress")
+  fisikDeviasi        Float?   @default(0) @map("fisik_deviasi")
+  fisikTarget         Float?   @default(100) @map("fisik_target")
   
-  saluranProgress     Float?   @default(0)
-  saluranDeviasi      Float?   @default(0)
-  saluranTarget       Float?   @default(0)
+  saluranProgress     Float?   @default(0) @map("saluran_progress")
+  saluranDeviasi      Float?   @default(0) @map("saluran_deviasi")
+  saluranTarget       Float?   @default(0) @map("saluran_target")
   
-  bangunanProgress    Float?   @default(0)
-  bangunanDeviasi     Float?   @default(0)
-  bangunanTarget      Float?   @default(0)
+  bangunanProgress    Float?   @default(0) @map("bangunan_progress")
+  bangunanDeviasi     Float?   @default(0) @map("bangunan_deviasi")
+  bangunanTarget      Float?   @default(0) @map("bangunan_target")
   
-  keuanganProgress    Float?   @default(0)
-  keuanganDeviasi     Float?   @default(0)
-  keuanganTarget      Float?   @default(0)
+  keuanganProgress    Float?   @default(0) @map("keuangan_progress")
+  keuanganDeviasi     Float?   @default(0) @map("keuangan_deviasi")
+  keuanganTarget      Float?   @default(0) @map("keuangan_target")
   
   // Realisasi data (JSON untuk fleksibilitas)
-  outputData          Json?
-  tenagaKerjaData     Json?
-  alatData            Json?
-  materialData        Json?
+  outputData          Json?    @map("output_data")
+  tenagaKerjaData     Json?    @map("tenaga_kerja_data")
+  alatData            Json?    @map("alat_data")
+  materialData        Json?    @map("material_data")
   
   // Metadata
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
   
   // Relations
   auditLogs           ProjectAuditLog[]
@@ -65,11 +65,11 @@ model Project {
 // Model untuk tracking perubahan otomatis
 model ProjectAuditLog {
   id          String   @id @default(cuid())
-  projectId   String
-  fieldName   String
-  oldValue    String?
-  newValue    String?
-  changedAt   DateTime @default(now())
+  projectId   String   @map("project_id")
+  fieldName   String   @map("field_name")
+  oldValue    String?  @map("old_value")
+  newValue    String?  @map("new_value")
+  changedAt   DateTime @default(now()) @map("changed_at")
   
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
