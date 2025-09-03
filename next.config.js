@@ -7,12 +7,14 @@ const withPWA = require('next-pwa')({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-    serverComponentsExternalPackages: ['mapbox-gl']
-  },
+  serverExternalPackages: ['mapbox-gl'],
   images: {
-    domains: ['api.mapbox.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'api.mapbox.com',
+      },
+    ],
     formats: ['image/avif', 'image/webp']
   },
   webpack: (config, { isServer }) => {
@@ -33,7 +35,6 @@ const nextConfig = {
   },
   poweredByHeader: false,
   reactStrictMode: true,
-  swcMinify: true,
   compress: true
 };
 
