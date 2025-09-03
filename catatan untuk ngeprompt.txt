@@ -1,0 +1,22 @@
+logic:
+Monitoring dan Evaluasi
+Daftar pekerjaan diambil dari usulan yang sudah diverifikasi??
+
+
+
+
+
+
+
+others:
+-ikuti ini sebagai acuan untuk ukuran ratio dari font size hingga ukuran content-contentnya:
+	+src\app\monitoring-evaluasi\page.tsx
+	+src\components\monitoring\project-list.tsx
+	+src\components\monitoring\summary-cards.tsx
+
+
+
+
+pada bagian informasi umum proyek dan inforamasi kontrak & anggaran nya itu bisa diisi dan otomatis akan menyimpan data tersebut otomatis ke db(tanpa perlu diki)
+
+

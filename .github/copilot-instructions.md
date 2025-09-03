@@ -1,4 +1,5 @@
 tolong ikuti aturan ini:
+-selalu gunakan tools yang terdapat pada List Technology stack terlebih dahulu, jika tidak memungkinkan maka gunakan yang lain
 -buat tampilannya responsive dan konsisten menggunakan aturan ini:
 Mobile:    < 640px   (sm)
 Tablet:    640-1023px (sm-lg)
@@ -8,9 +9,10 @@ Desktop:   ≥ 1280px (xl)
 -gunakan pendekatan reusable component dan clean code. selalu gunakan shadcn, jika tidak memungkinkan baru bikin component sendiri.
 -saya juga ingin connect menggunakan database postgressql dengan url seperti ini POSTGRES_URL=postgres://postgres:yoontae93@127.0.0.1:5432/siger
 
+
  
 
-Technology stack yang digunakan
+List Technology stack yang digunakan
 {
 
   "frontend": {

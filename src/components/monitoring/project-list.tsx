@@ -4,6 +4,7 @@ import React from 'react'
 import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import { ProgressBar } from '../ui/progress-bar'
+import { useRouter } from 'next/navigation'
 import {
   MapPinIcon,
   CurrencyDollarIcon,
@@ -61,6 +62,11 @@ const StatusBadge: React.FC<{ status: ProjectData['status'] }> = ({ status }) =>
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
+  const router = useRouter()
+
+  const handleDetailClick = () => {
+    router.push(`/monitoring-evaluasi/project/${project.id}`)
+  }
   return (
     <Card className={cn('relative border border-gray-200 shadow-sm', className)}>
       <CardContent className="p-2 lg:p-3 xl:p-4">
@@ -112,6 +118,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
           <div className="flex flex-shrink-0 justify-end lg:block">
             <Button
               size="sm"
+              onClick={handleDetailClick}
               className="bg-blue-500 px-2 text-[9px] text-white hover:bg-blue-600 lg:px-2.5 lg:text-[10px] xl:px-3 xl:text-xs"
             >
               Detail
@@ -181,7 +188,10 @@ export const ProjectList: React.FC<ProjectListProps> = ({ className }) => {
   return (
     <div className={cn('space-y-4', className)}>
       {projects.map(project => (
-        <ProjectCard key={project.id} project={project} />
+        <ProjectCard 
+          key={project.id} 
+          project={project}
+        />
       ))}
     </div>
   )

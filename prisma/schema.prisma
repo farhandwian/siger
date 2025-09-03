@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model Project {
+  id                  String   @id @default(cuid())
+  
+  // Informasi Umum Proyek
+  penyediaJasa        String?
+  pekerjaan           String?
+  jenisPaket          String?
+  jenisPengadaan      String?
+  
+  // Informasi Kontrak & Anggaran
+  paguAnggaran        String?
+  nilaiKontrak        String?
+  nomorKontrak        String?
+  spmk                String?
+  masaKontrak         String?
+  tanggalKontrak      String?
+  akhirKontrak        String?
+  pembayaranTerakhir  String?
+  
+  // Progress data
+  fisikProgress       Float?   @default(0)
+  fisikDeviasi        Float?   @default(0)
+  fisikTarget         Float?   @default(100)
+  
+  saluranProgress     Float?   @default(0)
+  saluranDeviasi      Float?   @default(0)
+  saluranTarget       Float?   @default(0)
+  
+  bangunanProgress    Float?   @default(0)
+  bangunanDeviasi     Float?   @default(0)
+  bangunanTarget      Float?   @default(0)
+  
+  keuanganProgress    Float?   @default(0)
+  keuanganDeviasi     Float?   @default(0)
+  keuanganTarget      Float?   @default(0)
+  
+  // Realisasi data (JSON untuk fleksibilitas)
+  outputData          Json?
+  tenagaKerjaData     Json?
+  alatData            Json?
+  materialData        Json?
+  
+  // Metadata
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  // Relations
+  auditLogs           ProjectAuditLog[]
+  
+  @@map("projects")
+}
+
+// Model untuk tracking perubahan otomatis
+model ProjectAuditLog {
+  id          String   @id @default(cuid())
+  projectId   String
+  fieldName   String
+  oldValue    String?
+  newValue    String?
+  changedAt   DateTime @default(now())
+  
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@map("project_audit_logs")
+}
