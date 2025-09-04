@@ -15,8 +15,10 @@ export async function calculateCumulativeData(
   projectId: string,
   targetMonth: number,
   targetWeek: number
-): Promise<CumulativeCalculation[]> {
-  // Get all schedules for the project up to the target date
+): Promise<CumulativeCalculation> {
+  console.log(`Calculating cumulative for project ${projectId} up to ${targetMonth}-${targetWeek}`)
+
+  // Get all schedules for the project up to the target date (including target week)
   const schedules = await prisma.activitySchedule.findMany({
     where: {
       AND: [
@@ -56,52 +58,30 @@ export async function calculateCumulativeData(
     },
   })
 
-  // Group by month/week and sum the percentages
-  const weeklyTotals = new Map<string, { rencana: number; realisasi: number }>()
+  console.log(`Found ${schedules.length} schedules for cumulative calculation`)
+
+  // Calculate total cumulative values up to target week
+  let cumulativePlan = 0
+  let cumulativeActual = 0
 
   schedules.forEach(schedule => {
-    const weekKey = `${schedule.month}-${schedule.week}`
-
-    if (!weeklyTotals.has(weekKey)) {
-      weeklyTotals.set(weekKey, { rencana: 0, realisasi: 0 })
-    }
-
-    const totals = weeklyTotals.get(weekKey)!
-    totals.rencana += schedule.planPercentage || 0
-    totals.realisasi += schedule.actualPercentage || 0
+    console.log(
+      `Schedule: ${schedule.month}-${schedule.week}, plan: ${schedule.planPercentage}, actual: ${schedule.actualPercentage}`
+    )
+    cumulativePlan += schedule.planPercentage || 0
+    cumulativeActual += schedule.actualPercentage || 0
   })
 
-  // Calculate cumulative totals
-  const cumulativeResults: CumulativeCalculation[] = []
-  let cumulativeRencana = 0
-  let cumulativeRealisasi = 0
+  const result = {
+    month: targetMonth,
+    week: targetWeek,
+    cumulativePlan,
+    cumulativeActual,
+    cumulativeDeviation: cumulativePlan - cumulativeActual,
+  }
 
-  // Sort weeks chronologically
-  const sortedWeeks = Array.from(weeklyTotals.keys()).sort((a, b) => {
-    const [monthA, weekA] = a.split('-').map(Number)
-    const [monthB, weekB] = b.split('-').map(Number)
-
-    if (monthA !== monthB) return monthA - monthB
-    return weekA - weekB
-  })
-
-  sortedWeeks.forEach(weekKey => {
-    const [month, week] = weekKey.split('-').map(Number)
-    const totals = weeklyTotals.get(weekKey)!
-
-    cumulativeRencana += totals.rencana
-    cumulativeRealisasi += totals.realisasi
-
-    cumulativeResults.push({
-      month,
-      week,
-      cumulativePlan: cumulativeRencana,
-      cumulativeActual: cumulativeRealisasi,
-      cumulativeDeviation: cumulativeRencana - cumulativeRealisasi,
-    })
-  })
-
-  return cumulativeResults
+  console.log(`Cumulative result for ${targetMonth}-${targetWeek}:`, result)
+  return result
 }
 
 /**
@@ -113,8 +93,15 @@ export async function updateCumulativeDataForProject(
   changedWeek: number
 ) {
   try {
-    console.log('Updating cumulative data for project:', projectId, 'month:', changedMonth, 'week:', changedWeek)
-    
+    console.log(
+      'Updating cumulative data for project:',
+      projectId,
+      'month:',
+      changedMonth,
+      'week:',
+      changedWeek
+    )
+
     // Get all unique month/week combinations for this project
     const allSchedules = await prisma.activitySchedule.findMany({
       where: {
@@ -153,42 +140,37 @@ export async function updateCumulativeDataForProject(
       const { month, week } = sortedSchedules[i]
 
       const cumulativeData = await calculateCumulativeData(projectId, month, week)
-      const currentWeekData = cumulativeData.find(
-        data => data.month === month && data.week === week
-      )
 
-      console.log(`Processing week ${month}-${week}, cumulative data:`, currentWeekData)
+      console.log(`Processing week ${month}-${week}, cumulative data:`, cumulativeData)
 
-      if (currentWeekData) {
-        // Upsert cumulative data
-        await prisma.cumulativeSchedule.upsert({
-          where: {
-            projectId_month_year_week: {
-              projectId,
-              month,
-              year: new Date().getFullYear(),
-              week,
-            },
-          },
-          update: {
-            cumulativePlan: currentWeekData.cumulativePlan,
-            cumulativeActual: currentWeekData.cumulativeActual,
-            cumulativeDeviation: currentWeekData.cumulativeDeviation,
-            updatedAt: new Date(),
-          },
-          create: {
+      // Upsert cumulative data
+      await prisma.cumulativeSchedule.upsert({
+        where: {
+          projectId_month_year_week: {
             projectId,
             month,
             year: new Date().getFullYear(),
             week,
-            cumulativePlan: currentWeekData.cumulativePlan,
-            cumulativeActual: currentWeekData.cumulativeActual,
-            cumulativeDeviation: currentWeekData.cumulativeDeviation,
           },
-        })
-      }
+        },
+        update: {
+          cumulativePlan: cumulativeData.cumulativePlan,
+          cumulativeActual: cumulativeData.cumulativeActual,
+          cumulativeDeviation: cumulativeData.cumulativeDeviation,
+          updatedAt: new Date(),
+        },
+        create: {
+          projectId,
+          month,
+          year: new Date().getFullYear(),
+          week,
+          cumulativePlan: cumulativeData.cumulativePlan,
+          cumulativeActual: cumulativeData.cumulativeActual,
+          cumulativeDeviation: cumulativeData.cumulativeDeviation,
+        },
+      })
     }
-    
+
     console.log('Cumulative data update completed')
   } catch (error) {
     console.error('Error updating cumulative data:', error)

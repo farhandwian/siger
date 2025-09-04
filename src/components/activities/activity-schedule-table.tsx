@@ -27,6 +27,8 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
   const { data: cumulativeData } = useCumulativeData(projectId)
   const updateScheduleMutation = useUpdateSchedule()
 
+  console.log('Component cumulativeData:', cumulativeData)
+
   // Generate months and weeks for table headers based on contract dates
   const currentYear = new Date().getFullYear()
   const months = generateMonthsFromContract(
@@ -324,7 +326,11 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                                   className="cursor-pointer text-xs font-medium text-[#364878]"
                                   onClick={() => handleCellEdit(cellId, value)}
                                 >
-                                  {value !== null && value !== undefined ? (value === 0 ? '0' : value.toFixed(3)) : '-'}
+                                  {value !== null && value !== undefined
+                                    ? value === 0
+                                      ? '0'
+                                      : value.toFixed(3)
+                                    : '-'}
                                 </div>
                               )}
                             </td>
@@ -395,7 +401,11 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                                   className="cursor-pointer text-xs font-medium text-[#364878]"
                                   onClick={() => handleCellEdit(cellId, value)}
                                 >
-                                  {value !== null && value !== undefined ? (value === 0 ? '0' : value.toFixed(3)) : '-'}
+                                  {value !== null && value !== undefined
+                                    ? value === 0
+                                      ? '0'
+                                      : value.toFixed(3)
+                                    : '-'}
                                 </div>
                               )}
                             </td>

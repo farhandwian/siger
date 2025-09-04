@@ -203,10 +203,11 @@ export function useCumulativeData(projectId: string) {
   return useQuery({
     queryKey: cumulativeKeys.list(projectId),
     queryFn: async () => {
-      const response = await apiClient.get<{ data: CumulativeData[] }>(
-        `/cumulative?projectId=${projectId}`
-      )
-      return response.data
+      console.log('Fetching cumulative data for project:', projectId)
+      const response = await apiClient.get<CumulativeData[]>(`/cumulative?projectId=${projectId}`)
+      console.log('Cumulative API response (already extracted data):', response)
+      // apiClient.get already returns the data array, not the full response
+      return response
     },
     enabled: !!projectId,
   })
