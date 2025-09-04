@@ -143,11 +143,17 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
           {/* Legend */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-[#ffc928]"></div>
+              <div
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: '#FFC928' }}
+              ></div>
               <span className="text-sm text-gray-500">Realisasi</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-blue-200"></div>
+              <div
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: '#BFDBFE' }}
+              ></div>
               <span className="text-sm text-gray-500">Rencana</span>
             </div>
           </div>
@@ -199,121 +205,66 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
           <tbody>
             {activities?.map(activity => (
               <React.Fragment key={activity.id}>
-                {/* Main Activity Row */}
+                {/* Main Activity Row - No weight, blocked */}
                 <tr className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="border-b border-gray-200 bg-gray-100 px-2 py-1.5">
-                    <div className="cursor-pointer text-xs font-semibold text-gray-900 underline">
+                    <div className="cursor-pointer text-xs font-bold uppercase text-gray-900 underline">
                       {activity.name}
                     </div>
                   </td>
                   <td className="border-b border-gray-200 bg-gray-100 px-6 py-3 text-center text-xs text-gray-700">
-                    {activity.weight}
+                    {/* No weight for main activity */}
                   </td>
                   {months.map(month =>
-                    month.weeks.map(weekObj => {
-                      const cellId = `${activity.id}-${month.month}-${weekObj.week}-plan`
-                      const value = getScheduleValue(
-                        activity.id,
-                        null,
-                        month.month,
-                        weekObj.week,
-                        'plan'
-                      )
-                      const isEditing = editingCell === cellId
-
-                      return (
-                        <td
-                          key={cellId}
-                          className="min-w-[67px] border-b border-gray-200 bg-gray-100 px-6 py-1.5 text-center"
-                        >
-                          {isEditing ? (
-                            <Input
-                              value={editValue}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                setEditValue(e.target.value)
-                              }
-                              onBlur={() =>
-                                handleCellSave(activity.id, null, month.month, weekObj.week, 'plan')
-                              }
-                              onKeyDown={e => {
-                                if (e.key === 'Enter') {
-                                  handleCellSave(
-                                    activity.id,
-                                    null,
-                                    month.month,
-                                    weekObj.week,
-                                    'plan'
-                                  )
-                                } else if (e.key === 'Escape') {
-                                  handleCellCancel()
-                                }
-                              }}
-                              className="h-6 w-full border-0 p-0 text-center text-xs focus:ring-0"
-                              autoFocus
-                            />
-                          ) : (
-                            <div
-                              className={`cursor-pointer text-xs ${
-                                value > 0
-                                  ? 'rounded bg-blue-200 px-2 py-1 text-[#364878]'
-                                  : 'text-gray-700'
-                              }`}
-                              onClick={() => handleCellEdit(cellId, value)}
-                            >
-                              {value > 0 ? value.toFixed(3) : '-'}
-                            </div>
-                          )}
-                        </td>
-                      )
-                    })
+                    month.weeks.map(weekObj => (
+                      <td
+                        key={`${activity.id}-main-${month.month}-${weekObj.week}`}
+                        className="min-w-[67px] border-b border-gray-200 bg-gray-100 px-6 py-1.5 text-center"
+                      >
+                        {/* Main activity cells are blocked/empty */}
+                      </td>
+                    ))
                   )}
                 </tr>
 
-                {/* Sub Activities */}
+                {/* Sub Activities - Each has 2 rows */}
                 {activity.subActivities?.map(subActivity => (
-                  <tr key={subActivity.id} className="border-b border-gray-200 bg-gray-100">
-                    <td className="px-6 py-3">
-                      <div className="pl-4 text-xs font-semibold text-gray-900">
-                        {subActivity.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-center text-xs text-gray-700">
-                      {subActivity.weight}
-                    </td>
-                    {months.map(month =>
-                      month.weeks.map(weekObj => {
-                        const cellId = `${subActivity.id}-${month.month}-${weekObj.week}-plan`
-                        const value = getScheduleValue(
-                          activity.id,
-                          subActivity.id,
-                          month.month,
-                          weekObj.week,
-                          'plan'
-                        )
-                        const isEditing = editingCell === cellId
+                  <React.Fragment key={subActivity.id}>
+                    {/* First Row - Blue background (#BFDBFE) */}
+                    <tr className="border-b border-gray-200">
+                      <td className="px-6 py-2">
+                        <div className="pl-4 text-xs font-semibold text-gray-900">
+                          {subActivity.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-2 text-center text-xs text-gray-700">
+                        {subActivity.weight}
+                      </td>
+                      {months.map(month =>
+                        month.weeks.map(weekObj => {
+                          const cellId = `${subActivity.id}-${month.month}-${weekObj.week}-plan`
+                          const value = getScheduleValue(
+                            activity.id,
+                            subActivity.id,
+                            month.month,
+                            weekObj.week,
+                            'plan'
+                          )
+                          const isEditing = editingCell === cellId
 
-                        return (
-                          <td
-                            key={cellId}
-                            className="min-w-[67px] border-b border-gray-200 px-6 py-1.5 text-center"
-                          >
-                            {isEditing ? (
-                              <Input
-                                value={editValue}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                  setEditValue(e.target.value)
-                                }
-                                onBlur={() =>
-                                  handleCellSave(
-                                    activity.id,
-                                    subActivity.id,
-                                    month.month,
-                                    weekObj.week,
-                                    'plan'
-                                  )
-                                }
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
+                          return (
+                            <td
+                              key={cellId}
+                              className="min-w-[67px] border-b border-gray-200 px-6 py-1.5 text-center"
+                              style={{ backgroundColor: '#BFDBFE' }}
+                            >
+                              {isEditing ? (
+                                <Input
+                                  value={editValue}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                    setEditValue(e.target.value)
+                                  }
+                                  onBlur={() =>
                                     handleCellSave(
                                       activity.id,
                                       subActivity.id,
@@ -321,30 +272,106 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                                       weekObj.week,
                                       'plan'
                                     )
-                                  } else if (e.key === 'Escape') {
-                                    handleCellCancel()
                                   }
-                                }}
-                                className="h-6 w-full border-0 p-0 text-center text-xs focus:ring-0"
-                                autoFocus
-                              />
-                            ) : (
-                              <div
-                                className={`cursor-pointer text-xs ${
-                                  value > 0
-                                    ? 'rounded bg-blue-200 px-2 py-1 text-[#364878]'
-                                    : 'text-gray-700'
-                                }`}
-                                onClick={() => handleCellEdit(cellId, value)}
-                              >
-                                {value > 0 ? value.toFixed(3) : '-'}
-                              </div>
-                            )}
-                          </td>
-                        )
-                      })
-                    )}
-                  </tr>
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                      handleCellSave(
+                                        activity.id,
+                                        subActivity.id,
+                                        month.month,
+                                        weekObj.week,
+                                        'plan'
+                                      )
+                                    } else if (e.key === 'Escape') {
+                                      handleCellCancel()
+                                    }
+                                  }}
+                                  className="h-6 w-full border-0 bg-transparent p-0 text-center text-xs focus:ring-0"
+                                  autoFocus
+                                />
+                              ) : (
+                                <div
+                                  className="cursor-pointer text-xs font-medium text-[#364878]"
+                                  onClick={() => handleCellEdit(cellId, value)}
+                                >
+                                  {value > 0 ? value.toFixed(3) : '-'}
+                                </div>
+                              )}
+                            </td>
+                          )
+                        })
+                      )}
+                    </tr>
+
+                    {/* Second Row - Yellow background (#FFC928) */}
+                    <tr className="border-b border-gray-200">
+                      <td className="px-6 py-2">{/* Empty for second row */}</td>
+                      <td className="px-6 py-2 text-center text-xs text-gray-700">
+                        {/* Empty for second row */}
+                      </td>
+                      {months.map(month =>
+                        month.weeks.map(weekObj => {
+                          const cellId = `${subActivity.id}-${month.month}-${weekObj.week}-actual`
+                          const value = getScheduleValue(
+                            activity.id,
+                            subActivity.id,
+                            month.month,
+                            weekObj.week,
+                            'actual'
+                          )
+                          const isEditing = editingCell === cellId
+
+                          return (
+                            <td
+                              key={cellId}
+                              className="min-w-[67px] border-b border-gray-200 px-6 py-1.5 text-center"
+                              style={{ backgroundColor: '#FFC928' }}
+                            >
+                              {isEditing ? (
+                                <Input
+                                  value={editValue}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                    setEditValue(e.target.value)
+                                  }
+                                  onBlur={() =>
+                                    handleCellSave(
+                                      activity.id,
+                                      subActivity.id,
+                                      month.month,
+                                      weekObj.week,
+                                      'actual'
+                                    )
+                                  }
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                      handleCellSave(
+                                        activity.id,
+                                        subActivity.id,
+                                        month.month,
+                                        weekObj.week,
+                                        'actual'
+                                      )
+                                    } else if (e.key === 'Escape') {
+                                      handleCellCancel()
+                                    }
+                                  }}
+                                  className="h-6 w-full border-0 bg-transparent p-0 text-center text-xs focus:ring-0"
+                                  autoFocus
+                                />
+                              ) : (
+                                <div
+                                  className="cursor-pointer text-xs font-medium text-[#364878]"
+                                  onClick={() => handleCellEdit(cellId, value)}
+                                >
+                                  {value > 0 ? value.toFixed(3) : '-'}
+                                </div>
+                              )}
+                            </td>
+                          )
+                        })
+                      )}
+                    </tr>
+                  </React.Fragment>
                 ))}
               </React.Fragment>
             ))}
@@ -383,9 +410,10 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 month.weeks.map(weekObj => (
                   <td
                     key={`rencana-${month.month}-${weekObj.week}`}
-                    className="border-b border-gray-200 px-6 py-1.5 text-center text-xs text-[#364878]"
+                    className="border-b border-gray-200 px-6 py-1.5 text-center text-xs font-medium text-[#364878]"
+                    style={{ backgroundColor: '#BFDBFE' }}
                   >
-                    0.148
+                    -
                   </td>
                 ))
               )}
@@ -401,9 +429,10 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 month.weeks.map(weekObj => (
                   <td
                     key={`realisasi-${month.month}-${weekObj.week}`}
-                    className="border-b border-gray-200 bg-[#ffc928] px-6 py-1.5 text-center text-xs text-[#364878]"
+                    className="border-b border-gray-200 px-6 py-1.5 text-center text-xs font-medium text-[#364878]"
+                    style={{ backgroundColor: '#FFC928' }}
                   >
-                    0.148
+                    -
                   </td>
                 ))
               )}
@@ -419,9 +448,9 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 month.weeks.map(weekObj => (
                   <td
                     key={`deviasi-${month.month}-${weekObj.week}`}
-                    className="border-b border-gray-200 px-6 py-1.5 text-center text-xs text-[#364878]"
+                    className="border-b border-gray-200 bg-white px-6 py-1.5 text-center text-xs font-medium text-[#364878]"
                   >
-                    0.148
+                    -
                   </td>
                 ))
               )}
