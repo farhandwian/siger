@@ -3,9 +3,15 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { AddActivityModal } from '@/components/activities/add-activity-modal'
-import { useActivities, useUpdateSchedule } from '@/hooks/useActivityQueries'
+import {
+  useActivities,
+  useUpdateSchedule,
+  useProject,
+  useCumulativeData,
+} from '@/hooks/useActivityQueries'
 import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
+import { generateMonthsFromContract } from '@/utils/dateUtils'
 
 interface ActivityScheduleTableProps {
   projectId: string
@@ -17,40 +23,16 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
   const [editValue, setEditValue] = useState('')
 
   const { data: activities, isLoading } = useActivities(projectId)
+  const { data: project } = useProject(projectId)
+  const { data: cumulativeData } = useCumulativeData(projectId)
   const updateScheduleMutation = useUpdateSchedule()
 
-  // Generate months and weeks for table headers based on Figma design
+  // Generate months and weeks for table headers based on contract dates
   const currentYear = new Date().getFullYear()
-  const months = [
-    {
-      month: 5,
-      name: 'MEI',
-      weeks: [
-        { week: 1, range: '23 - 25' },
-        { week: 2, range: '26 - 01' },
-      ],
-    },
-    {
-      month: 6,
-      name: 'JUNI',
-      weeks: [
-        { week: 1, range: '02 - 08' },
-        { week: 2, range: '09 - 15' },
-        { week: 3, range: '16 - 22' },
-        { week: 4, range: '23 - 29' },
-      ],
-    },
-    {
-      month: 7,
-      name: 'JULI',
-      weeks: [
-        { week: 1, range: '30 - 06' },
-        { week: 2, range: '07 - 13' },
-        { week: 3, range: '14 - 20' },
-        { week: 4, range: '21 - 27' },
-      ],
-    },
-  ]
+  const months = generateMonthsFromContract(
+    project?.tanggalKontrak || null,
+    project?.akhirKontrak || null
+  )
 
   const getScheduleValue = (
     activityId: string,
@@ -59,28 +41,54 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
     week: number,
     type: 'plan' | 'actual'
   ) => {
-    if (!activities) return 0
+    if (!activities) return null
 
     const activity = activities.find(a => a.id === activityId)
-    if (!activity) return 0
+    if (!activity) return null
 
     if (subActivityId) {
       const subActivity = activity.subActivities?.find(sa => sa.id === subActivityId)
       const schedule = subActivity?.schedules?.find(
         s => s.month === month && s.week === week && s.year === currentYear
       )
-      return type === 'plan' ? schedule?.planPercentage || 0 : schedule?.actualPercentage || 0
+      const value = type === 'plan' ? schedule?.planPercentage : schedule?.actualPercentage
+      return value !== undefined ? value : null
     } else {
       const schedule = activity.schedules?.find(
         s => s.month === month && s.week === week && s.year === currentYear
       )
-      return type === 'plan' ? schedule?.planPercentage || 0 : schedule?.actualPercentage || 0
+      const value = type === 'plan' ? schedule?.planPercentage : schedule?.actualPercentage
+      return value !== undefined ? value : null
     }
   }
 
-  const handleCellEdit = (cellId: string, currentValue: number) => {
+  // Get cumulative value for a specific month/week
+  const getCumulativeValue = (
+    month: number,
+    week: number,
+    type: 'plan' | 'actual' | 'deviation'
+  ): number => {
+    const cumulative = cumulativeData?.find(
+      c => c.month === month && c.week === week && c.year === currentYear
+    )
+
+    if (!cumulative) return 0
+
+    switch (type) {
+      case 'plan':
+        return cumulative.cumulativePlan
+      case 'actual':
+        return cumulative.cumulativeActual
+      case 'deviation':
+        return cumulative.cumulativeDeviation
+      default:
+        return 0
+    }
+  }
+
+  const handleCellEdit = (cellId: string, currentValue: number | null) => {
     setEditingCell(cellId)
-    setEditValue(currentValue.toString())
+    setEditValue(currentValue !== null ? currentValue.toString() : '')
   }
 
   const handleCellSave = async (
@@ -90,7 +98,11 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
     week: number,
     type: 'plan' | 'actual'
   ) => {
-    const value = parseFloat(editValue) || 0
+    // Parse value - allow 0 as valid value
+    const numericValue = editValue === '' ? null : parseFloat(editValue)
+    const value = !isNaN(numericValue!) ? numericValue : null
+
+    console.log('Saving cell value:', editValue, 'parsed as:', value)
 
     try {
       await updateScheduleMutation.mutateAsync({
@@ -312,7 +324,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                                   className="cursor-pointer text-xs font-medium text-[#364878]"
                                   onClick={() => handleCellEdit(cellId, value)}
                                 >
-                                  {value > 0 ? value.toFixed(3) : '-'}
+                                  {value !== null && value !== undefined ? (value === 0 ? '0' : value.toFixed(3)) : '-'}
                                 </div>
                               )}
                             </td>
@@ -383,7 +395,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                                   className="cursor-pointer text-xs font-medium text-[#364878]"
                                   onClick={() => handleCellEdit(cellId, value)}
                                 >
-                                  {value > 0 ? value.toFixed(3) : '-'}
+                                  {value !== null && value !== undefined ? (value === 0 ? '0' : value.toFixed(3)) : '-'}
                                 </div>
                               )}
                             </td>
@@ -441,7 +453,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     }`}
                     style={{ backgroundColor: '#BFDBFE' }}
                   >
-                    -
+                    {getCumulativeValue(month.month, weekObj.week, 'plan').toFixed(1)}%
                   </td>
                 ))
               )}
@@ -464,7 +476,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     }`}
                     style={{ backgroundColor: '#FFC928' }}
                   >
-                    -
+                    {getCumulativeValue(month.month, weekObj.week, 'actual').toFixed(1)}%
                   </td>
                 ))
               )}
@@ -486,7 +498,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                         : ''
                     }`}
                   >
-                    -
+                    {getCumulativeValue(month.month, weekObj.week, 'deviation').toFixed(1)}%
                   </td>
                 ))
               )}

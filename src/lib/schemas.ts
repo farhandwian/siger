@@ -355,6 +355,9 @@ export const CreateActivityScheduleSchema = ActivityScheduleSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).partial({
+  planPercentage: true,
+  actualPercentage: true,
 })
 
 // Export inferred types

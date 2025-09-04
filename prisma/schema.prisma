@@ -59,6 +59,7 @@ model Project {
   // Relations
   auditLogs           ProjectAuditLog[]
   activities          Activity[]
+  cumulativeSchedules CumulativeSchedule[]
   
   @@map("projects")
 }
@@ -129,4 +130,23 @@ model ActivitySchedule {
   @@unique([activityId, month, year, week])
   @@unique([subActivityId, month, year, week])
   @@map("activity_schedules")
+}
+
+// Model untuk data kumulatif per minggu
+model CumulativeSchedule {
+  id                    String   @id @default(cuid())
+  projectId             String   @map("project_id")
+  month                 Int      @map("month") // 1-12
+  year                  Int      @map("year")
+  week                  Int      @map("week") // 1-4 (minggu ke berapa dalam bulan)
+  cumulativePlan        Float    @default(0) @map("cumulative_plan") // Kumulatif rencana
+  cumulativeActual      Float    @default(0) @map("cumulative_actual") // Kumulatif realisasi
+  cumulativeDeviation   Float    @default(0) @map("cumulative_deviation") // Kumulatif deviasi
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, month, year, week])
+  @@map("cumulative_schedules")
 }

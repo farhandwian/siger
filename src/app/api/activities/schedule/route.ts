@@ -1,18 +1,18 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { CreateActivityScheduleSchema } from '@/lib/schemas'
+import { updateCumulativeDataForProject } from '@/lib/cumulativeUtils'
 import { z } from 'zod'
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; activityId?: string; subActivityId?: string }> }
-) {
+export async function PUT(request: NextRequest) {
   try {
-    const { activityId, subActivityId } = await params
     const body = await request.json()
 
     // Validate request body
     const validatedData = CreateActivityScheduleSchema.parse(body)
+
+    // Extract activityId or subActivityId from request body
+    const { activityId, subActivityId } = body
 
     // Create or update schedule
     const schedule = await prisma.activitySchedule.upsert({
@@ -40,10 +40,33 @@ export async function PUT(
         actualPercentage: validatedData.actualPercentage,
       },
       create: {
-        ...validatedData,
+        month: validatedData.month,
+        year: validatedData.year,
+        week: validatedData.week,
+        planPercentage: validatedData.planPercentage,
+        actualPercentage: validatedData.actualPercentage,
         ...(activityId ? { activityId } : { subActivityId }),
       },
     })
+
+    // Get project ID for cumulative calculation
+    let projectId: string
+    if (activityId) {
+      const activity = await prisma.activity.findUnique({
+        where: { id: activityId },
+        select: { projectId: true },
+      })
+      projectId = activity!.projectId
+    } else {
+      const subActivity = await prisma.subActivity.findUnique({
+        where: { id: subActivityId! },
+        include: { activity: { select: { projectId: true } } },
+      })
+      projectId = subActivity!.activity.projectId
+    }
+
+    // Update cumulative data for the project
+    await updateCumulativeDataForProject(projectId, validatedData.month, validatedData.week)
 
     return Response.json({
       success: true,

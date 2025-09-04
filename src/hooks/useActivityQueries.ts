@@ -19,6 +19,26 @@ type CreateSubActivityData = {
   weight: number
 }
 
+// Define project type
+type Project = {
+  id: string
+  tanggalKontrak?: string | null
+  akhirKontrak?: string | null
+  // other project fields...
+}
+
+// Define cumulative data type
+type CumulativeData = {
+  id: string
+  projectId: string
+  month: number
+  year: number
+  week: number
+  cumulativePlan: number
+  cumulativeActual: number
+  cumulativeDeviation: number
+}
+
 // Query keys factory
 export const activityKeys = {
   all: ['activities'] as const,
@@ -26,6 +46,18 @@ export const activityKeys = {
   list: (projectId: string) => [...activityKeys.lists(), projectId] as const,
   details: () => [...activityKeys.all, 'detail'] as const,
   detail: (id: string) => [...activityKeys.details(), id] as const,
+}
+
+export const projectKeys = {
+  all: ['projects'] as const,
+  details: () => [...projectKeys.all, 'detail'] as const,
+  detail: (id: string) => [...projectKeys.details(), id] as const,
+}
+
+export const cumulativeKeys = {
+  all: ['cumulative'] as const,
+  lists: () => [...cumulativeKeys.all, 'list'] as const,
+  list: (projectId: string) => [...cumulativeKeys.lists(), projectId] as const,
 }
 
 // Get activities for a project
@@ -149,6 +181,33 @@ export function useUpdateSchedule() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: activityKeys.all })
+      queryClient.invalidateQueries({ queryKey: cumulativeKeys.all })
     },
+  })
+}
+
+// Get project detail
+export function useProject(projectId: string) {
+  return useQuery({
+    queryKey: projectKeys.detail(projectId),
+    queryFn: async () => {
+      const response = await apiClient.get<Project>(`/projects/${projectId}`)
+      return response
+    },
+    enabled: !!projectId,
+  })
+}
+
+// Get cumulative data for a project
+export function useCumulativeData(projectId: string) {
+  return useQuery({
+    queryKey: cumulativeKeys.list(projectId),
+    queryFn: async () => {
+      const response = await apiClient.get<{ data: CumulativeData[] }>(
+        `/cumulative?projectId=${projectId}`
+      )
+      return response.data
+    },
+    enabled: !!projectId,
   })
 }

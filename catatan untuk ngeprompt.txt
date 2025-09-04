@@ -33,9 +33,11 @@ pokoknya tolong buat sama persis dengan yang di figma ini https://www.figma.com/
 
 !!!disini
 
-untuk aktivitas utamanya saya ingin, itu bisa diklik dan menampilkan modal untuk mengedit dan menghapus data tersebut
+untuk cell aktivitas utamanya saya ingin, itu bisa diklik dan menampilkan modal untuk mengedit dan menghapus data tersebut. dan juga tolong ubah data aktivitas utamanya itu tidak perlu ada field bobot, dan tambahakan pada data sub aktivitas field ini: satuan, volume kontrak, volume MC 0, bobot mc 0 dalam persen
 ------------
-untuk isiiannya itu belum benar
-------------
-saya ingin range dari tanggalnya itu diambil dari tanggalKontrak hingga akhirKontrak pada projectSchema, lalu data kumulatif rencana dan kumulatif realisasi itu adalah penjumlahan datanya, sedangkan deviasi itu adalah kumulatif rencana dikurangi dengan kumulatif realisasi	
+ok sudah benar, lalu saya ingin range tanggalnya itu diambil dari tanggalKontrak hingga akhirKontrak yang ada pada projectSchema, lalu data kumulatif rencana dan kumulatif realisasi itu adalah penjumlahan datanya, sedangkan kumulatif deviasi itu adalah kumulatif rencana dikurangi dengan kumulatif realisasi. saya ingin juga data kumulatif rencana,realisasi, dan deviasi itu disimpan didalam db. saya juga telah mencoba kode yang sekarang, Ketika saya mengsisi salah satu cell pada salah satu kolom tanggalnya itu saya masih mendapatkan error ini:
+{"success":false,"error":"Failed to update schedule"}. saya ingin Ketika saya mengsisi salah satu cell pada salah satu kolom tanggalnya, data kumulatif nya itu ikut berubah menyesuaikan dan semua data yang berubah nya itu langsung terupdate di db 
+-------------
+
+	
 
