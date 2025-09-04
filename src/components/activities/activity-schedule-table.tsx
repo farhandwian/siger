@@ -170,7 +170,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
               <th className="w-[270px] border-b border-gray-200 bg-gray-50 p-3 text-left text-sm font-bold text-gray-900">
                 Uraian Pekerjaan
               </th>
-              <th className="w-[57px] border-b border-gray-200 bg-gray-50 p-3 text-center text-sm font-bold text-gray-900">
+              <th className="w-[57px] border-b border-r-2 border-white bg-gray-50 p-3 text-center text-sm font-bold text-gray-900">
                 <div>Bobot</div>
                 <div>(%)</div>
               </th>
@@ -190,7 +190,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
             {/* Second header row - Week ranges */}
             <tr>
               <th className="border-b border-gray-200 bg-gray-50"></th>
-              <th className="border-b border-gray-200 bg-gray-50"></th>
+              <th className="border-b border-r-2 border-white bg-gray-50"></th>
               {months.map((month, monthIndex) =>
                 month.weeks.map((weekObj, weekIndex) => (
                   <th
@@ -218,7 +218,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                       {activity.name}
                     </div>
                   </td>
-                  <td className="border-b border-gray-200 bg-gray-100 px-6 py-3 text-center text-xs text-gray-700">
+                  <td className="border-b border-r-2 border-white bg-gray-100 px-6 py-3 text-center text-xs text-gray-700">
                     {/* No weight for main activity */}
                   </td>
                   {months.map((month, monthIndex) =>
@@ -227,7 +227,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                         key={`${activity.id}-main-${month.month}-${weekObj.week}`}
                         className={`min-w-[67px] border-b border-gray-200 bg-gray-100 px-6 py-1.5 text-center ${
                           weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                            ? 'border-r-2 border-gray-300'
+                            ? 'border-r-2 border-white'
                             : ''
                         }`}
                       >
@@ -249,7 +249,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                       </td>
                       <td
                         rowSpan={2}
-                        className="border-r border-gray-200 px-6 py-2 text-center text-xs text-gray-700"
+                        className="border-r-2 border-white px-6 py-2 text-center text-xs text-gray-700"
                       >
                         {subActivity.weight}
                       </td>
@@ -271,7 +271,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                               className={`min-w-[67px] border-b border-gray-200 px-6 py-1.5 text-center ${
                                 weekIndex === month.weeks.length - 1 &&
                                 monthIndex < months.length - 1
-                                  ? 'border-r-2 border-gray-300'
+                                  ? 'border-r-2 border-white'
                                   : ''
                               }`}
                               style={{ backgroundColor: '#BFDBFE' }}
@@ -342,7 +342,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                               className={`min-w-[67px] border-b border-gray-200 px-6 py-1.5 text-center ${
                                 weekIndex === month.weeks.length - 1 &&
                                 monthIndex < months.length - 1
-                                  ? 'border-r-2 border-gray-300'
+                                  ? 'border-r-2 border-white'
                                   : ''
                               }`}
                               style={{ backgroundColor: '#FFC928' }}
@@ -416,7 +416,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     key={`kumulatif-header-${month.month}-${weekObj.week}`}
                     className={`border-b border-gray-200 ${
                       weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'border-r-2 border-gray-300'
+                        ? 'border-r-2 border-white'
                         : ''
                     }`}
                   ></td>
@@ -426,7 +426,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
             {/* Rencana Row */}
             <tr>
-              <td className="border-b border-gray-200 px-6 py-1.5 text-xs font-semibold text-gray-700">
+              <td className="border-b border-r-2 border-white px-6 py-1.5 text-xs font-semibold text-gray-700">
                 Rencana
               </td>
               <td className="border-b border-gray-200"></td>
@@ -436,7 +436,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     key={`rencana-${month.month}-${weekObj.week}`}
                     className={`border-b border-gray-200 px-6 py-1.5 text-center text-xs font-medium text-[#364878] ${
                       weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'border-r-2 border-gray-300'
+                        ? 'border-r-2 border-white'
                         : ''
                     }`}
                     style={{ backgroundColor: '#BFDBFE' }}
@@ -449,7 +449,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
             {/* Realisasi Row */}
             <tr>
-              <td className="border-b border-gray-200 px-6 py-1.5 text-xs font-semibold text-gray-700">
+              <td className="border-b border-r-2 border-white px-6 py-1.5 text-xs font-semibold text-gray-700">
                 Realisasi
               </td>
               <td className="border-b border-gray-200"></td>
@@ -459,7 +459,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     key={`realisasi-${month.month}-${weekObj.week}`}
                     className={`border-b border-gray-200 px-6 py-1.5 text-center text-xs font-medium text-[#364878] ${
                       weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'border-r-2 border-gray-300'
+                        ? 'border-r-2 border-white'
                         : ''
                     }`}
                     style={{ backgroundColor: '#FFC928' }}
@@ -472,7 +472,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
             {/* Deviasi Row */}
             <tr>
-              <td className="border-b border-gray-200 px-6 py-1.5 text-xs font-semibold text-gray-700">
+              <td className="border-b border-r-2 border-white px-6 py-1.5 text-xs font-semibold text-gray-700">
                 Deviasi
               </td>
               <td className="border-b border-gray-200"></td>
@@ -482,7 +482,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     key={`deviasi-${month.month}-${weekObj.week}`}
                     className={`border-b border-gray-200 bg-white px-6 py-1.5 text-center text-xs font-medium text-[#364878] ${
                       weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'border-r-2 border-gray-300'
+                        ? 'border-r-2 border-white'
                         : ''
                     }`}
                   >

@@ -23,3 +23,19 @@ pada bagian informasi umum proyek dan inforamasi kontrak & anggaran nya itu bisa
 
 
 untuk catatan tambahan, pada table monitoring dan evaluasi pekerjaan terdapat tombol tambah kegiatan kan. nahh,Ketika tombol tambah kegiatan diklik maka akan memunculkan modal dengan input field pekerjaan dengan masing-masing list sub-pekerjaan, user bisa menambah data pekerjaan dan bisa menambah data sub-pekerjaannya. nantinya data tersebut akan muncul sebagai isi dari kolom uraian pekerjaan dan kolom bobot. lalu isi tersebut pada data pekerjaan yang digaris bawahi bisa dikilik untuk memunculkan modal untuk updatenya. lalu pada input-input isian dari kolom tanggal-nya itu bisa di input oleh user.
+
+
+----------------------------------------------------
+ok pada tabel monitoring dan evaluasi, baris pada uraian pekerjaannya itu tidak ada bobot dan diblock saja, jadi yang bisa diisi bobot itu hanya sub pekerjaannya saja. untuk sub pekerjaan pada bagian kolom tanggalnya itu  tolong buat 2 baris. untuk cell pada baris pertama warnanya adalah ini #BFDBFE,dan untuk cell baris kedua warnanya adalah ini #FFC928. tapi untuk pertama kali menginput tampilan seperti yang sekarang saja dengan menggunakan symbol ini -.
+
+pokoknya tolong buat sama persis dengan yang di figma ini https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=195-8153&m=dev
+-----------------------------------------------------
+
+!!!disini
+
+untuk aktivitas utamanya saya ingin, itu bisa diklik dan menampilkan modal untuk mengedit dan menghapus data tersebut
+------------
+untuk isiiannya itu belum benar
+------------
+saya ingin range dari tanggalnya itu diambil dari tanggalKontrak hingga akhirKontrak pada projectSchema, lalu data kumulatif rencana dan kumulatif realisasi itu adalah penjumlahan datanya, sedangkan deviasi itu adalah kumulatif rencana dikurangi dengan kumulatif realisasi	
+
