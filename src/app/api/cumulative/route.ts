@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
         },
       },
       update: {
-        cumulativePlan,
-        cumulativeActual,
-        cumulativeDeviation,
+        ...(cumulativePlan !== null && { cumulativePlan }),
+        ...(cumulativeActual !== null && { cumulativeActual }),
+        ...(cumulativeDeviation !== null && { cumulativeDeviation }),
         updatedAt: new Date(),
       },
       create: {
@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
         month,
         year,
         week,
-        cumulativePlan,
-        cumulativeActual,
-        cumulativeDeviation,
+        ...(cumulativePlan !== null && { cumulativePlan }),
+        ...(cumulativeActual !== null && { cumulativeActual }),
+        ...(cumulativeDeviation !== null && { cumulativeDeviation }),
       },
     })
 

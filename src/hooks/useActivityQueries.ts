@@ -11,11 +11,14 @@ import { z } from 'zod'
 // Define simple types for create operations
 type CreateActivityData = {
   name: string
-  weight: number
 }
 
 type CreateSubActivityData = {
   name: string
+  satuan?: string
+  volumeKontrak?: number
+  volumeMC0?: number
+  bobotMC0?: number
   weight: number
 }
 

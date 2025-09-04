@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { AddActivityModal } from '@/components/activities/add-activity-modal'
+import { EditActivityModal } from '@/components/activities/edit-activity-modal'
 import {
   useActivities,
   useUpdateSchedule,
@@ -12,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
 import { generateMonthsFromContract } from '@/utils/dateUtils'
+import type { Activity } from '@/lib/schemas'
 
 interface ActivityScheduleTableProps {
   projectId: string
@@ -19,6 +21,8 @@ interface ActivityScheduleTableProps {
 
 export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
   const [editingCell, setEditingCell] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
@@ -128,6 +132,11 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
     setEditValue('')
   }
 
+  const handleActivityClick = (activity: Activity) => {
+    setSelectedActivity(activity)
+    setIsEditModalOpen(true)
+  }
+
   if (isLoading) {
     return (
       <div className="animate-pulse">
@@ -225,10 +234,13 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
           <tbody>
             {activities?.map(activity => (
               <React.Fragment key={activity.id}>
-                {/* Main Activity Row - No weight, blocked */}
+                {/* Main Activity Row - No weight, clickable */}
                 <tr className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="border-b border-gray-200 bg-gray-100 px-2 py-1.5">
-                    <div className="cursor-pointer text-xs font-bold uppercase text-gray-900 underline">
+                  <td
+                    className="cursor-pointer border-b border-gray-200 bg-gray-100 px-2 py-1.5 hover:bg-gray-200"
+                    onClick={() => handleActivityClick(activity)}
+                  >
+                    <div className="text-xs font-bold uppercase text-gray-900 underline">
                       {activity.name}
                     </div>
                   </td>
@@ -528,6 +540,17 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
       <AddActivityModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+        projectId={projectId}
+      />
+
+      {/* Edit Activity Modal */}
+      <EditActivityModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setSelectedActivity(null)
+        }}
+        activity={selectedActivity}
         projectId={projectId}
       />
     </div>

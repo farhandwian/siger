@@ -83,7 +83,6 @@ model Activity {
   id            String   @id @default(cuid())
   projectId     String   @map("project_id")
   name          String   @map("name")
-  weight        Float    @map("weight") // Bobot dalam persen
   order         Int      @default(0)    @map("order") // Urutan tampilan
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -97,16 +96,20 @@ model Activity {
 
 // Model untuk sub kegiatan pekerjaan
 model SubActivity {
-  id          String   @id @default(cuid())
-  activityId  String   @map("activity_id")
-  name        String   @map("name")
-  weight      Float    @map("weight") // Bobot dalam persen dari activity parent
-  order       Int      @default(0) @map("order") // Urutan tampilan
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  activityId    String   @map("activity_id")
+  name          String   @map("name")
+  satuan        String?  @map("satuan") // Unit measurement
+  volumeKontrak Float?   @map("volume_kontrak") // Contract volume
+  volumeMC0     Float?   @map("volume_mc0") // MC 0 volume
+  bobotMC0      Float?   @map("bobot_mc0") // MC 0 weight in percentage
+  weight        Float    @map("weight") // Bobot dalam persen dari activity parent
+  order         Int      @default(0) @map("order") // Urutan tampilan
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
   
-  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  schedules   ActivitySchedule[]
+  activity      Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  schedules     ActivitySchedule[]
   
   @@map("sub_activities")
 }

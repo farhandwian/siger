@@ -81,6 +81,10 @@ export async function POST(
     const subActivity = await prisma.subActivity.create({
       data: {
         name: validatedData.name,
+        satuan: validatedData.satuan,
+        volumeKontrak: validatedData.volumeKontrak,
+        volumeMC0: validatedData.volumeMC0,
+        bobotMC0: validatedData.bobotMC0,
         weight: validatedData.weight,
         activityId: validatedActivityId,
         order: (maxOrderSubActivity?.order || 0) + 1,

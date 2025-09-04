@@ -310,6 +310,10 @@ export const SubActivitySchema = z.object({
   id: z.any(), // Temporary: allow any type for id
   activityId: z.any(), // Temporary: allow any type
   name: z.string().min(1, 'Nama sub kegiatan wajib diisi').max(255),
+  satuan: z.string().nullable().optional(),
+  volumeKontrak: z.number().min(0).nullable().optional(),
+  volumeMC0: z.number().min(0).nullable().optional(),
+  bobotMC0: z.number().min(0).max(100).nullable().optional(),
   weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
   order: z.number().min(0).default(0),
   createdAt: z.any(), // Temporary: allow any type for createdAt
@@ -321,7 +325,6 @@ export const ActivitySchema = z.object({
   id: z.any(), // Temporary: allow any type for id
   projectId: z.any(), // Temporary: allow any type
   name: z.string().min(1, 'Nama kegiatan wajib diisi').max(255),
-  weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
   order: z.number().min(0).default(0),
   createdAt: z.any(), // Temporary: allow any type for createdAt
   updatedAt: z.any(), // Temporary: allow any type for updatedAt
@@ -331,22 +334,28 @@ export const ActivitySchema = z.object({
 
 export const CreateActivitySchema = z.object({
   name: z.string().min(1, 'Nama kegiatan wajib diisi').max(255),
-  weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
 })
 
 export const CreateSubActivitySchema = z.object({
   name: z.string().min(1, 'Nama sub kegiatan wajib diisi').max(255),
+  satuan: z.string().optional(),
+  volumeKontrak: z.number().min(0).optional(),
+  volumeMC0: z.number().min(0).optional(),
+  bobotMC0: z.number().min(0).max(100).optional(),
   weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
 })
 
 export const UpdateActivitySchema = z.object({
   name: z.string().min(1, 'Nama kegiatan wajib diisi').max(255).optional(),
-  weight: z.number().min(0).max(100, 'Bobot maksimal 100%').optional(),
   order: z.number().min(0).optional(),
 })
 
 export const UpdateSubActivitySchema = z.object({
   name: z.string().min(1, 'Nama sub kegiatan wajib diisi').max(255).optional(),
+  satuan: z.string().nullable().optional(),
+  volumeKontrak: z.number().min(0).nullable().optional(),
+  volumeMC0: z.number().min(0).nullable().optional(),
+  bobotMC0: z.number().min(0).max(100).nullable().optional(),
   weight: z.number().min(0).max(100, 'Bobot maksimal 100%').optional(),
   order: z.number().min(0).optional(),
 })

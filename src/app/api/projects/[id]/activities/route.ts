@@ -81,7 +81,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const activity = await prisma.activity.create({
       data: {
         name: validatedData.name,
-        weight: validatedData.weight,
         projectId: projectId,
         order: (maxOrderActivity?.order || 0) + 1,
       },
