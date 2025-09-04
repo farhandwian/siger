@@ -232,12 +232,15 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   <React.Fragment key={subActivity.id}>
                     {/* First Row - Blue background (#BFDBFE) */}
                     <tr className="border-b border-gray-200">
-                      <td className="px-6 py-2">
+                      <td rowSpan={2} className="border-r border-gray-200 px-6 py-2">
                         <div className="pl-4 text-xs font-semibold text-gray-900">
                           {subActivity.name}
                         </div>
                       </td>
-                      <td className="px-6 py-2 text-center text-xs text-gray-700">
+                      <td
+                        rowSpan={2}
+                        className="border-r border-gray-200 px-6 py-2 text-center text-xs text-gray-700"
+                      >
                         {subActivity.weight}
                       </td>
                       {months.map(month =>
@@ -305,10 +308,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
                     {/* Second Row - Yellow background (#FFC928) */}
                     <tr className="border-b border-gray-200">
-                      <td className="px-6 py-2">{/* Empty for second row */}</td>
-                      <td className="px-6 py-2 text-center text-xs text-gray-700">
-                        {/* Empty for second row */}
-                      </td>
+                      {/* Name and weight cells are merged with rowspan above */}
                       {months.map(month =>
                         month.weeks.map(weekObj => {
                           const cellId = `${subActivity.id}-${month.month}-${weekObj.week}-actual`
