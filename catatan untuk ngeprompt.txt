@@ -20,4 +20,6 @@ others:
 pada bagian informasi umum proyek dan inforamasi kontrak & anggaran nya itu bisa diisi dan otomatis akan menyimpan data tersebut otomatis ke db(tanpa perlu diki)
 
 
-pada table tambah kegiatan, Ketika tombol tambah kegiatan diklik maka akan memunculkan modal dengan input field      nilai nya bisa diisi
+
+
+untuk catatan tambahan, pada table monitoring dan evaluasi pekerjaan terdapat tombol tambah kegiatan kan. nahh,Ketika tombol tambah kegiatan diklik maka akan memunculkan modal dengan input field pekerjaan dengan masing-masing list sub-pekerjaan, user bisa menambah data pekerjaan dan bisa menambah data sub-pekerjaannya. nantinya data tersebut akan muncul sebagai isi dari kolom uraian pekerjaan dan kolom bobot. lalu isi tersebut pada data pekerjaan yang digaris bawahi bisa dikilik untuk memunculkan modal untuk updatenya. lalu pada input-input isian dari kolom tanggal-nya itu bisa di input oleh user.

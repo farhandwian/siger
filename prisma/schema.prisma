@@ -58,6 +58,7 @@ model Project {
   
   // Relations
   auditLogs           ProjectAuditLog[]
+  activities          Activity[]
   
   @@map("projects")
 }
@@ -74,4 +75,58 @@ model ProjectAuditLog {
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
   @@map("project_audit_logs")
+}
+
+// Model untuk kegiatan pekerjaan
+model Activity {
+  id            String   @id @default(cuid())
+  projectId     String   @map("project_id")
+  name          String   @map("name")
+  weight        Float    @map("weight") // Bobot dalam persen
+  order         Int      @default(0)    @map("order") // Urutan tampilan
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subActivities SubActivity[]
+  schedules     ActivitySchedule[]
+  
+  @@map("activities")
+}
+
+// Model untuk sub kegiatan pekerjaan
+model SubActivity {
+  id          String   @id @default(cuid())
+  activityId  String   @map("activity_id")
+  name        String   @map("name")
+  weight      Float    @map("weight") // Bobot dalam persen dari activity parent
+  order       Int      @default(0) @map("order") // Urutan tampilan
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  schedules   ActivitySchedule[]
+  
+  @@map("sub_activities")
+}
+
+// Model untuk jadwal kegiatan (rencana vs realisasi)
+model ActivitySchedule {
+  id              String    @id @default(cuid())
+  activityId      String?   @map("activity_id")
+  subActivityId   String?   @map("sub_activity_id")
+  month           Int       @map("month") // 1-12
+  year            Int       @map("year")
+  week            Int       @map("week") // 1-4 (minggu ke berapa dalam bulan)
+  planPercentage  Float?    @default(0) @map("plan_percentage") // Persentase rencana
+  actualPercentage Float?   @default(0) @map("actual_percentage") // Persentase realisasi
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  activity        Activity?    @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  subActivity     SubActivity? @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+  
+  @@unique([activityId, month, year, week])
+  @@unique([subActivityId, month, year, week])
+  @@map("activity_schedules")
 }

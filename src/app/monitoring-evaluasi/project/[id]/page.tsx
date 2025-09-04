@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { AutoSaveField } from '@/components/ui/auto-save-field'
+import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
 import { useProjectDetail, useUpdateProjectField } from '@/hooks/useProjectQueries'
 import { cn } from '@/lib/utils'
 
@@ -164,6 +165,7 @@ export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('Data Teknis')
 
   const projectId = (params?.id as string) || '1'
   const { data: project, isLoading, error } = useProjectDetail(projectId)
@@ -357,189 +359,210 @@ export default function ProjectDetailPage() {
               <div className="rounded-lg bg-gray-100 p-0.5">
                 <div className="flex gap-0.5 overflow-x-auto lg:gap-1">
                   {tabs.map((tab, index) => (
-                    <Tab key={index} label={tab} isActive={tab === 'Data Teknis'} />
+                    <Tab
+                      key={index}
+                      label={tab}
+                      isActive={tab === activeTab}
+                      onClick={() => setActiveTab(tab)}
+                    />
                   ))}
                 </div>
               </div>
             </div>
 
             <div className="space-y-4 pt-3 lg:space-y-5 lg:pt-4 xl:space-y-6 xl:pt-6">
-              {/* Informasi Umum Proyek */}
-              <section>
-                <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
-                  Informasi Umum Proyek
-                </h2>
-                <div className="space-y-2 lg:space-y-3">
-                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
-                    <AutoSaveField
-                      label="Penyedia Jasa"
-                      value={projectData.penyediaJasa}
-                      onChange={(value: string) => updateField('penyediaJasa', value)}
-                      projectId={projectId}
-                      fieldName="penyediaJasa"
-                    />
-                    <AutoSaveField
-                      label="Pekerjaan"
-                      value={projectData.pekerjaan}
-                      onChange={(value: string) => updateField('pekerjaan', value)}
-                      projectId={projectId}
-                      fieldName="pekerjaan"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
-                    <AutoSaveField
-                      label="Jenis Paket"
-                      value={projectData.jenisPaket}
-                      onChange={(value: string) => updateField('jenisPaket', value)}
-                      projectId={projectId}
-                      fieldName="jenisPaket"
-                    />
-                    <AutoSaveField
-                      label="Jenis Pengadaan"
-                      value={projectData.jenisPengadaan}
-                      onChange={(value: string) => updateField('jenisPengadaan', value)}
-                      projectId={projectId}
-                      fieldName="jenisPengadaan"
-                    />
-                  </div>
+              {/* Render content based on active tab */}
+              {activeTab === 'Data Teknis' && (
+                <>
+                  {/* Informasi Umum Proyek */}
+                  <section>
+                    <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
+                      Informasi Umum Proyek
+                    </h2>
+                    <div className="space-y-2 lg:space-y-3">
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+                        <AutoSaveField
+                          label="Penyedia Jasa"
+                          value={projectData.penyediaJasa}
+                          onChange={(value: string) => updateField('penyediaJasa', value)}
+                          projectId={projectId}
+                          fieldName="penyediaJasa"
+                        />
+                        <AutoSaveField
+                          label="Pekerjaan"
+                          value={projectData.pekerjaan}
+                          onChange={(value: string) => updateField('pekerjaan', value)}
+                          projectId={projectId}
+                          fieldName="pekerjaan"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+                        <AutoSaveField
+                          label="Jenis Paket"
+                          value={projectData.jenisPaket}
+                          onChange={(value: string) => updateField('jenisPaket', value)}
+                          projectId={projectId}
+                          fieldName="jenisPaket"
+                        />
+                        <AutoSaveField
+                          label="Jenis Pengadaan"
+                          value={projectData.jenisPengadaan}
+                          onChange={(value: string) => updateField('jenisPengadaan', value)}
+                          projectId={projectId}
+                          fieldName="jenisPengadaan"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200" />
+
+                  {/* Informasi Kontrak & Anggaran */}
+                  <section>
+                    <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
+                      Informasi Kontrak & Anggaran
+                    </h2>
+                    <div className="space-y-2 lg:space-y-3">
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+                        <AutoSaveField
+                          label="Pagu Anggaran"
+                          value={projectData.paguAnggaran}
+                          onChange={(value: string) => updateField('paguAnggaran', value)}
+                          projectId={projectId}
+                          fieldName="paguAnggaran"
+                        />
+                        <AutoSaveField
+                          label="Nilai Kontrak"
+                          value={projectData.nilaiKontrak}
+                          onChange={(value: string) => updateField('nilaiKontrak', value)}
+                          projectId={projectId}
+                          fieldName="nilaiKontrak"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
+                        <AutoSaveField
+                          label="Nomor Kontrak"
+                          value={projectData.nomorKontrak}
+                          onChange={(value: string) => updateField('nomorKontrak', value)}
+                          projectId={projectId}
+                          fieldName="nomorKontrak"
+                        />
+                        <AutoSaveField
+                          label="SPMK"
+                          value={projectData.spmk}
+                          onChange={(value: string) => updateField('spmk', value)}
+                          projectId={projectId}
+                          fieldName="spmk"
+                        />
+                        <AutoSaveField
+                          label="Masa Kontrak"
+                          value={projectData.masaKontrak}
+                          onChange={(value: string) => updateField('masaKontrak', value)}
+                          projectId={projectId}
+                          fieldName="masaKontrak"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
+                        <AutoSaveField
+                          label="Tanggal Kontrak"
+                          value={projectData.tanggalKontrak}
+                          onChange={(value: string) => updateField('tanggalKontrak', value)}
+                          projectId={projectId}
+                          fieldName="tanggalKontrak"
+                        />
+                        <AutoSaveField
+                          label="Akhir Kontrak"
+                          value={projectData.akhirKontrak}
+                          onChange={(value: string) => updateField('akhirKontrak', value)}
+                          projectId={projectId}
+                          fieldName="akhirKontrak"
+                        />
+                        <AutoSaveField
+                          label="Pembayaran Terakhir"
+                          value={projectData.pembayaranTerakhir}
+                          onChange={(value: string) => updateField('pembayaranTerakhir', value)}
+                          projectId={projectId}
+                          fieldName="pembayaranTerakhir"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200" />
+
+                  {/* Progress */}
+                  <section>
+                    <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
+                      Progress
+                    </h2>
+                    <div className="space-y-2 lg:space-y-3">
+                      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
+                        <ProgressCard
+                          title="Fisik (%)"
+                          progress={project?.fisikProgress || 0}
+                          deviation={project?.fisikDeviasi || 0}
+                          target={project?.fisikTarget || 100}
+                        />
+                        <ProgressCard
+                          title="Saluran (KM)"
+                          progress={project?.saluranProgress || 0}
+                          deviation={project?.saluranDeviasi || 0}
+                          target={project?.saluranTarget || 0}
+                          unit=""
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
+                        <ProgressCard
+                          title="Bangunan (Buah)"
+                          progress={project?.bangunanProgress || 0}
+                          deviation={project?.bangunanDeviasi || 0}
+                          target={project?.bangunanTarget || 0}
+                          unit=""
+                        />
+                        <ProgressCard
+                          title="Keuangan (%)"
+                          progress={project?.keuanganProgress || 0}
+                          deviation={project?.keuanganDeviasi || 0}
+                          target={project?.keuanganTarget || 0}
+                        />
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200" />
+
+                  {/* Realisasi */}
+                  <section>
+                    <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
+                      Realisasi
+                    </h2>
+                    <div className="space-y-2 lg:space-y-3">
+                      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
+                        <DataCard title="Output" data={outputData} />
+                        <DataCard title="Tenaga Kerja" data={tenagaKerjaData} />
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
+                        <DataCard title="Alat" data={alatData} />
+                        <DataCard title="Material" data={materialData} />
+                      </div>
+                    </div>
+                  </section>
+                </>
+              )}
+
+              {/* Jadwal Tab Content */}
+              {activeTab === 'Jadwal' && <ActivityScheduleTable projectId={projectId} />}
+
+              {/* Other tabs can be implemented here */}
+              {activeTab !== 'Data Teknis' && activeTab !== 'Jadwal' && (
+                <div className="py-12 text-center">
+                  <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
+                  <p className="text-gray-600">Konten untuk tab ini sedang dalam pengembangan.</p>
                 </div>
-              </section>
-
-              {/* Divider */}
-              <div className="border-t border-gray-200" />
-
-              {/* Informasi Kontrak & Anggaran */}
-              <section>
-                <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
-                  Informasi Kontrak & Anggaran
-                </h2>
-                <div className="space-y-2 lg:space-y-3">
-                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
-                    <AutoSaveField
-                      label="Pagu Anggaran"
-                      value={projectData.paguAnggaran}
-                      onChange={(value: string) => updateField('paguAnggaran', value)}
-                      projectId={projectId}
-                      fieldName="paguAnggaran"
-                    />
-                    <AutoSaveField
-                      label="Nilai Kontrak"
-                      value={projectData.nilaiKontrak}
-                      onChange={(value: string) => updateField('nilaiKontrak', value)}
-                      projectId={projectId}
-                      fieldName="nilaiKontrak"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
-                    <AutoSaveField
-                      label="Nomor Kontrak"
-                      value={projectData.nomorKontrak}
-                      onChange={(value: string) => updateField('nomorKontrak', value)}
-                      projectId={projectId}
-                      fieldName="nomorKontrak"
-                    />
-                    <AutoSaveField
-                      label="SPMK"
-                      value={projectData.spmk}
-                      onChange={(value: string) => updateField('spmk', value)}
-                      projectId={projectId}
-                      fieldName="spmk"
-                    />
-                    <AutoSaveField
-                      label="Masa Kontrak"
-                      value={projectData.masaKontrak}
-                      onChange={(value: string) => updateField('masaKontrak', value)}
-                      projectId={projectId}
-                      fieldName="masaKontrak"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
-                    <AutoSaveField
-                      label="Tanggal Kontrak"
-                      value={projectData.tanggalKontrak}
-                      onChange={(value: string) => updateField('tanggalKontrak', value)}
-                      projectId={projectId}
-                      fieldName="tanggalKontrak"
-                    />
-                    <AutoSaveField
-                      label="Akhir Kontrak"
-                      value={projectData.akhirKontrak}
-                      onChange={(value: string) => updateField('akhirKontrak', value)}
-                      projectId={projectId}
-                      fieldName="akhirKontrak"
-                    />
-                    <AutoSaveField
-                      label="Pembayaran Terakhir"
-                      value={projectData.pembayaranTerakhir}
-                      onChange={(value: string) => updateField('pembayaranTerakhir', value)}
-                      projectId={projectId}
-                      fieldName="pembayaranTerakhir"
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* Divider */}
-              <div className="border-t border-gray-200" />
-
-              {/* Progress */}
-              <section>
-                <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
-                  Progress
-                </h2>
-                <div className="space-y-2 lg:space-y-3">
-                  <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
-                    <ProgressCard
-                      title="Fisik (%)"
-                      progress={project?.fisikProgress || 0}
-                      deviation={project?.fisikDeviasi || 0}
-                      target={project?.fisikTarget || 100}
-                    />
-                    <ProgressCard
-                      title="Saluran (KM)"
-                      progress={project?.saluranProgress || 0}
-                      deviation={project?.saluranDeviasi || 0}
-                      target={project?.saluranTarget || 0}
-                      unit=""
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
-                    <ProgressCard
-                      title="Bangunan (Buah)"
-                      progress={project?.bangunanProgress || 0}
-                      deviation={project?.bangunanDeviasi || 0}
-                      target={project?.bangunanTarget || 0}
-                      unit=""
-                    />
-                    <ProgressCard
-                      title="Keuangan (%)"
-                      progress={project?.keuanganProgress || 0}
-                      deviation={project?.keuanganDeviasi || 0}
-                      target={project?.keuanganTarget || 0}
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* Divider */}
-              <div className="border-t border-gray-200" />
-
-              {/* Realisasi */}
-              <section>
-                <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
-                  Realisasi
-                </h2>
-                <div className="space-y-2 lg:space-y-3">
-                  <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
-                    <DataCard title="Output" data={outputData} />
-                    <DataCard title="Tenaga Kerja" data={tenagaKerjaData} />
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-3">
-                    <DataCard title="Alat" data={alatData} />
-                    <DataCard title="Material" data={materialData} />
-                  </div>
-                </div>
-              </section>
+              )}
             </div>
           </div>
         </main>

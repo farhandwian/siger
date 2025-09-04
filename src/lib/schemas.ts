@@ -292,6 +292,71 @@ export const ChartDataSchema = z.object({
   datasets: z.array(ChartDatasetSchema),
 })
 
+// Activity schemas
+export const ActivityScheduleSchema = z.object({
+  id: z.any(), // Temporary: allow any type for id
+  activityId: z.any().optional(), // Temporary: allow any type
+  subActivityId: z.any().optional(), // Temporary: allow any type
+  month: z.number().min(1).max(12),
+  year: z.number(),
+  week: z.number().min(1).max(4),
+  planPercentage: z.number().min(0).max(100).nullable(),
+  actualPercentage: z.number().min(0).max(100).nullable(),
+  createdAt: z.any(), // Temporary: allow any type for createdAt
+  updatedAt: z.any(), // Temporary: allow any type for updatedAt
+})
+
+export const SubActivitySchema = z.object({
+  id: z.any(), // Temporary: allow any type for id
+  activityId: z.any(), // Temporary: allow any type
+  name: z.string().min(1, 'Nama sub kegiatan wajib diisi').max(255),
+  weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
+  order: z.number().min(0).default(0),
+  createdAt: z.any(), // Temporary: allow any type for createdAt
+  updatedAt: z.any(), // Temporary: allow any type for updatedAt
+  schedules: z.array(ActivityScheduleSchema).optional(),
+})
+
+export const ActivitySchema = z.object({
+  id: z.any(), // Temporary: allow any type for id
+  projectId: z.any(), // Temporary: allow any type
+  name: z.string().min(1, 'Nama kegiatan wajib diisi').max(255),
+  weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
+  order: z.number().min(0).default(0),
+  createdAt: z.any(), // Temporary: allow any type for createdAt
+  updatedAt: z.any(), // Temporary: allow any type for updatedAt
+  subActivities: z.array(SubActivitySchema).optional(),
+  schedules: z.array(ActivityScheduleSchema).optional(),
+})
+
+export const CreateActivitySchema = z.object({
+  name: z.string().min(1, 'Nama kegiatan wajib diisi').max(255),
+  weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
+})
+
+export const CreateSubActivitySchema = z.object({
+  name: z.string().min(1, 'Nama sub kegiatan wajib diisi').max(255),
+  weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
+})
+
+export const UpdateActivitySchema = z.object({
+  name: z.string().min(1, 'Nama kegiatan wajib diisi').max(255).optional(),
+  weight: z.number().min(0).max(100, 'Bobot maksimal 100%').optional(),
+  order: z.number().min(0).optional(),
+})
+
+export const UpdateSubActivitySchema = z.object({
+  name: z.string().min(1, 'Nama sub kegiatan wajib diisi').max(255).optional(),
+  weight: z.number().min(0).max(100, 'Bobot maksimal 100%').optional(),
+  order: z.number().min(0).optional(),
+})
+
+export const CreateActivityScheduleSchema = ActivityScheduleSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+})
+
 // Export inferred types
 export type User = z.infer<typeof CreateUserSchema> & {
   id: string
@@ -305,6 +370,9 @@ export type Report = z.infer<typeof CreateReportSchema> & {
   updatedAt: Date
 }
 
+export type Activity = z.infer<typeof ActivitySchema>
+export type SubActivity = z.infer<typeof SubActivitySchema>
+export type ActivitySchedule = z.infer<typeof ActivityScheduleSchema>
 export type DashboardWidget = z.infer<typeof DashboardWidgetSchema>
 export type FilterOptions = z.infer<typeof FilterOptionsSchema>
 export type APIResponse<T = any> = Omit<z.infer<typeof APIResponseSchema>, 'data'> & { data?: T }
