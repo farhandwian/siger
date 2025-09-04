@@ -174,11 +174,13 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 <div>Bobot</div>
                 <div>(%)</div>
               </th>
-              {months.map(month => (
+              {months.map((month, monthIndex) => (
                 <th
                   key={month.month}
                   colSpan={month.weeks.length}
-                  className="border-b border-gray-200 bg-[#364878] px-6 py-1.5 text-center text-xs font-bold text-white"
+                  className={`border-b border-gray-200 bg-[#364878] px-6 py-1.5 text-center text-xs font-bold text-white ${
+                    monthIndex < months.length - 1 ? 'border-r-2 border-white' : ''
+                  }`}
                 >
                   {month.name}
                 </th>
@@ -189,11 +191,15 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
             <tr>
               <th className="border-b border-gray-200 bg-gray-50"></th>
               <th className="border-b border-gray-200 bg-gray-50"></th>
-              {months.map(month =>
-                month.weeks.map(weekObj => (
+              {months.map((month, monthIndex) =>
+                month.weeks.map((weekObj, weekIndex) => (
                   <th
                     key={`${month.month}-${weekObj.week}`}
-                    className="min-w-[67px] border-b border-gray-200 bg-[#80a9da] px-3 py-1.5 text-center text-xs font-bold text-white"
+                    className={`min-w-[67px] border-b border-gray-200 bg-[#80a9da] px-3 py-1.5 text-center text-xs font-bold text-white ${
+                      weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                        ? 'border-r-2 border-white'
+                        : ''
+                    }`}
                   >
                     {weekObj.range}
                   </th>
@@ -215,11 +221,15 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   <td className="border-b border-gray-200 bg-gray-100 px-6 py-3 text-center text-xs text-gray-700">
                     {/* No weight for main activity */}
                   </td>
-                  {months.map(month =>
-                    month.weeks.map(weekObj => (
+                  {months.map((month, monthIndex) =>
+                    month.weeks.map((weekObj, weekIndex) => (
                       <td
                         key={`${activity.id}-main-${month.month}-${weekObj.week}`}
-                        className="min-w-[67px] border-b border-gray-200 bg-gray-100 px-6 py-1.5 text-center"
+                        className={`min-w-[67px] border-b border-gray-200 bg-gray-100 px-6 py-1.5 text-center ${
+                          weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                            ? 'border-r-2 border-gray-300'
+                            : ''
+                        }`}
                       >
                         {/* Main activity cells are blocked/empty */}
                       </td>
@@ -243,8 +253,8 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                       >
                         {subActivity.weight}
                       </td>
-                      {months.map(month =>
-                        month.weeks.map(weekObj => {
+                      {months.map((month, monthIndex) =>
+                        month.weeks.map((weekObj, weekIndex) => {
                           const cellId = `${subActivity.id}-${month.month}-${weekObj.week}-plan`
                           const value = getScheduleValue(
                             activity.id,
@@ -258,7 +268,12 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                           return (
                             <td
                               key={cellId}
-                              className="min-w-[67px] border-b border-gray-200 px-6 py-1.5 text-center"
+                              className={`min-w-[67px] border-b border-gray-200 px-6 py-1.5 text-center ${
+                                weekIndex === month.weeks.length - 1 &&
+                                monthIndex < months.length - 1
+                                  ? 'border-r-2 border-gray-300'
+                                  : ''
+                              }`}
                               style={{ backgroundColor: '#BFDBFE' }}
                             >
                               {isEditing ? (
@@ -309,8 +324,8 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     {/* Second Row - Yellow background (#FFC928) */}
                     <tr className="border-b border-gray-200">
                       {/* Name and weight cells are merged with rowspan above */}
-                      {months.map(month =>
-                        month.weeks.map(weekObj => {
+                      {months.map((month, monthIndex) =>
+                        month.weeks.map((weekObj, weekIndex) => {
                           const cellId = `${subActivity.id}-${month.month}-${weekObj.week}-actual`
                           const value = getScheduleValue(
                             activity.id,
@@ -324,7 +339,12 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                           return (
                             <td
                               key={cellId}
-                              className="min-w-[67px] border-b border-gray-200 px-6 py-1.5 text-center"
+                              className={`min-w-[67px] border-b border-gray-200 px-6 py-1.5 text-center ${
+                                weekIndex === month.weeks.length - 1 &&
+                                monthIndex < months.length - 1
+                                  ? 'border-r-2 border-gray-300'
+                                  : ''
+                              }`}
                               style={{ backgroundColor: '#FFC928' }}
                             >
                               {isEditing ? (
@@ -390,11 +410,15 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 Kumulatif
               </td>
               <td className="border-b border-gray-200"></td>
-              {months.map(month =>
-                month.weeks.map(weekObj => (
+              {months.map((month, monthIndex) =>
+                month.weeks.map((weekObj, weekIndex) => (
                   <td
                     key={`kumulatif-header-${month.month}-${weekObj.week}`}
-                    className="border-b border-gray-200"
+                    className={`border-b border-gray-200 ${
+                      weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                        ? 'border-r-2 border-gray-300'
+                        : ''
+                    }`}
                   ></td>
                 ))
               )}
@@ -406,11 +430,15 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 Rencana
               </td>
               <td className="border-b border-gray-200"></td>
-              {months.map(month =>
-                month.weeks.map(weekObj => (
+              {months.map((month, monthIndex) =>
+                month.weeks.map((weekObj, weekIndex) => (
                   <td
                     key={`rencana-${month.month}-${weekObj.week}`}
-                    className="border-b border-gray-200 px-6 py-1.5 text-center text-xs font-medium text-[#364878]"
+                    className={`border-b border-gray-200 px-6 py-1.5 text-center text-xs font-medium text-[#364878] ${
+                      weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                        ? 'border-r-2 border-gray-300'
+                        : ''
+                    }`}
                     style={{ backgroundColor: '#BFDBFE' }}
                   >
                     -
@@ -425,11 +453,15 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 Realisasi
               </td>
               <td className="border-b border-gray-200"></td>
-              {months.map(month =>
-                month.weeks.map(weekObj => (
+              {months.map((month, monthIndex) =>
+                month.weeks.map((weekObj, weekIndex) => (
                   <td
                     key={`realisasi-${month.month}-${weekObj.week}`}
-                    className="border-b border-gray-200 px-6 py-1.5 text-center text-xs font-medium text-[#364878]"
+                    className={`border-b border-gray-200 px-6 py-1.5 text-center text-xs font-medium text-[#364878] ${
+                      weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                        ? 'border-r-2 border-gray-300'
+                        : ''
+                    }`}
                     style={{ backgroundColor: '#FFC928' }}
                   >
                     -
@@ -444,11 +476,15 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 Deviasi
               </td>
               <td className="border-b border-gray-200"></td>
-              {months.map(month =>
-                month.weeks.map(weekObj => (
+              {months.map((month, monthIndex) =>
+                month.weeks.map((weekObj, weekIndex) => (
                   <td
                     key={`deviasi-${month.month}-${weekObj.week}`}
-                    className="border-b border-gray-200 bg-white px-6 py-1.5 text-center text-xs font-medium text-[#364878]"
+                    className={`border-b border-gray-200 bg-white px-6 py-1.5 text-center text-xs font-medium text-[#364878] ${
+                      weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                        ? 'border-r-2 border-gray-300'
+                        : ''
+                    }`}
                   >
                     -
                   </td>
