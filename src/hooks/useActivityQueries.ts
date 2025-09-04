@@ -95,11 +95,8 @@ export function useCreateActivity(projectId: string) {
 
   return useMutation({
     mutationFn: async (data: CreateActivityData) => {
-      const response = await apiClient.post<{ data: Activity }>(
-        `/projects/${projectId}/activities`,
-        data
-      )
-      return response.data
+      const response = await apiClient.post<Activity>(`/projects/${projectId}/activities`, data)
+      return response
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: activityKeys.list(projectId) })
@@ -119,11 +116,11 @@ export function useUpdateActivity(projectId: string) {
       activityId: string
       data: z.infer<typeof UpdateActivitySchema>
     }) => {
-      const response = await apiClient.put<{ data: Activity }>(
+      const response = await apiClient.put<Activity>(
         `/projects/${projectId}/activities/${activityId}`,
         data
       )
-      return response.data
+      return response
     },
     onSuccess: (_, { activityId }) => {
       queryClient.invalidateQueries({ queryKey: activityKeys.list(projectId) })
@@ -152,11 +149,11 @@ export function useCreateSubActivity(projectId: string, activityId: string) {
 
   return useMutation({
     mutationFn: async (data: CreateSubActivityData) => {
-      const response = await apiClient.post<{ data: SubActivity }>(
+      const response = await apiClient.post<SubActivity>(
         `/projects/${projectId}/activities/${activityId}/sub-activities`,
         data
       )
-      return response.data
+      return response
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: activityKeys.list(projectId) })

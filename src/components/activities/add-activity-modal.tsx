@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { X, Save, Trash2, Plus } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
+import { useCreateActivity, useCreateSubActivity, activityKeys } from '@/hooks/useActivityQueries'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface SubActivityForm {
   id: string
@@ -41,6 +43,9 @@ export function AddActivityModal({ isOpen, onClose, projectId }: AddActivityModa
     },
   ])
   const [isLoading, setIsLoading] = useState(false)
+
+  const createActivityMutation = useCreateActivity(projectId)
+  const queryClient = useQueryClient()
 
   const addActivity = () => {
     const newId = (Math.max(...activities.map(a => parseInt(a.id))) + 1).toString()
@@ -158,43 +163,58 @@ export function AddActivityModal({ isOpen, onClose, projectId }: AddActivityModa
       for (const activity of activities) {
         console.log('Creating activity with data:', { name: activity.name })
 
-        // Create the main activity using direct API call (since mutation is not working)
-        try {
-          const createdActivity = await apiClient.post(`/projects/${projectId}/activities`, {
-            name: activity.name,
-          })
+        // Create the main activity using the mutation hook
+        const createdActivity = await createActivityMutation.mutateAsync({
+          name: activity.name,
+        })
 
-          console.log('Created activity response:', createdActivity)
+        console.log('Created activity response:', createdActivity)
 
-          // Extract activity ID from the response
-          const activityId = (createdActivity as any).id
+        // Extract activity ID from the response
+        const activityId = createdActivity.id
 
-          if (!activityId) {
-            throw new Error('Could not extract activity ID from response')
-          }
+        if (!activityId) {
+          throw new Error('Could not extract activity ID from response')
+        }
 
-          console.log('Extracted activity ID:', activityId)
+        console.log('Extracted activity ID:', activityId)
 
-          // Then create all sub-activities for this activity
-          for (const subActivity of activity.subActivities) {
-            console.log('Creating sub-activity:', subActivity.name)
-            await apiClient.post(`/projects/${projectId}/activities/${activityId}/sub-activities`, {
+        // Then create all sub-activities for this activity
+        for (const subActivity of activity.subActivities) {
+          console.log('Creating sub-activity:', subActivity.name)
+          const subActivityResponse = await apiClient.post(
+            `/projects/${projectId}/activities/${activityId}/sub-activities`,
+            {
               name: subActivity.name,
               satuan: subActivity.satuan || undefined,
               volumeKontrak: subActivity.volumeKontrak || undefined,
               volumeMC0: subActivity.volumeMC0 || undefined,
               bobotMC0: subActivity.bobotMC0 || undefined,
               weight: subActivity.weight,
-            })
-          }
-        } catch (activityError) {
-          console.error('Error creating activity:', activityError)
-          throw activityError
+            }
+          )
+          console.log('Sub-activity created successfully:', subActivityResponse)
         }
       }
 
+      // Manually invalidate queries to ensure fresh data is fetched
+      await queryClient.invalidateQueries({ queryKey: activityKeys.list(projectId) })
+      await queryClient.invalidateQueries({ queryKey: activityKeys.all })
+
+      // Also invalidate all related queries
+      await queryClient.invalidateQueries({ type: 'all' })
+
+      // Force refetch the activities list to ensure immediate update
+      await queryClient.refetchQueries({ queryKey: activityKeys.list(projectId) })
+
+      console.log('Cache invalidation completed')
+
       toast.success('Kegiatan berhasil ditambahkan')
-      handleClose()
+
+      // Small delay to ensure cache invalidation completes
+      setTimeout(() => {
+        handleClose()
+      }, 200)
     } catch (error) {
       toast.error('Gagal menambahkan kegiatan')
       console.error('Error creating activity:', error)
@@ -472,11 +492,11 @@ export function AddActivityModal({ isOpen, onClose, projectId }: AddActivityModa
             <div className="flex justify-end border-t border-gray-200 pt-4">
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || createActivityMutation.isPending}
                 className="bg-[#ffc928] px-4 py-2.5 text-[#364878] hover:bg-[#e6b526]"
               >
                 <Save className="mr-2 h-4 w-4" />
-                {isLoading ? 'Menyimpan...' : 'Simpan'}
+                {isLoading || createActivityMutation.isPending ? 'Menyimpan...' : 'Simpan'}
               </Button>
             </div>
           </div>
