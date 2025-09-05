@@ -5,11 +5,18 @@ import { useParams, useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { AutoSaveField } from '@/components/ui/auto-save-field'
 import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
+import { MonitoringMetrics } from '@/components/monitoring/monitoring-metrics'
+import { SCurveChart } from '@/components/monitoring/s-curve-chart'
+import { AIInsights } from '@/components/monitoring/ai-insights'
+import { ScheduleTable } from '@/components/monitoring/schedule-table'
 import { useProjectDetail, useUpdateProjectField } from '@/hooks/useProjectQueries'
+import { useMonitoringData } from '@/hooks/use-monitoring-data'
 import { cn } from '@/lib/utils'
+import { RefreshCw, Wifi, WifiOff } from 'lucide-react'
 
 interface TabProps {
   label: string
@@ -170,6 +177,7 @@ export default function ProjectDetailPage() {
   const projectId = (params?.id as string) || '1'
   const { data: project, isLoading, error } = useProjectDetail(projectId)
   const updateProjectMutation = useUpdateProjectField()
+  const { refreshAll, isLoading: monitoringLoading, isError: monitoringError } = useMonitoringData()
 
   // Project data state with auto-save capability
   const [projectData, setProjectData] = useState({
@@ -554,7 +562,76 @@ export default function ProjectDetailPage() {
               )}
 
               {/* Jadwal Tab Content */}
-              {activeTab === 'Jadwal' && <ActivityScheduleTable projectId={projectId} />}
+              {activeTab === 'Jadwal' && (
+                <div className="space-y-6">
+                  {/* Real-time Status Indicator */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1">
+                        <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+                        <span className="text-xs font-medium text-green-700">
+                          Real-time monitoring aktif (refresh setiap 5 detik)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {!monitoringError ? (
+                          <Wifi className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <WifiOff className="h-4 w-4 text-red-500" />
+                        )}
+                        <span
+                          className={`text-xs ${!monitoringError ? 'text-green-500' : 'text-red-500'}`}
+                        >
+                          {!monitoringError ? 'Live' : 'Offline'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <Button
+                        onClick={refreshAll}
+                        disabled={monitoringLoading}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <RefreshCw
+                          className={`h-4 w-4 ${monitoringLoading ? 'animate-spin' : ''}`}
+                        />
+                        Refresh
+                      </Button>
+
+                      <div className="text-xs text-gray-500">
+                        Last updated: {new Date().toLocaleTimeString('id-ID')}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Metrics Cards */}
+                  <div>
+                    <h2 className="mb-4 text-sm font-medium text-gray-900">Progress Overview</h2>
+                    <MonitoringMetrics />
+                  </div>
+
+                  {/* Chart and AI Insights */}
+                  <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                    <div className="xl:col-span-2">
+                      <h2 className="mb-4 text-sm font-medium text-gray-900">S-Curve Analysis</h2>
+                      <SCurveChart />
+                    </div>
+                    <div>
+                      <h2 className="mb-4 text-sm font-medium text-gray-900">AI Insights</h2>
+                      <AIInsights />
+                    </div>
+                  </div>
+
+                  {/* Activity Schedule Table */}
+                  <div>
+                    <h2 className="mb-4 text-sm font-medium text-gray-900">Activity Schedule</h2>
+                    <ActivityScheduleTable projectId={projectId} />
+                  </div>
+                </div>
+              )}
 
               {/* Other tabs can be implemented here */}
               {activeTab !== 'Data Teknis' && activeTab !== 'Jadwal' && (

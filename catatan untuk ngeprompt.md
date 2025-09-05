@@ -39,5 +39,11 @@ ok sudah benar, lalu saya ingin range tanggalnya itu diambil dari tanggalKontrak
 {"success":false,"error":"Failed to update schedule"}. saya ingin Ketika saya mengsisi salah satu cell pada salah satu kolom tanggalnya, data kumulatif nya itu ikut berubah menyesuaikan dan semua data yang berubah nya itu langsung terupdate di db 
 -------------
 
-	
+
+ok now i want you to create the remaining component which hasnt been impemented yet(follow exactly as the figma shown),  for ai insight and adendum please use dummy data. and for others use the data related from db, i want the chart and progres and deviasi terhadap targe data to be slightly real time, so please refetch per 5s 
+
+--------------------------------
+for input Volume Target (Volume Satuan),Volume (Volume Satuan),Tanggal Mulai,Tanggal Selesai,Waktu Selesai (Hari) user can input and it will autosave on the db(please follow )
+	pelaksaan column is statis, but ont the righs side table is input and automatically save to db
+
 
