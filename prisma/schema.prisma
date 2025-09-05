@@ -60,6 +60,7 @@ model Project {
   auditLogs           ProjectAuditLog[]
   activities          Activity[]
   cumulativeSchedules CumulativeSchedule[]
+  materials           Material[]
   
   @@map("projects")
 }
@@ -152,4 +153,42 @@ model CumulativeSchedule {
   
   @@unique([projectId, month, year, week])
   @@map("cumulative_schedules")
+}
+
+// Model untuk material flow
+model Material {
+  id              String   @id @default(cuid())
+  projectId       String   @map("project_id")
+  jenisMaterial   String   @map("jenis_material") // Jenis material (e.g., Pasir, Semen)
+  volumeSatuan    String   @default("m3") @map("volume_satuan") // m3 atau buah
+  volumeTarget    Float?   @default(0) @map("volume_target") // Target volume
+  tanggalMulai    String?  @map("tanggal_mulai") // Start date
+  tanggalSelesai  String?  @map("tanggal_selesai") // End date
+  waktuSelesai    Int?     @map("waktu_selesai") // Duration in days
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  schedules       MaterialSchedule[]
+  
+  @@map("materials")
+}
+
+// Model untuk jadwal material progress (daily tracking)
+model MaterialSchedule {
+  id                  String   @id @default(cuid())
+  materialId          String   @map("material_id")
+  date                String   @map("date") // Format: YYYY-MM-DD
+  rencana             Float?   @default(0) @map("rencana") // Daily plan
+  rencanaKumulatif    Float?   @default(0) @map("rencana_kumulatif") // Cumulative plan
+  realisasi           Float?   @default(0) @map("realisasi") // Daily actual
+  realisasiKumulatif  Float?   @default(0) @map("realisasi_kumulatif") // Cumulative actual
+  tercapai            String?  @default("Y") @map("tercapai") // Y/T (Yes/No)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  
+  material            Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  
+  @@unique([materialId, date])
+  @@map("material_schedules")
 }

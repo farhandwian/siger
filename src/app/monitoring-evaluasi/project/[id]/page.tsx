@@ -1,8 +1,13 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
+import { AddMaterialModal } from '@/components/materials/add-material-modal'
+import { MaterialFlowTable } from '@/components/materials/material-flow-table'
+import { MaterialChart } from '@/components/materials/material-chart'
 import { AIInsights } from '@/components/monitoring/ai-insights'
 import { MonitoringMetrics } from '@/components/monitoring/monitoring-metrics'
 import { SCurveChart } from '@/components/monitoring/s-curve-chart'
@@ -11,11 +16,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { useMonitoringData } from '@/hooks/use-monitoring-data'
+import { useMaterials } from '@/hooks/useMaterialQueries'
 import { useProjectDetail, useUpdateProjectField } from '@/hooks/useProjectQueries'
 import { cn } from '@/lib/utils'
-import { RefreshCw, Wifi, WifiOff } from 'lucide-react'
+import { ChevronDown, Plus, RefreshCw, Wifi, WifiOff } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
 
 interface TabProps {
   label: string
@@ -172,11 +177,21 @@ export default function ProjectDetailPage() {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('Data Teknis')
+  const [addMaterialModalOpen, setAddMaterialModalOpen] = useState(false)
+  const [selectedMaterial, setSelectedMaterial] = useState<string>('')
 
   const projectId = (params?.id as string) || '1'
   const { data: project, isLoading, error } = useProjectDetail(projectId)
+  const { data: materials } = useMaterials(projectId)
   const updateProjectMutation = useUpdateProjectField()
   const { refreshAll, isLoading: monitoringLoading, isError: monitoringError } = useMonitoringData()
+
+  // Initialize selectedMaterial when materials are loaded
+  useEffect(() => {
+    if (materials && materials.length > 0 && !selectedMaterial) {
+      setSelectedMaterial(materials[0].jenisMaterial)
+    }
+  }, [materials, selectedMaterial])
 
   // Project data state with auto-save capability
   const [projectData, setProjectData] = useState({
@@ -630,16 +645,84 @@ export default function ProjectDetailPage() {
                 </div>
               )}
 
-              {/* Other tabs can be implemented here */}
-              {activeTab !== 'Data Teknis' && activeTab !== 'Jadwal' && (
-                <div className="py-12 text-center">
-                  <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
-                  <p className="text-gray-600">Konten untuk tab ini sedang dalam pengembangan.</p>
+              {/* Material Flow Tab Content */}
+              {activeTab === 'Material Flow' && (
+                <div className="space-y-6">
+                  {/* Header Section */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                      <h2 className="text-lg font-medium text-gray-900">Daftar Material</h2>
+
+                      {/* Material Dropdown */}
+                      <div className="relative">
+                        <select
+                          value={selectedMaterial}
+                          onChange={e => setSelectedMaterial(e.target.value)}
+                          className="appearance-none rounded-lg border border-gray-200 bg-gray-100 px-4 py-1.5 pr-8 text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {materials && materials.length > 0 ? (
+                            materials.map(material => (
+                              <option key={material.id} value={material.jenisMaterial}>
+                                {material.jenisMaterial}
+                              </option>
+                            ))
+                          ) : (
+                            <option value="">Belum ada material</option>
+                          )}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                      </div>
+                    </div>
+
+                    {/* Add Material Button */}
+                    <Button
+                      onClick={() => setAddMaterialModalOpen(true)}
+                      className="flex items-center gap-2 bg-[#ffc928] text-[#364878] hover:bg-[#ffc928]/90"
+                    >
+                      <Plus className="h-5 w-5" />
+                      Tambah Material
+                    </Button>
+                  </div>
+
+                  {/* Material Flow Table */}
+                  {materials && materials.length > 0 ? (
+                    <MaterialFlowTable
+                      materials={materials}
+                      selectedMaterial={selectedMaterial}
+                      onMaterialChange={setSelectedMaterial}
+                    />
+                  ) : (
+                    <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
+                      <p className="text-gray-500">
+                        Belum ada data material. Silakan tambah material terlebih dahulu.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Material Chart */}
+                  {materials && materials.length > 0 && <MaterialChart materials={materials} />}
                 </div>
               )}
+
+              {/* Other tabs can be implemented here */}
+              {activeTab !== 'Data Teknis' &&
+                activeTab !== 'Jadwal' &&
+                activeTab !== 'Material Flow' && (
+                  <div className="py-12 text-center">
+                    <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
+                    <p className="text-gray-600">Konten untuk tab ini sedang dalam pengembangan.</p>
+                  </div>
+                )}
             </div>
           </div>
         </main>
+
+        {/* Add Material Modal */}
+        <AddMaterialModal
+          isOpen={addMaterialModalOpen}
+          onClose={() => setAddMaterialModalOpen(false)}
+          projectId={String(params.id)}
+        />
       </div>
     </div>
   )

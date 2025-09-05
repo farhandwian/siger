@@ -6,6 +6,8 @@ async function main() {
   console.log('🌱 Seeding database...')
 
   // Clear existing data
+  await prisma.materialSchedule.deleteMany({})
+  await prisma.material.deleteMany({})
   await prisma.projectAuditLog.deleteMany({})
   await prisma.project.deleteMany({})
 
@@ -273,6 +275,64 @@ async function main() {
   ])
 
   console.log(`✅ Created ${projects.length} projects`)
+
+  // Create Material Flow data for project 1 (Pasir)
+  const pasirMaterial = await prisma.material.create({
+    data: {
+      projectId: '1',
+      jenisMaterial: 'Pasir',
+      volumeSatuan: 'm3',
+      volumeTarget: 850,
+      tanggalMulai: '2025-06-18',
+      tanggalSelesai: '2025-08-31',
+      waktuSelesai: 74,
+    },
+  })
+
+  // Generate daily schedule data for June 2025 (18-30)
+  const generateDailyTargetFromTotal = (totalTarget: number, totalDays: number) => {
+    return totalTarget / totalDays
+  }
+
+  const dailyTarget = generateDailyTargetFromTotal(850, 74) // ~11.49 per day
+
+  const juneScheduleData = [
+    { date: '2025-06-18', realisasi: 1082, realisasiKumulatif: 1082 },
+    { date: '2025-06-19', realisasi: 729, realisasiKumulatif: 1811 },
+    { date: '2025-06-20', realisasi: 1047, realisasiKumulatif: 2858 },
+    { date: '2025-06-21', realisasi: 1167, realisasiKumulatif: 4025 },
+    { date: '2025-06-22', realisasi: 1274, realisasiKumulatif: 5299 },
+    { date: '2025-06-23', realisasi: 1400, realisasiKumulatif: 6699 },
+    { date: '2025-06-24', realisasi: 1409, realisasiKumulatif: 8108 },
+    { date: '2025-06-25', realisasi: 1184, realisasiKumulatif: 9292 },
+    { date: '2025-06-26', realisasi: 831, realisasiKumulatif: 10123 },
+    { date: '2025-06-27', realisasi: 832, realisasiKumulatif: 10124 },
+    { date: '2025-06-28', realisasi: 833, realisasiKumulatif: 10125 },
+    { date: '2025-06-29', realisasi: 833, realisasiKumulatif: 10125 },
+    { date: '2025-06-30', realisasi: 833, realisasiKumulatif: 10125 },
+  ]
+
+  // Create material schedules
+  for (const [index, scheduleData] of juneScheduleData.entries()) {
+    const dayNumber = index + 1
+    const rencana = dailyTarget
+    const rencanaKumulatif = dailyTarget * dayNumber
+    const tercapai = scheduleData.realisasi >= rencana ? 'Y' : 'T'
+
+    await prisma.materialSchedule.create({
+      data: {
+        materialId: pasirMaterial.id,
+        date: scheduleData.date,
+        rencana: rencana,
+        rencanaKumulatif: rencanaKumulatif,
+        realisasi: scheduleData.realisasi,
+        realisasiKumulatif: scheduleData.realisasiKumulatif,
+        tercapai: tercapai,
+      },
+    })
+  }
+
+  console.log('✅ Created Material Flow data')
   console.log('🎉 Seeding completed!')
 }
 

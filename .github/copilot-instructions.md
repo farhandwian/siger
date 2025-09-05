@@ -2,6 +2,10 @@
 selalu jawab dengan bahasa inggris, sebelum menjawab tolong perbaiki bahasa inggris saya jika ada yang salah.
 
 tolong ikuti aturan ini:
+-ikuti ini sebagai acuan untuk ukuran ratio dari font size hingga ukuran content-contentnya:
+	+src\app\monitoring-evaluasi\page.tsx
+	+src\components\monitoring\project-list.tsx
+	+src\components\monitoring\summary-cards.tsx
 -untuk implementasi kodenya tolong selalu implementasikan tools yang terdapat pada List Technology stack terlebih dahulu, jika tidak memungkinkan maka gunakan yang lain
 -gunakan tanstack react query 
 -buat validasi menggunakan zod

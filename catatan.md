@@ -1,0 +1,1 @@
+-pada tabel jadwal itu perlu ada tahun pada kolom waktunya

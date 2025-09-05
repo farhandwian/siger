@@ -1,0 +1,729 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { AutoSaveMaterialField } from '@/components/ui/auto-save-material-field'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Trash2, ChevronDown, Loader2 } from 'lucide-react'
+import {
+  useDeleteMaterial,
+  useUpdateMaterialSchedule,
+  useCreateMaterialSchedule,
+  Material,
+} from '@/hooks/useMaterialQueries'
+import { cn } from '@/lib/utils'
+
+interface MaterialFlowTableProps {
+  materials: Material[]
+  selectedMaterial: string
+  onMaterialChange: (material: string) => void
+}
+
+interface EditableCellProps {
+  value: number
+  onChange: (value: number) => void
+  isDisabled?: boolean
+  className?: string
+}
+
+const EditableCell = ({ value, onChange, isDisabled = false, className }: EditableCellProps) => {
+  const [localValue, setLocalValue] = useState(value.toString())
+  const [isFocused, setIsFocused] = useState(false)
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value.toString())
+    }
+  }, [value, isFocused])
+
+  const handleBlur = () => {
+    setIsFocused(false)
+    const numValue = parseFloat(localValue) || 0
+    if (numValue !== value) {
+      onChange(numValue)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur()
+    }
+  }
+
+  if (isDisabled) {
+    return (
+      <div className={cn('py-1.5 text-center text-xs text-gray-700', className)}>
+        {value.toLocaleString()}
+      </div>
+    )
+  }
+
+  return (
+    <input
+      type="number"
+      value={localValue}
+      onChange={e => setLocalValue(e.target.value)}
+      onFocus={() => setIsFocused(true)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      className={cn(
+        'w-full border-none bg-transparent py-1.5 text-center text-xs outline-none',
+        'focus:bg-blue-50 focus:ring-1 focus:ring-blue-200',
+        className
+      )}
+    />
+  )
+}
+
+export function MaterialFlowTable({
+  materials,
+  selectedMaterial,
+  onMaterialChange,
+}: MaterialFlowTableProps) {
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [editingCell, setEditingCell] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [loadingCell, setLoadingCell] = useState<string | null>(null)
+
+  const deleteMaterial = useDeleteMaterial()
+  const updateSchedule = useUpdateMaterialSchedule()
+  const createSchedule = useCreateMaterialSchedule()
+
+  // Find the selected material
+  const currentMaterial = materials.find(m => m.jenisMaterial === selectedMaterial) || materials[0]
+
+  // Update parent component when material selection changes
+  useEffect(() => {
+    if (materials.length > 0 && !selectedMaterial) {
+      onMaterialChange(materials[0].jenisMaterial)
+    }
+  }, [materials, selectedMaterial, onMaterialChange])
+
+  // Initialize selected month based on current material's start date
+  useEffect(() => {
+    if (currentMaterial?.tanggalMulai) {
+      const startDate = new Date(currentMaterial.tanggalMulai)
+      setSelectedMonth(startDate.getMonth() + 1)
+      setSelectedYear(startDate.getFullYear())
+    }
+  }, [currentMaterial])
+
+  // Get current month for display based on selected month/year
+  const currentMonth = new Date(selectedYear, selectedMonth - 1)
+    .toLocaleDateString('id-ID', {
+      month: 'long',
+      year: 'numeric',
+    })
+    .toUpperCase()
+
+  // Generate date range based on selected month and material date range
+  const generateDateColumns = (material: Material) => {
+    if (!material?.tanggalMulai || !material?.tanggalSelesai) return []
+
+    const materialStart = new Date(material.tanggalMulai)
+    const materialEnd = new Date(material.tanggalSelesai)
+
+    // Get first and last day of selected month
+    const monthStart = new Date(selectedYear, selectedMonth - 1, 1)
+    const monthEnd = new Date(selectedYear, selectedMonth, 0) // Last day of month
+
+    // Use the overlapping period between material dates and selected month
+    const startDate = materialStart > monthStart ? materialStart : monthStart
+    const endDate = materialEnd < monthEnd ? materialEnd : monthEnd
+
+    const dates = []
+
+    // Only generate dates if there's an overlap
+    if (startDate <= endDate) {
+      const currentDate = new Date(startDate)
+      while (currentDate <= endDate) {
+        dates.push({
+          date: currentDate.toISOString().split('T')[0],
+          display: currentDate.getDate().toString(),
+          fullDate: new Date(currentDate),
+        })
+        currentDate.setDate(currentDate.getDate() + 1)
+      }
+    }
+
+    return dates
+  }
+
+  const dateColumns = currentMaterial ? generateDateColumns(currentMaterial) : []
+
+  // Calculate cumulative values for a specific date
+  const calculateRencanaKumulatif = (targetDate: string) => {
+    if (!currentMaterial?.schedules) return 0
+
+    return dateColumns
+      .filter(col => col.date <= targetDate)
+      .reduce((sum, col) => {
+        const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
+        return sum + (schedule?.rencana || 0)
+      }, 0)
+  }
+
+  const calculateRealisasiKumulatif = (targetDate: string) => {
+    if (!currentMaterial?.schedules) return 0
+
+    return dateColumns
+      .filter(col => col.date <= targetDate)
+      .reduce((sum, col) => {
+        const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
+        return sum + (schedule?.realisasi || 0)
+      }, 0)
+  }
+
+  const handleDeleteMaterial = async (materialId: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus material ini?')) {
+      try {
+        const materialToDelete = materials.find(m => m.id === materialId)
+        if (materialToDelete) {
+          await deleteMaterial.mutateAsync({
+            id: materialId,
+            projectId: materialToDelete.projectId,
+          })
+        }
+      } catch (error) {
+        console.error('Failed to delete material:', error)
+      }
+    }
+  }
+
+  const handleCellEdit = (cellId: string, currentValue: number | null) => {
+    setEditingCell(cellId)
+    setEditValue(currentValue !== null ? currentValue.toString() : '')
+  }
+
+  const handleCellSave = async (
+    scheduleId: string | undefined,
+    field: 'rencana' | 'realisasi' | 'rencanaKumulatif' | 'realisasiKumulatif',
+    date: string,
+    materialId: string
+  ) => {
+    const numericValue = editValue === '' ? 0 : parseFloat(editValue)
+    const value = !isNaN(numericValue) ? numericValue : 0
+
+    const cellId = `${field}-${date}`
+    setLoadingCell(cellId)
+
+    console.log('Saving cell:', { scheduleId, field, date, materialId, value, editValue })
+
+    try {
+      // Always use the create endpoint which now handles upsert
+      const existingSchedule = currentMaterial.schedules?.find(s => s.date === date)
+
+      let scheduleData = {
+        materialId,
+        date,
+        rencana: existingSchedule?.rencana || 0,
+        rencanaKumulatif: existingSchedule?.rencanaKumulatif || 0,
+        realisasi: existingSchedule?.realisasi || 0,
+        realisasiKumulatif: existingSchedule?.realisasiKumulatif || 0,
+        // Override the specific field being updated
+        [field]: value,
+      }
+
+      // Recalculate cumulative values based on the updated data
+      if (field === 'rencana') {
+        // Update the schedule data temporarily to calculate cumulative
+        const tempSchedules = [...(currentMaterial.schedules || [])]
+        const existingIndex = tempSchedules.findIndex(s => s.date === date)
+        if (existingIndex >= 0) {
+          tempSchedules[existingIndex] = { ...tempSchedules[existingIndex], rencana: value }
+        } else {
+          tempSchedules.push({ ...scheduleData, rencana: value })
+        }
+
+        // Calculate cumulative for this date and update
+        scheduleData.rencanaKumulatif = dateColumns
+          .filter(col => col.date <= date)
+          .reduce((sum, col) => {
+            const schedule = tempSchedules.find(s => s.date === col.date)
+            return sum + (schedule?.rencana || 0)
+          }, 0)
+      } else if (field === 'realisasi') {
+        // Similar calculation for realisasi
+        const tempSchedules = [...(currentMaterial.schedules || [])]
+        const existingIndex = tempSchedules.findIndex(s => s.date === date)
+        if (existingIndex >= 0) {
+          tempSchedules[existingIndex] = { ...tempSchedules[existingIndex], realisasi: value }
+        } else {
+          tempSchedules.push({ ...scheduleData, realisasi: value })
+        }
+
+        scheduleData.realisasiKumulatif = dateColumns
+          .filter(col => col.date <= date)
+          .reduce((sum, col) => {
+            const schedule = tempSchedules.find(s => s.date === col.date)
+            return sum + (schedule?.realisasi || 0)
+          }, 0)
+      }
+
+      console.log('Schedule data to upsert:', scheduleData)
+      await createSchedule.mutateAsync(scheduleData)
+
+      setEditingCell(null)
+      setEditValue('')
+      console.log('Cell saved successfully')
+    } catch (error) {
+      console.error('Error saving schedule:', error)
+      // Don't reset the cell if there was an error, let user try again
+    } finally {
+      setLoadingCell(null)
+    }
+  }
+
+  const handleCellCancel = () => {
+    setEditingCell(null)
+    setEditValue('')
+  }
+
+  if (!materials || materials.length === 0) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
+        <p className="text-gray-500">
+          Belum ada data material. Silakan tambah material terlebih dahulu.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Material Information Form */}
+      {currentMaterial && (
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              {/* Material Basic Info */}
+              <div className="flex items-start gap-3">
+                <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Jenis Material</label>
+                    <div className="border-b border-gray-200 pb-2">
+                      <AutoSaveMaterialField
+                        value={currentMaterial.jenisMaterial}
+                        onChange={value => {}}
+                        materialId={currentMaterial.id}
+                        fieldName="jenisMaterial"
+                        className="border-none p-0 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Volume Satuan</label>
+                    <div className="relative">
+                      <select
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        defaultValue={currentMaterial.volumeSatuan}
+                      >
+                        <option value="m3">m3</option>
+                        <option value="buah">buah</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => handleDeleteMaterial(currentMaterial.id)}
+                  variant="outline"
+                  size="sm"
+                  className="border-red-500 bg-red-500 text-white hover:bg-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Hapus Material
+                </Button>
+              </div>
+
+              {/* Volume and Dates */}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">
+                    Volume Target (
+                    {currentMaterial.volumeSatuan === 'm3' ? 'm³' : currentMaterial.volumeSatuan})
+                  </label>
+                  <div className="border-b border-gray-200 pb-2">
+                    <AutoSaveMaterialField
+                      value={currentMaterial.volumeTarget?.toString() || '0'}
+                      onChange={() => {}}
+                      materialId={currentMaterial.id}
+                      fieldName="volumeTarget"
+                      className="border-none p-0 text-sm"
+                      type="number"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Volume Realisasi</label>
+                  <div className="border-b border-gray-200 pb-2">
+                    <span className="text-sm text-gray-400">
+                      {currentMaterial.schedules?.[
+                        currentMaterial.schedules.length - 1
+                      ]?.realisasiKumulatif?.toLocaleString() || '0'}{' '}
+                      {currentMaterial.volumeSatuan === 'm3' ? 'm³' : currentMaterial.volumeSatuan}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Tanggal Mulai</label>
+                  <div className="border-b border-gray-200 pb-2">
+                    <AutoSaveMaterialField
+                      value={currentMaterial.tanggalMulai || ''}
+                      onChange={() => {}}
+                      materialId={currentMaterial.id}
+                      fieldName="tanggalMulai"
+                      className="border-none p-0 text-sm"
+                      type="date"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Tanggal Selesai</label>
+                  <div className="border-b border-gray-200 pb-2">
+                    <AutoSaveMaterialField
+                      value={currentMaterial.tanggalSelesai || ''}
+                      onChange={() => {}}
+                      materialId={currentMaterial.id}
+                      fieldName="tanggalSelesai"
+                      className="border-none p-0 text-sm"
+                      type="date"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Waktu Selesai (Hari)</label>
+                  <div className="border-b border-gray-200 pb-2">
+                    <AutoSaveMaterialField
+                      value={currentMaterial.waktuSelesai?.toString() || '0'}
+                      onChange={() => {}}
+                      materialId={currentMaterial.id}
+                      fieldName="waktuSelesai"
+                      className="border-none p-0 text-sm"
+                      type="number"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Progress Table */}
+      {currentMaterial && (
+        <div className="space-y-4">
+          <h3 className="text-base font-medium text-gray-700">
+            Tabel Progress {currentMaterial.jenisMaterial}
+          </h3>
+
+          {/* Month Picker */}
+          <div className="w-64">
+            <div className="relative">
+              <div className="rounded-lg border border-gray-200 bg-white px-4 py-2 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => {
+                      if (selectedMonth === 1) {
+                        setSelectedMonth(12)
+                        setSelectedYear(selectedYear - 1)
+                      } else {
+                        setSelectedMonth(selectedMonth - 1)
+                      }
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="text-sm text-gray-500">{currentMonth}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (selectedMonth === 12) {
+                        setSelectedMonth(1)
+                        setSelectedYear(selectedYear + 1)
+                      } else {
+                        setSelectedMonth(selectedMonth + 1)
+                      }
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Table */}
+          <Card className="overflow-hidden border border-gray-200 shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="border-b border-gray-200 bg-[#fcfcfd] px-6 py-3 text-left">
+                      <span className="text-xs font-bold text-gray-700">Pelaksanaan</span>
+                    </th>
+                    <th
+                      className="border-b border-gray-200 bg-[#364878] px-6 py-1.5 text-center"
+                      colSpan={dateColumns.length}
+                    >
+                      <span className="text-xs font-bold text-white">
+                        {currentMonth.split(' ')[0]}
+                      </span>
+                    </th>
+                  </tr>
+                  <tr>
+                    <th className="border-b border-gray-200"></th>
+                    {dateColumns.map(col => (
+                      <th
+                        key={col.date}
+                        className="min-w-[67px] border-b border-gray-200 bg-[#80a9da] px-6 py-1.5 text-center"
+                      >
+                        <span className="text-xs font-bold text-white">{col.display}</span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Rencana Row */}
+                  <tr>
+                    <td className="border-b border-gray-200 px-6 py-1.5">
+                      <span className="text-xs font-medium text-gray-900">Rencana</span>
+                    </td>
+                    {dateColumns.map(col => {
+                      const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
+                      const cellId = `rencana-${col.date}`
+                      const value = schedule?.rencana || 0
+                      const isEditing = editingCell === cellId
+                      const isLoading = loadingCell === cellId
+
+                      return (
+                        <td
+                          key={col.date}
+                          className="border-b border-gray-200 px-6 py-1.5 text-center"
+                        >
+                          {isEditing ? (
+                            <div className="flex items-center justify-center">
+                              <input
+                                value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                onBlur={() =>
+                                  handleCellSave(
+                                    schedule?.id,
+                                    'rencana',
+                                    col.date,
+                                    currentMaterial.id
+                                  )
+                                }
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    handleCellSave(
+                                      schedule?.id,
+                                      'rencana',
+                                      col.date,
+                                      currentMaterial.id
+                                    )
+                                  } else if (e.key === 'Escape') {
+                                    handleCellCancel()
+                                  }
+                                }}
+                                className="h-6 w-full border-0 bg-transparent p-0 text-center text-xs focus:ring-0"
+                                autoFocus
+                                type="number"
+                              />
+                              {isLoading && (
+                                <Loader2 className="ml-1 h-3 w-3 animate-spin text-blue-500" />
+                              )}
+                            </div>
+                          ) : (
+                            <div
+                              className="flex cursor-pointer items-center justify-center text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              onClick={() => handleCellEdit(cellId, value)}
+                            >
+                              {value !== null && value !== undefined
+                                ? value === 0
+                                  ? '0'
+                                  : value.toLocaleString()
+                                : '-'}
+                            </div>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+
+                  {/* Rencana Kumulatif Row */}
+                  <tr>
+                    <td className="border-b border-gray-200 px-6 py-1.5">
+                      <span className="text-xs font-medium text-gray-900">Rencana Kumulatif</span>
+                    </td>
+                    {dateColumns.map(col => {
+                      const kumulatifValue = calculateRencanaKumulatif(col.date)
+                      return (
+                        <td
+                          key={col.date}
+                          className="border-b border-gray-200 bg-gray-50 px-6 py-1.5 text-center"
+                        >
+                          <div className="text-xs text-gray-600">
+                            {kumulatifValue.toLocaleString()}
+                          </div>
+                        </td>
+                      )
+                    })}
+                  </tr>
+
+                  {/* Realisasi Row */}
+                  <tr>
+                    <td className="border-b border-gray-200 px-6 py-1.5">
+                      <span className="text-xs font-medium text-gray-900">Realisasi</span>
+                    </td>
+                    {dateColumns.map(col => {
+                      const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
+                      const cellId = `realisasi-${col.date}`
+                      const value = schedule?.realisasi || 0
+                      const isEditing = editingCell === cellId
+                      const isLoading = loadingCell === cellId
+
+                      return (
+                        <td
+                          key={col.date}
+                          className="border-b border-gray-200 px-6 py-1.5 text-center"
+                        >
+                          {isEditing ? (
+                            <div className="flex items-center justify-center">
+                              <input
+                                value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                onBlur={() =>
+                                  handleCellSave(
+                                    schedule?.id,
+                                    'realisasi',
+                                    col.date,
+                                    currentMaterial.id
+                                  )
+                                }
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    handleCellSave(
+                                      schedule?.id,
+                                      'realisasi',
+                                      col.date,
+                                      currentMaterial.id
+                                    )
+                                  } else if (e.key === 'Escape') {
+                                    handleCellCancel()
+                                  }
+                                }}
+                                className="h-6 w-full border-0 bg-transparent p-0 text-center text-xs focus:ring-0"
+                                autoFocus
+                                type="number"
+                              />
+                              {isLoading && (
+                                <Loader2 className="ml-1 h-3 w-3 animate-spin text-blue-500" />
+                              )}
+                            </div>
+                          ) : (
+                            <div
+                              className="cursor-pointer text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              onClick={() => handleCellEdit(cellId, value)}
+                            >
+                              {value !== null && value !== undefined
+                                ? value === 0
+                                  ? '0'
+                                  : value.toLocaleString()
+                                : '-'}
+                            </div>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+
+                  {/* Realisasi Kumulatif Row */}
+                  <tr>
+                    <td className="border-b border-gray-200 px-6 py-1.5">
+                      <span className="text-xs font-medium text-gray-900">Realisasi Kumulatif</span>
+                    </td>
+                    {dateColumns.map(col => {
+                      const kumulatifValue = calculateRealisasiKumulatif(col.date)
+                      return (
+                        <td
+                          key={col.date}
+                          className="border-b border-gray-200 bg-gray-50 px-6 py-1.5 text-center"
+                        >
+                          <div className="text-xs text-gray-600">
+                            {kumulatifValue.toLocaleString()}
+                          </div>
+                        </td>
+                      )
+                    })}
+                  </tr>
+
+                  {/* Tercapai Row */}
+                  <tr>
+                    <td className="border-b border-gray-200 bg-gray-100 px-6 py-1.5">
+                      <span className="text-xs font-medium text-gray-900">Tercapai</span>
+                    </td>
+                    {dateColumns.map(col => {
+                      const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
+                      const tercapai = schedule?.tercapai || 'Y'
+                      return (
+                        <td
+                          key={col.date}
+                          className={cn(
+                            'border-b border-gray-200 px-6 py-1.5 text-center',
+                            tercapai === 'Y' ? 'bg-emerald-500' : 'bg-red-500'
+                          )}
+                        >
+                          <span className="text-sm font-bold text-white">{tercapai}</span>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -64,3 +64,8 @@ the value of pelaksanaan column is statis, but on the right side of pelaksaan co
 
 and for the chart you can use SCurveChart as reference
 
+----------------------------------
+begini saja jika misalkan perubahan tanggal nya itu masih dalam range tanggal data sebelumnya maka extend saja, tapi jika perubahan tanggal nya ada yang 
+-------------------------------------
+jadi ketika user mengisi nilai volume, Tanggal Mulai, dan Tanggal Selesai, tolong generate dulu semua data di table schedules untuk range tersebut, yang mana nilai rencana berasal dari nilai volume(tiap hari sama nilainya), dan tolong juga tunjukkan bahwa row ini itu disabled entah warnanya dubah atau apapun itu. lalu untuk row Rencana Akumulasi adalah jumlah nilai rencana per harinya. lalu untuk row Tercapai terdiri dari 2 kemungkinan Y dengan warna hijau dan T dengan warna merah (Y jika pada hari tersebut realisasi < rencana) ini juga dinonaktifkan. Jadi pengguna hanya dapat menginput data pada baris realisasi untuk baris realisasi akumulasi nya adalah pertambahan dari nilai realisai tiap harinya. Dan jika target volume berubah, nilai-nilai pada rencana dan rencana Akumulasi juga akan berubah, dan tolong rekalkulasi nilai-nilai baris tercapai.
+
