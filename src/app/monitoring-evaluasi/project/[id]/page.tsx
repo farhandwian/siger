@@ -1,22 +1,21 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { Sidebar } from '@/components/layout/sidebar'
-import { Header } from '@/components/layout/header'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ProgressBar } from '@/components/ui/progress-bar'
-import { AutoSaveField } from '@/components/ui/auto-save-field'
 import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
+import { Header } from '@/components/layout/header'
+import { Sidebar } from '@/components/layout/sidebar'
+import { AIInsights } from '@/components/monitoring/ai-insights'
 import { MonitoringMetrics } from '@/components/monitoring/monitoring-metrics'
 import { SCurveChart } from '@/components/monitoring/s-curve-chart'
-import { AIInsights } from '@/components/monitoring/ai-insights'
-import { ScheduleTable } from '@/components/monitoring/schedule-table'
-import { useProjectDetail, useUpdateProjectField } from '@/hooks/useProjectQueries'
+import { AutoSaveField } from '@/components/ui/auto-save-field'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { ProgressBar } from '@/components/ui/progress-bar'
 import { useMonitoringData } from '@/hooks/use-monitoring-data'
+import { useProjectDetail, useUpdateProjectField } from '@/hooks/useProjectQueries'
 import { cn } from '@/lib/utils'
 import { RefreshCw, Wifi, WifiOff } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
+import React, { useEffect, useState } from 'react'
 
 interface TabProps {
   label: string
@@ -616,11 +615,9 @@ export default function ProjectDetailPage() {
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="xl:col-span-2">
-                      <h2 className="mb-4 text-sm font-medium text-gray-900">S-Curve Analysis</h2>
                       <SCurveChart />
                     </div>
                     <div>
-                      <h2 className="mb-4 text-sm font-medium text-gray-900">AI Insights</h2>
                       <AIInsights />
                     </div>
                   </div>
