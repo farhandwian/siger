@@ -529,13 +529,6 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
         </table>
       </div>
 
-      {/* Progress Bar */}
-      <div className="border-t border-gray-200 px-3 py-2">
-        <div className="h-1.5 w-[407px] rounded-full bg-gray-200">
-          <div className="h-full w-[30%] rounded-full bg-gray-300"></div>
-        </div>
-      </div>
-
       {/* Add Activity Modal */}
       <AddActivityModal
         isOpen={isAddModalOpen}
