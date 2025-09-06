@@ -302,33 +302,28 @@ export function MaterialFlowTable({
               <div className="flex items-start gap-2 lg:gap-3">
                 <div className="grid flex-1 grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4 xl:gap-6">
                   <div className="space-y-0.5 lg:space-y-1">
-                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
                       Jenis Material
                     </label>
-                    <div className="border-b border-gray-200 pb-1 lg:pb-2">
-                      <AutoSaveMaterialField
-                        value={currentMaterial.jenisMaterial}
-                        onChange={value => {}}
-                        materialId={currentMaterial.id}
-                        fieldName="jenisMaterial"
-                        className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
-                      />
-                    </div>
+                    <AutoSaveMaterialField
+                      value={currentMaterial.jenisMaterial}
+                      onChange={value => {}}
+                      materialId={currentMaterial.id}
+                      fieldName="jenisMaterial"
+                    />
                   </div>
 
                   <div className="space-y-0.5 lg:space-y-1">
-                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
                       Volume Satuan
                     </label>
-                    <div className="relative">
-                      <select
-                        className="w-full rounded-lg border border-gray-200 px-2 py-1 text-[9px] focus:outline-none focus:ring-2 focus:ring-blue-500 lg:px-3 lg:py-2 lg:text-[10px] xl:text-sm"
-                        defaultValue={currentMaterial.volumeSatuan}
-                      >
-                        <option value="m3">m3</option>
-                        <option value="buah">buah</option>
-                      </select>
-                    </div>
+                    <select
+                      className="w-full border-b border-gray-200 bg-white px-2 py-1 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
+                      defaultValue={currentMaterial.volumeSatuan}
+                    >
+                      <option value="m3">m3</option>
+                      <option value="buah">buah</option>
+                    </select>
                   </div>
                 </div>
 
@@ -346,84 +341,70 @@ export function MaterialFlowTable({
               {/* Volume and Dates */}
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4 xl:gap-6">
                 <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
                     Volume Target (
                     {currentMaterial.volumeSatuan === 'm3' ? 'm³' : currentMaterial.volumeSatuan})
                   </label>
-                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
-                    <AutoSaveMaterialField
-                      value={currentMaterial.volumeTarget?.toString() || '0'}
-                      onChange={() => {}}
-                      materialId={currentMaterial.id}
-                      fieldName="volumeTarget"
-                      className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
-                      type="number"
-                    />
-                  </div>
+                  <AutoSaveMaterialField
+                    value={currentMaterial.volumeTarget?.toString() || '0'}
+                    onChange={() => {}}
+                    materialId={currentMaterial.id}
+                    fieldName="volumeTarget"
+                    type="number"
+                  />
                 </div>
 
                 <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
                     Volume Realisasi
                   </label>
-                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
-                    <span className="text-[9px] text-gray-400 lg:text-[10px] xl:text-sm">
-                      {currentMaterial.schedules?.[
-                        currentMaterial.schedules.length - 1
-                      ]?.realisasiKumulatif?.toLocaleString() || '0'}{' '}
-                      {currentMaterial.volumeSatuan === 'm3' ? 'm³' : currentMaterial.volumeSatuan}
-                    </span>
+                  <div className="w-full border-b border-gray-200 bg-white px-2 py-1 text-[9px] text-gray-400 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs">
+                    {currentMaterial.schedules?.[
+                      currentMaterial.schedules.length - 1
+                    ]?.realisasiKumulatif?.toLocaleString() || '0'}{' '}
+                    {currentMaterial.volumeSatuan === 'm3' ? 'm³' : currentMaterial.volumeSatuan}
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4 xl:gap-6">
                 <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
                     Tanggal Mulai
                   </label>
-                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
-                    <AutoSaveMaterialField
-                      value={currentMaterial.tanggalMulai || ''}
-                      onChange={() => {}}
-                      materialId={currentMaterial.id}
-                      fieldName="tanggalMulai"
-                      className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
-                      type="date"
-                    />
-                  </div>
+                  <AutoSaveMaterialField
+                    value={currentMaterial.tanggalMulai || ''}
+                    onChange={() => {}}
+                    materialId={currentMaterial.id}
+                    fieldName="tanggalMulai"
+                    type="date"
+                  />
                 </div>
 
                 <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
                     Tanggal Selesai
                   </label>
-                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
-                    <AutoSaveMaterialField
-                      value={currentMaterial.tanggalSelesai || ''}
-                      onChange={() => {}}
-                      materialId={currentMaterial.id}
-                      fieldName="tanggalSelesai"
-                      className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
-                      type="date"
-                    />
-                  </div>
+                  <AutoSaveMaterialField
+                    value={currentMaterial.tanggalSelesai || ''}
+                    onChange={() => {}}
+                    materialId={currentMaterial.id}
+                    fieldName="tanggalSelesai"
+                    type="date"
+                  />
                 </div>
 
                 <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
                     Waktu Selesai (Hari)
                   </label>
-                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
-                    <AutoSaveMaterialField
-                      value={currentMaterial.waktuSelesai?.toString() || '0'}
-                      onChange={() => {}}
-                      materialId={currentMaterial.id}
-                      fieldName="waktuSelesai"
-                      className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
-                      type="number"
-                    />
-                  </div>
+                  <AutoSaveMaterialField
+                    value={currentMaterial.waktuSelesai?.toString() || '0'}
+                    onChange={() => {}}
+                    materialId={currentMaterial.id}
+                    fieldName="waktuSelesai"
+                    type="number"
+                  />
                 </div>
               </div>
             </div>

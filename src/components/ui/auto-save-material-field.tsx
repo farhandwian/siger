@@ -113,19 +113,17 @@ export function AutoSaveMaterialField({
         placeholder={placeholder}
         readOnly={readOnly}
         className={cn(
-          'w-full rounded-md border border-gray-300 px-3 py-2 text-sm',
-          'focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500',
-          'disabled:bg-gray-50 disabled:text-gray-500',
+          'w-full border-b border-gray-200 bg-white px-2 py-1 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs',
           readOnly && 'cursor-not-allowed bg-gray-50',
-          showSavingIndicator && 'pr-10',
+          showSavingIndicator && 'pr-8',
           className
         )}
         disabled={readOnly}
       />
 
       {showSavingIndicator && (
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+        <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+          <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 lg:h-3.5 lg:w-3.5"></div>
         </div>
       )}
     </div>
