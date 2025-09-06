@@ -151,33 +151,33 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
       {/* Header with Add Button and Legend */}
-      <div className="border-b border-gray-200 px-6 py-5">
+      <div className="border-b border-gray-200 px-2 py-2 lg:px-3 lg:py-3 xl:px-4 xl:py-4">
         <div className="flex items-center justify-between">
           <Button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 rounded-lg border-[#ffc928] bg-[#ffc928] px-4 py-2.5 text-sm font-medium text-[#364878] hover:bg-[#e6b323]"
+            className="flex items-center gap-1.5 rounded-lg border-[#ffc928] bg-[#ffc928] px-2 py-1.5 text-[9px] font-medium text-[#364878] hover:bg-[#e6b323] lg:gap-2 lg:px-3 lg:py-2 lg:text-[10px] xl:text-xs"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
             Tambah Kegiatan
           </Button>
 
           {/* Legend */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 lg:gap-4">
+            <div className="flex items-center gap-1 lg:gap-2">
               <div
-                className="h-2.5 w-2.5 rounded-full"
+                className="h-2 w-2 rounded-full lg:h-2.5 lg:w-2.5"
                 style={{ backgroundColor: '#FFC928' }}
               ></div>
-              <span className="text-sm text-gray-500">Realisasi</span>
+              <span className="text-[9px] text-gray-500 lg:text-[10px] xl:text-xs">Realisasi</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 lg:gap-2">
               <div
-                className="h-2.5 w-2.5 rounded-full"
+                className="h-2 w-2 rounded-full lg:h-2.5 lg:w-2.5"
                 style={{ backgroundColor: '#BFDBFE' }}
               ></div>
-              <span className="text-sm text-gray-500">Rencana</span>
+              <span className="text-[9px] text-gray-500 lg:text-[10px] xl:text-xs">Rencana</span>
             </div>
           </div>
         </div>
@@ -185,15 +185,15 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
       {/* Main Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="w-full text-[8px] lg:text-[9px] xl:text-[10px]">
           {/* Table Header */}
           <thead>
             {/* First header row - Month names */}
             <tr>
-              <th className="w-[270px] border-b border-gray-200 bg-gray-50 p-3 text-left text-sm font-bold text-gray-900">
+              <th className="w-[200px] border-b border-gray-200 bg-gray-50 p-1.5 text-left text-[9px] font-bold text-gray-900 lg:w-[250px] lg:p-2 lg:text-[10px] xl:w-[270px] xl:p-3 xl:text-xs">
                 Uraian Pekerjaan
               </th>
-              <th className="w-[57px] border-b border-r-2 border-white bg-gray-50 p-3 text-center text-sm font-bold text-gray-900">
+              <th className="w-[40px] border-b border-r-2 border-white bg-gray-50 p-1.5 text-center text-[9px] font-bold text-gray-900 lg:w-[50px] lg:p-2 lg:text-[10px] xl:w-[57px] xl:p-3 xl:text-xs">
                 <div>Bobot</div>
                 <div>(%)</div>
               </th>
@@ -201,7 +201,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 <th
                   key={month.month}
                   colSpan={month.weeks.length}
-                  className={`border-b border-gray-200 bg-[#364878] px-6 py-1.5 text-center text-xs font-bold text-white ${
+                  className={`border-b border-gray-200 bg-[#364878] px-2 py-1 text-center text-[9px] font-bold text-white lg:px-3 lg:py-1.5 lg:text-[10px] xl:px-6 xl:py-1.5 xl:text-xs ${
                     monthIndex < months.length - 1 ? 'border-r-2 border-white' : ''
                   }`}
                 >
@@ -218,7 +218,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 month.weeks.map((weekObj, weekIndex) => (
                   <th
                     key={`${month.month}-${weekObj.week}`}
-                    className={`min-w-[67px] border-b border-gray-200 bg-[#80a9da] px-3 py-1.5 text-center text-xs font-bold text-white ${
+                    className={`min-w-[50px] border-b border-gray-200 bg-[#80a9da] px-1 py-1 text-center text-[8px] font-bold text-white lg:min-w-[60px] lg:px-2 lg:py-1.5 lg:text-[9px] xl:min-w-[67px] xl:px-3 xl:text-[10px] ${
                       weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
                         ? 'border-r-2 border-white'
                         : ''
@@ -237,21 +237,21 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 {/* Main Activity Row - No weight, clickable */}
                 <tr className="border-b border-gray-200 hover:bg-gray-50">
                   <td
-                    className="cursor-pointer border-b border-gray-200 bg-gray-100 px-2 py-1.5 hover:bg-gray-200"
+                    className="cursor-pointer border-b border-gray-200 bg-gray-100 px-1.5 py-1 hover:bg-gray-200 lg:px-2 lg:py-1.5 xl:px-2 xl:py-1.5"
                     onClick={() => handleActivityClick(activity)}
                   >
-                    <div className="text-xs font-bold uppercase text-gray-900 underline">
+                    <div className="text-[9px] font-bold uppercase text-gray-900 underline lg:text-[10px] xl:text-xs">
                       {activity.name}
                     </div>
                   </td>
-                  <td className="border-b border-r-2 border-white bg-gray-100 px-6 py-3 text-center text-xs text-gray-700">
+                  <td className="border-b border-r-2 border-white bg-gray-100 px-2 py-1.5 text-center text-[9px] text-gray-700 lg:px-3 lg:text-[10px] xl:px-6 xl:py-3 xl:text-xs">
                     {/* No weight for main activity */}
                   </td>
                   {months.map((month, monthIndex) =>
                     month.weeks.map((weekObj, weekIndex) => (
                       <td
                         key={`${activity.id}-main-${month.month}-${weekObj.week}`}
-                        className={`min-w-[67px] border-b border-gray-200 bg-gray-100 px-6 py-1.5 text-center ${
+                        className={`min-w-[50px] border-b border-gray-200 bg-gray-100 px-2 py-1 text-center lg:min-w-[60px] lg:px-3 lg:py-1.5 xl:min-w-[67px] xl:px-6 ${
                           weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
                             ? 'border-r-2 border-white'
                             : ''
@@ -268,14 +268,17 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   <React.Fragment key={subActivity.id}>
                     {/* First Row - Blue background (#BFDBFE) */}
                     <tr className="border-b border-gray-200">
-                      <td rowSpan={2} className="border-r border-gray-200 px-6 py-2">
-                        <div className="pl-4 text-xs font-semibold text-gray-900">
+                      <td
+                        rowSpan={2}
+                        className="border-r border-gray-200 px-2 py-1 lg:px-3 lg:py-1.5 xl:px-6 xl:py-2"
+                      >
+                        <div className="pl-1 text-[9px] font-semibold text-gray-900 lg:pl-2 lg:text-[10px] xl:pl-4 xl:text-xs">
                           {subActivity.name}
                         </div>
                       </td>
                       <td
                         rowSpan={2}
-                        className="border-r-2 border-white px-6 py-2 text-center text-xs text-gray-700"
+                        className="border-r-2 border-white px-2 py-1 text-center text-[9px] text-gray-700 lg:px-3 lg:py-1.5 lg:text-[10px] xl:px-6 xl:py-2 xl:text-xs"
                       >
                         {subActivity.weight}
                       </td>

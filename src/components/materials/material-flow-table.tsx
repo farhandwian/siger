@@ -292,33 +292,37 @@ export function MaterialFlowTable({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2 lg:space-y-3 xl:space-y-4">
       {/* Material Information Form */}
       {currentMaterial && (
         <Card className="border border-gray-200 shadow-sm">
-          <CardContent className="p-6">
-            <div className="space-y-6">
+          <CardContent className="p-2 lg:p-3 xl:p-4">
+            <div className="space-y-3 lg:space-y-4 xl:space-y-6">
               {/* Material Basic Info */}
-              <div className="flex items-start gap-3">
-                <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-2">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Jenis Material</label>
-                    <div className="border-b border-gray-200 pb-2">
+              <div className="flex items-start gap-2 lg:gap-3">
+                <div className="grid flex-1 grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4 xl:gap-6">
+                  <div className="space-y-0.5 lg:space-y-1">
+                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                      Jenis Material
+                    </label>
+                    <div className="border-b border-gray-200 pb-1 lg:pb-2">
                       <AutoSaveMaterialField
                         value={currentMaterial.jenisMaterial}
                         onChange={value => {}}
                         materialId={currentMaterial.id}
                         fieldName="jenisMaterial"
-                        className="border-none p-0 text-sm"
+                        className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Volume Satuan</label>
+                  <div className="space-y-0.5 lg:space-y-1">
+                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                      Volume Satuan
+                    </label>
                     <div className="relative">
                       <select
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-lg border border-gray-200 px-2 py-1 text-[9px] focus:outline-none focus:ring-2 focus:ring-blue-500 lg:px-3 lg:py-2 lg:text-[10px] xl:text-sm"
                         defaultValue={currentMaterial.volumeSatuan}
                       >
                         <option value="m3">m3</option>
@@ -332,36 +336,38 @@ export function MaterialFlowTable({
                   onClick={() => handleDeleteMaterial(currentMaterial.id)}
                   variant="outline"
                   size="sm"
-                  className="border-red-500 bg-red-500 text-white hover:bg-red-600"
+                  className="border-red-500 bg-red-500 px-2 py-1 text-[9px] text-white hover:bg-red-600 lg:px-3 lg:py-1.5 lg:text-[10px] xl:text-xs"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="mr-1 h-3 w-3 lg:mr-2 lg:h-4 lg:w-4" />
                   Hapus Material
                 </Button>
               </div>
 
               {/* Volume and Dates */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4 xl:gap-6">
+                <div className="space-y-0.5 lg:space-y-1">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
                     Volume Target (
                     {currentMaterial.volumeSatuan === 'm3' ? 'm³' : currentMaterial.volumeSatuan})
                   </label>
-                  <div className="border-b border-gray-200 pb-2">
+                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
                     <AutoSaveMaterialField
                       value={currentMaterial.volumeTarget?.toString() || '0'}
                       onChange={() => {}}
                       materialId={currentMaterial.id}
                       fieldName="volumeTarget"
-                      className="border-none p-0 text-sm"
+                      className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
                       type="number"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Volume Realisasi</label>
-                  <div className="border-b border-gray-200 pb-2">
-                    <span className="text-sm text-gray-400">
+                <div className="space-y-0.5 lg:space-y-1">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                    Volume Realisasi
+                  </label>
+                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
+                    <span className="text-[9px] text-gray-400 lg:text-[10px] xl:text-sm">
                       {currentMaterial.schedules?.[
                         currentMaterial.schedules.length - 1
                       ]?.realisasiKumulatif?.toLocaleString() || '0'}{' '}
@@ -371,44 +377,50 @@ export function MaterialFlowTable({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Tanggal Mulai</label>
-                  <div className="border-b border-gray-200 pb-2">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4 xl:gap-6">
+                <div className="space-y-0.5 lg:space-y-1">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                    Tanggal Mulai
+                  </label>
+                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
                     <AutoSaveMaterialField
                       value={currentMaterial.tanggalMulai || ''}
                       onChange={() => {}}
                       materialId={currentMaterial.id}
                       fieldName="tanggalMulai"
-                      className="border-none p-0 text-sm"
+                      className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
                       type="date"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Tanggal Selesai</label>
-                  <div className="border-b border-gray-200 pb-2">
+                <div className="space-y-0.5 lg:space-y-1">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                    Tanggal Selesai
+                  </label>
+                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
                     <AutoSaveMaterialField
                       value={currentMaterial.tanggalSelesai || ''}
                       onChange={() => {}}
                       materialId={currentMaterial.id}
                       fieldName="tanggalSelesai"
-                      className="border-none p-0 text-sm"
+                      className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
                       type="date"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Waktu Selesai (Hari)</label>
-                  <div className="border-b border-gray-200 pb-2">
+                <div className="space-y-0.5 lg:space-y-1">
+                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-sm">
+                    Waktu Selesai (Hari)
+                  </label>
+                  <div className="border-b border-gray-200 pb-1 lg:pb-2">
                     <AutoSaveMaterialField
                       value={currentMaterial.waktuSelesai?.toString() || '0'}
                       onChange={() => {}}
                       materialId={currentMaterial.id}
                       fieldName="waktuSelesai"
-                      className="border-none p-0 text-sm"
+                      className="border-none p-0 text-[9px] lg:text-[10px] xl:text-sm"
                       type="number"
                     />
                   </div>
@@ -421,16 +433,16 @@ export function MaterialFlowTable({
 
       {/* Progress Table */}
       {currentMaterial && (
-        <div className="space-y-4">
-          <h3 className="text-base font-medium text-gray-700">
+        <div className="space-y-2 lg:space-y-3 xl:space-y-4">
+          <h3 className="text-[10px] font-medium text-gray-700 lg:text-xs xl:text-base">
             Tabel Progress {currentMaterial.jenisMaterial}
           </h3>
 
           {/* Month Picker */}
-          <div className="w-64">
+          <div className="w-48 lg:w-56 xl:w-64">
             <div className="relative">
-              <div className="rounded-lg border border-gray-200 bg-white px-4 py-2 shadow-sm">
-                <div className="flex items-center justify-between gap-2">
+              <div className="rounded-lg border border-gray-200 bg-white px-2 py-1 shadow-sm lg:px-3 lg:py-1.5 xl:px-4 xl:py-2">
+                <div className="flex items-center justify-between gap-1 lg:gap-2">
                   <button
                     onClick={() => {
                       if (selectedMonth === 1) {
@@ -442,7 +454,12 @@ export function MaterialFlowTable({
                     }}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -451,9 +468,9 @@ export function MaterialFlowTable({
                       />
                     </svg>
                   </button>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 lg:gap-2">
                     <svg
-                      className="h-5 w-5 text-gray-400"
+                      className="h-3 w-3 text-gray-400 lg:h-4 lg:w-4 xl:h-5 xl:w-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -465,7 +482,9 @@ export function MaterialFlowTable({
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    <span className="text-sm text-gray-500">{currentMonth}</span>
+                    <span className="text-[9px] text-gray-500 lg:text-[10px] xl:text-sm">
+                      {currentMonth}
+                    </span>
                   </div>
                   <button
                     onClick={() => {
@@ -478,7 +497,12 @@ export function MaterialFlowTable({
                     }}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -498,14 +522,16 @@ export function MaterialFlowTable({
               <table className="w-full">
                 <thead>
                   <tr>
-                    <th className="border-b border-gray-200 bg-[#fcfcfd] px-6 py-3 text-left">
-                      <span className="text-xs font-bold text-gray-700">Pelaksanaan</span>
+                    <th className="border-b border-gray-200 bg-[#fcfcfd] px-2 py-1.5 text-left lg:px-3 lg:py-2 xl:px-6 xl:py-3">
+                      <span className="text-[9px] font-bold text-gray-700 lg:text-[10px] xl:text-xs">
+                        Pelaksanaan
+                      </span>
                     </th>
                     <th
-                      className="border-b border-gray-200 bg-[#364878] px-6 py-1.5 text-center"
+                      className="border-b border-gray-200 bg-[#364878] px-2 py-1 text-center lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5"
                       colSpan={dateColumns.length}
                     >
-                      <span className="text-xs font-bold text-white">
+                      <span className="text-[9px] font-bold text-white lg:text-[10px] xl:text-xs">
                         {currentMonth.split(' ')[0]}
                       </span>
                     </th>
@@ -515,9 +541,11 @@ export function MaterialFlowTable({
                     {dateColumns.map(col => (
                       <th
                         key={col.date}
-                        className="min-w-[67px] border-b border-gray-200 bg-[#80a9da] px-6 py-1.5 text-center"
+                        className="min-w-[40px] border-b border-gray-200 bg-[#80a9da] px-2 py-1 text-center lg:min-w-[50px] lg:px-3 lg:py-1.5 xl:min-w-[67px] xl:px-6 xl:py-1.5"
                       >
-                        <span className="text-xs font-bold text-white">{col.display}</span>
+                        <span className="text-[8px] font-bold text-white lg:text-[9px] xl:text-xs">
+                          {col.display}
+                        </span>
                       </th>
                     ))}
                   </tr>
@@ -525,8 +553,10 @@ export function MaterialFlowTable({
                 <tbody>
                   {/* Rencana Row */}
                   <tr>
-                    <td className="border-b border-gray-200 px-6 py-1.5">
-                      <span className="text-xs font-medium text-gray-900">Rencana</span>
+                    <td className="border-b border-gray-200 px-2 py-1 lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5">
+                      <span className="text-[9px] font-medium text-gray-900 lg:text-[10px] xl:text-xs">
+                        Rencana
+                      </span>
                     </td>
                     {dateColumns.map(col => {
                       const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
@@ -538,7 +568,7 @@ export function MaterialFlowTable({
                       return (
                         <td
                           key={col.date}
-                          className="border-b border-gray-200 px-6 py-1.5 text-center"
+                          className="border-b border-gray-200 px-2 py-1 text-center lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5"
                         >
                           {isEditing ? (
                             <div className="flex items-center justify-center">
@@ -565,17 +595,17 @@ export function MaterialFlowTable({
                                     handleCellCancel()
                                   }
                                 }}
-                                className="h-6 w-full border-0 bg-transparent p-0 text-center text-xs focus:ring-0"
+                                className="h-4 w-full border-0 bg-transparent p-0 text-center text-[8px] focus:ring-0 lg:h-5 lg:text-[9px] xl:h-6 xl:text-xs"
                                 autoFocus
                                 type="number"
                               />
                               {isLoading && (
-                                <Loader2 className="ml-1 h-3 w-3 animate-spin text-blue-500" />
+                                <Loader2 className="ml-1 h-2 w-2 animate-spin text-blue-500 lg:h-2.5 lg:w-2.5 xl:h-3 xl:w-3" />
                               )}
                             </div>
                           ) : (
                             <div
-                              className="flex cursor-pointer items-center justify-center text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              className="flex cursor-pointer items-center justify-center text-[8px] font-medium text-gray-700 hover:bg-gray-50 lg:text-[9px] xl:text-xs"
                               onClick={() => handleCellEdit(cellId, value)}
                             >
                               {value !== null && value !== undefined
@@ -592,17 +622,19 @@ export function MaterialFlowTable({
 
                   {/* Rencana Kumulatif Row */}
                   <tr>
-                    <td className="border-b border-gray-200 px-6 py-1.5">
-                      <span className="text-xs font-medium text-gray-900">Rencana Kumulatif</span>
+                    <td className="border-b border-gray-200 px-2 py-1 lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5">
+                      <span className="text-[9px] font-medium text-gray-900 lg:text-[10px] xl:text-xs">
+                        Rencana Kumulatif
+                      </span>
                     </td>
                     {dateColumns.map(col => {
                       const kumulatifValue = calculateRencanaKumulatif(col.date)
                       return (
                         <td
                           key={col.date}
-                          className="border-b border-gray-200 bg-gray-50 px-6 py-1.5 text-center"
+                          className="border-b border-gray-200 bg-gray-50 px-2 py-1 text-center lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5"
                         >
-                          <div className="text-xs text-gray-600">
+                          <div className="text-[8px] text-gray-600 lg:text-[9px] xl:text-xs">
                             {kumulatifValue.toLocaleString()}
                           </div>
                         </td>
@@ -612,8 +644,10 @@ export function MaterialFlowTable({
 
                   {/* Realisasi Row */}
                   <tr>
-                    <td className="border-b border-gray-200 px-6 py-1.5">
-                      <span className="text-xs font-medium text-gray-900">Realisasi</span>
+                    <td className="border-b border-gray-200 px-2 py-1 lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5">
+                      <span className="text-[9px] font-medium text-gray-900 lg:text-[10px] xl:text-xs">
+                        Realisasi
+                      </span>
                     </td>
                     {dateColumns.map(col => {
                       const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
@@ -679,17 +713,19 @@ export function MaterialFlowTable({
 
                   {/* Realisasi Kumulatif Row */}
                   <tr>
-                    <td className="border-b border-gray-200 px-6 py-1.5">
-                      <span className="text-xs font-medium text-gray-900">Realisasi Kumulatif</span>
+                    <td className="border-b border-gray-200 px-2 py-1 lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5">
+                      <span className="text-[9px] font-medium text-gray-900 lg:text-[10px] xl:text-xs">
+                        Realisasi Kumulatif
+                      </span>
                     </td>
                     {dateColumns.map(col => {
                       const kumulatifValue = calculateRealisasiKumulatif(col.date)
                       return (
                         <td
                           key={col.date}
-                          className="border-b border-gray-200 bg-gray-50 px-6 py-1.5 text-center"
+                          className="border-b border-gray-200 bg-gray-50 px-2 py-1 text-center lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5"
                         >
-                          <div className="text-xs text-gray-600">
+                          <div className="text-[8px] text-gray-600 lg:text-[9px] xl:text-xs">
                             {kumulatifValue.toLocaleString()}
                           </div>
                         </td>
@@ -699,8 +735,10 @@ export function MaterialFlowTable({
 
                   {/* Tercapai Row */}
                   <tr>
-                    <td className="border-b border-gray-200 bg-gray-100 px-6 py-1.5">
-                      <span className="text-xs font-medium text-gray-900">Tercapai</span>
+                    <td className="border-b border-gray-200 bg-gray-100 px-2 py-1 lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5">
+                      <span className="text-[9px] font-medium text-gray-900 lg:text-[10px] xl:text-xs">
+                        Tercapai
+                      </span>
                     </td>
                     {dateColumns.map(col => {
                       const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
@@ -709,11 +747,13 @@ export function MaterialFlowTable({
                         <td
                           key={col.date}
                           className={cn(
-                            'border-b border-gray-200 px-6 py-1.5 text-center',
+                            'border-b border-gray-200 px-2 py-1 text-center lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5',
                             tercapai === 'Y' ? 'bg-emerald-500' : 'bg-red-500'
                           )}
                         >
-                          <span className="text-sm font-bold text-white">{tercapai}</span>
+                          <span className="text-[9px] font-bold text-white lg:text-[10px] xl:text-sm">
+                            {tercapai}
+                          </span>
                         </td>
                       )
                     })}
