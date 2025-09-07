@@ -80,7 +80,7 @@ note: image nya belum
 -pada tabel sub_activities tolong buatkan kolom catatan kegiatan, dan koordinat nullable
 -tolong buatkan satu api get /full-projects untuk mengambil data semua projek, beserta aktivitasnya dan sub aktivitasnya, tapi pertama tolong buat example response dari api yang akan dibuat terlebih dahulu.
 
--tolong buatkan api put /update mobile, api ini akan memberkan payload ini:
+-tolong buatkan api put /daily-update pada folder sub, api ini akan memberkan payload ini:
 {
 	sub_activities_id:
 	koordinat:{
@@ -98,7 +98,7 @@ note: image nya belum
 
 }
 
-oke data tersebut itu akan menambahkan progres pada tabel sub-activities
+fungsi dari api tersebut itu adalah menambahkan progres pada tabel sub-activities pada tanngal tertentu, jadi pertama cek dulu tanggal tersebut ada pada minggu yang mana, lalu jika sudah dapat datanya makan tambahkan kedalam progressnya
 
 
 ---------------------------
@@ -106,7 +106,7 @@ oke data tersebut itu akan menambahkan progres pada tabel sub-activities
 
 https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=195-17102&m=dev
 
-long implementasi ui diatas, untuk readiness gunakan dummy data saja dulu tapi buatkan attiribute di db juga
+tolong implementasi ui diatas, untuk readiness gunakan dummy data saja dulu. buat be dan fe nya
 
 ------------------------------
 **pembagian minggu pada activity schedule table

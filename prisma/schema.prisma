@@ -192,3 +192,78 @@ model MaterialSchedule {
   @@unique([materialId, date])
   @@map("material_schedules")
 }
+
+// Model untuk usulan kegiatan
+model ActivityProposal {
+  id                    String   @id @default(cuid())
+  
+  // Informasi Dasar
+  tahun                 String   @map("tahun") // Year
+  prioritas             String   @map("prioritas") // Priority
+  kategoriKegiatan      String   @map("kategori_kegiatan") // Activity category
+  
+  // Data Irigasi
+  jenisDaerahIrigasi    String?  @map("jenis_daerah_irigasi") // Irrigation area type
+  daerahIrigasi         String?  @map("daerah_irigasi") // Irrigation area
+  outcome               Float?   @default(0) @map("outcome") // Outcome in hectares
+  kebutuhanAnggaran     Float?   @default(0) @map("kebutuhan_anggaran") // Budget requirement
+  anggaranPerHektar     Float?   @default(0) @map("anggaran_per_hektar") // Budget per hectare
+  
+  // Informasi IP
+  ipExisting            Float?   @default(0) @map("ip_existing") // IP Existing percentage
+  ipRencana             Float?   @default(0) @map("ip_rencana") // IP Plan percentage
+  
+  // Status dan metadata
+  status                String   @default("Draft") @map("status") // Status: Draft, Submitted, Approved, Rejected
+  readinessLevel        String   @default("0%") @map("readiness_level") // Readiness level
+  submittedBy           String?  @map("submitted_by") // Who submitted
+  reviewedBy            String?  @map("reviewed_by") // Who reviewed
+  approvedBy            String?  @map("approved_by") // Who approved
+  reviewNotes           String?  @map("review_notes") // Review notes
+  submittedAt           DateTime? @map("submitted_at")
+  reviewedAt            DateTime? @map("reviewed_at")
+  approvedAt            DateTime? @map("approved_at")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  lingkupUsulan         LingkupUsulan[]
+  readinessCriteria     ReadinessCriteria[]
+  
+  @@map("activity_proposals")
+}
+
+// Model untuk lingkup usulan
+model LingkupUsulan {
+  id                    String   @id @default(cuid())
+  proposalId            String   @map("proposal_id")
+  namaLingkupUsulan     String   @map("nama_lingkup_usulan") // Scope name
+  nomenkaltur           String?  @map("nomenkaltur") // Nomenclature
+  koordinatGeoJson      Json?    @map("koordinat_geojson") // Coordinate data as GeoJSON
+  perimeter             Float?   @map("perimeter") // Perimeter
+  area                  Float?   @map("area") // Area
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  proposal              ActivityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  
+  @@map("lingkup_usulan")
+}
+
+// Model untuk readiness criteria documents
+model ReadinessCriteria {
+  id                    String   @id @default(cuid())
+  proposalId            String   @map("proposal_id")
+  dokumenType           String   @map("dokumen_type") // Document type
+  keterangan            String?  @map("keterangan") // Description
+  fileName              String?  @map("file_name") // Uploaded file name
+  filePath              String?  @map("file_path") // File storage path
+  fileSize              Int?     @map("file_size") // File size in bytes
+  uploadedAt            DateTime? @map("uploaded_at")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  proposal              ActivityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  
+  @@map("readiness_criteria")
+}
