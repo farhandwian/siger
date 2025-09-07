@@ -2,6 +2,7 @@
 selalu jawab dengan bahasa inggris, sebelum menjawab tolong perbaiki bahasa inggris saya jika ada yang salah.
 
 tolong ikuti aturan ini:
+-sebelum menjawab, tolong berikan lagkah-langkah yang akan kamu lakukan untuk menjawab pertanyaan saya 
 -ikuti ini sebagai acuan untuk ukuran ratio dari font size hingga ukuran content-contentnya:
 	+src\app\monitoring-evaluasi\page.tsx
 	+src\components\monitoring\project-list.tsx

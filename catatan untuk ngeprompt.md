@@ -71,6 +71,75 @@ jadi ketika user mengisi nilai volume, Tanggal Mulai, dan Tanggal Selesai, tolon
 ----------------------------------------
 pada activity shchedule table tolong buat waktunya itu diambil dari input tanggal kontrak dan akhir kontrola pada tab data teknis. tolong juga buat agar input field tanggal kontrak dan akhir kontrak menggunakan kalender 
 -----------------------
-tolong munculkan tampilan tahunnya misal 
+disini---
+tolong munculkan tampilan tahunnya misal(pastiin dulu sistem pembagian minggunya gimana) 
 ---------------------
-tolong buatkan satu api untuk mengambil data semua projek, beserta aktivitasn dan sub aktivitasnya, tapi pertama tolong buat example response dari api yang akan dibuat terlebih dahulu
+**untuk api mobile pelaksanaan
+note: image nya belum
+
+-pada tabel sub_activities tolong buatkan kolom catatan kegiatan, dan koordinat nullable
+-tolong buatkan satu api get /full-projects untuk mengambil data semua projek, beserta aktivitasnya dan sub aktivitasnya, tapi pertama tolong buat example response dari api yang akan dibuat terlebih dahulu.
+
+-tolong buatkan api put /update mobile, api ini akan memberkan payload ini:
+{
+	sub_activities_id:
+	koordinat:{
+
+	},
+	catatan_kegiatan:{
+
+	},
+	tanggal:{
+
+	},
+	progrres:{
+
+	}
+
+}
+
+oke data tersebut itu akan menambahkan progres pada tabel sub-activities
+
+
+---------------------------
+**untuk tambah usulan kegiatan
+
+https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=195-17102&m=dev
+
+long implementasi ui diatas, untuk readiness gunakan dummy data saja dulu tapi buatkan attiribute di db juga
+
+------------------------------
+**pembagian minggu pada activity schedule table
+tolong ubah aturan pembagian minggunya menggunakan aturan berikut:
+
+Aturan pembagian minggu per bulan (tahun apa pun)
+
+Gunakan minggu = Senin–Minggu.
+
+Tulis label minggu sebagai dd–dd (dua digit, leading zero).
+
+Jika satu minggu menyeberang bulan, jangan diduplikasi; tetapkan minggu ke bulan yang memiliki mayoritas hari (≥4 hari). Praktik cepat: ambil hari Kamis dari minggu tersebut; bulan tempat Kamis jatuh adalah pemilik minggu.
+
+Susun daftar per bulan; tiap bulan berisi 4–5 minggu sesuai aturan di atas.
+
+Validasi wajib (untuk tahun 2025)
+
+Juni: 02–08, 09–15, 16–22, 23–29
+
+Juli: 30–06, 07–13, 14–20, 21–27, 28–03
+
+Agustus: 04–10, 11–17, 18–24, 25–31
+
+September: 01–07, 08–14, 15–21, 22–28
+
+ok lalu untuk data yang ditampilkan pada header tabelnya(front end) itu minggu ke 1 dan minggu terakhir nya itu mengikuti data tanggal kontrak dan akhir kontrak. misal data tanggal kontrak 22 mei 2025 dan akhir kontrak adalah 19 september maka data pembagian yang akan ditampilkannya dalah sebagai berikut:
+
+Mei: 23-25, 26-01
+
+Juni: 02–08, 09–15, 16–22, 23–29
+
+Juli: 30–06, 07–13, 14–20, 21–27, 28–03
+
+Agustus: 04–10, 11–17, 18–24, 25–31
+
+September: 01–07, 08–14, 15–19
