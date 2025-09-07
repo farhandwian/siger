@@ -31,7 +31,7 @@ interface AutoSaveFieldProps {
   className?: string
   disabled?: boolean
   maxLength?: number
-  type?: 'text' | 'textarea'
+  type?: 'text' | 'textarea' | 'date'
   rows?: number
 }
 
@@ -205,6 +205,15 @@ export const AutoSaveField: React.FC<AutoSaveFieldProps> = ({
           maxLength={maxLength}
           rows={rows}
           className={cn(inputClasses, 'resize-none')}
+        />
+      ) : type === 'date' ? (
+        <input
+          type="date"
+          value={localValue}
+          onChange={e => handleChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={inputClasses}
         />
       ) : (
         <input

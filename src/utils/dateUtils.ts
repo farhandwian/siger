@@ -15,6 +15,30 @@ export interface MonthData {
 }
 
 /**
+ * Convert date string to HTML date input format (YYYY-MM-DD)
+ */
+export function formatDateForInput(dateStr: string | null): string {
+  if (!dateStr) return ''
+
+  const date = parseDateString(dateStr)
+  if (!date) return dateStr
+
+  return format(date, 'yyyy-MM-dd')
+}
+
+/**
+ * Convert HTML date input format to display format
+ */
+export function formatDateForDisplay(dateStr: string | null): string {
+  if (!dateStr) return ''
+
+  const date = parseDateString(dateStr)
+  if (!date) return dateStr
+
+  return format(date, 'dd/MM/yyyy')
+}
+
+/**
  * Generate month and week data based on contract dates
  */
 export function generateMonthsFromContract(
@@ -94,7 +118,16 @@ export function generateMonthsFromContract(
  * Parse date string in various formats
  */
 function parseDateString(dateStr: string): Date | null {
-  const formats = ['dd/MM/yyyy', 'dd-MM-yyyy', 'yyyy-MM-dd', 'MM/dd/yyyy']
+  // Handle HTML date input format (YYYY-MM-DD) first
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const date = new Date(dateStr + 'T00:00:00')
+    if (!isNaN(date.getTime())) {
+      return date
+    }
+  }
+
+  // Handle other formats
+  const formats = ['dd/MM/yyyy', 'dd-MM-yyyy', 'MM/dd/yyyy']
 
   for (const formatStr of formats) {
     try {

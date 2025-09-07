@@ -19,6 +19,7 @@ import { useMonitoringData } from '@/hooks/use-monitoring-data'
 import { useMaterials } from '@/hooks/useMaterialQueries'
 import { useProjectDetail, useUpdateProjectField } from '@/hooks/useProjectQueries'
 import { cn } from '@/lib/utils'
+import { formatDateForInput } from '@/utils/dateUtils'
 import { ChevronDown, Plus, RefreshCw, Wifi, WifiOff } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 
@@ -222,8 +223,8 @@ export default function ProjectDetailPage() {
         nomorKontrak: project.nomorKontrak || '',
         spmk: project.spmk || '',
         masaKontrak: project.masaKontrak || '',
-        tanggalKontrak: project.tanggalKontrak || '',
-        akhirKontrak: project.akhirKontrak || '',
+        tanggalKontrak: formatDateForInput(project.tanggalKontrak),
+        akhirKontrak: formatDateForInput(project.akhirKontrak),
         pembayaranTerakhir: project.pembayaranTerakhir || '',
       })
     }
@@ -492,6 +493,7 @@ export default function ProjectDetailPage() {
                           onChange={(value: string) => updateField('tanggalKontrak', value)}
                           projectId={projectId}
                           fieldName="tanggalKontrak"
+                          type="date"
                         />
                         <AutoSaveField
                           label="Akhir Kontrak"
@@ -499,6 +501,7 @@ export default function ProjectDetailPage() {
                           onChange={(value: string) => updateField('akhirKontrak', value)}
                           projectId={projectId}
                           fieldName="akhirKontrak"
+                          type="date"
                         />
                         <AutoSaveField
                           label="Pembayaran Terakhir"

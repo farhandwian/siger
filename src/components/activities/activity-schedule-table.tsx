@@ -32,6 +32,10 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
   const updateScheduleMutation = useUpdateSchedule()
 
   console.log('Component cumulativeData:', cumulativeData)
+  console.log('Contract dates for schedule:', {
+    tanggalKontrak: project?.tanggalKontrak,
+    akhirKontrak: project?.akhirKontrak,
+  })
 
   // Generate months and weeks for table headers based on contract dates
   const currentYear = new Date().getFullYear()
@@ -39,6 +43,8 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
     project?.tanggalKontrak || null,
     project?.akhirKontrak || null
   )
+
+  console.log('Generated months from contract:', months)
 
   const getScheduleValue = (
     activityId: string,
