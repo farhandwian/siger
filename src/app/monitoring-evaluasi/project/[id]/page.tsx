@@ -11,6 +11,7 @@ import { MaterialChart } from '@/components/materials/material-chart'
 import { AIInsights } from '@/components/monitoring/ai-insights'
 import { MonitoringMetrics } from '@/components/monitoring/monitoring-metrics'
 import { SCurveChart } from '@/components/monitoring/s-curve-chart'
+import { ProjectWorkMap } from '@/components/monitoring/project-work-map'
 import { AutoSaveField } from '@/components/ui/auto-save-field'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -707,10 +708,20 @@ export default function ProjectDetailPage() {
                 </div>
               )}
 
+              {/* Peta Pekerjaan Tab Content */}
+              {activeTab === 'Peta Pekerjaan' && (
+                <div className="space-y-6">
+                  <div className="relative">
+                    <ProjectWorkMap projectId={projectId} />
+                  </div>
+                </div>
+              )}
+
               {/* Other tabs can be implemented here */}
               {activeTab !== 'Data Teknis' &&
                 activeTab !== 'Jadwal' &&
-                activeTab !== 'Material Flow' && (
+                activeTab !== 'Material Flow' &&
+                activeTab !== 'Peta Pekerjaan' && (
                   <div className="py-12 text-center">
                     <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
                     <p className="text-gray-600">Konten untuk tab ini sedang dalam pengembangan.</p>

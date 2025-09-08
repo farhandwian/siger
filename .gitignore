@@ -141,3 +141,5 @@ temp/
 *.njsproj
 *.sln
 *.sw?
+
+/reference/
