@@ -172,3 +172,5 @@ progres rencana juni(30–06):15
 cumulative rencana juni(30–06):25
 
 
+---------------------------------
+ok i want you to visualize cumulative rencana dan cumulative realisasi from material flow table in material chart, and on the chart dont forget to add filter by month like the table does

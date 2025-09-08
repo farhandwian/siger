@@ -101,14 +101,15 @@ export function MaterialFlowTable({
     }
   }, [materials, selectedMaterial, onMaterialChange])
 
-  // Initialize selected month based on current material's start date
+  // Initialize selected month based on current material's start date (only once when material first loads)
   useEffect(() => {
-    if (currentMaterial?.tanggalMulai) {
+    if (currentMaterial?.tanggalMulai && selectedMonth === new Date().getMonth() + 1 && selectedYear === new Date().getFullYear()) {
+      // Only set if we're still on the current month/year (initial state)
       const startDate = new Date(currentMaterial.tanggalMulai)
       setSelectedMonth(startDate.getMonth() + 1)
       setSelectedYear(startDate.getFullYear())
     }
-  }, [currentMaterial])
+  }, [currentMaterial?.id]) // Only trigger when material ID changes, not when material data changes
 
   // Get current month for display based on selected month/year
   const currentMonth = new Date(selectedYear, selectedMonth - 1)
@@ -157,23 +158,19 @@ export function MaterialFlowTable({
   const calculateRencanaKumulatif = (targetDate: string) => {
     if (!currentMaterial?.schedules) return 0
 
-    return dateColumns
-      .filter(col => col.date <= targetDate)
-      .reduce((sum, col) => {
-        const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
-        return sum + (schedule?.rencana || 0)
-      }, 0)
+    // Use ALL schedules, not just current month's dateColumns
+    return currentMaterial.schedules
+      .filter(schedule => schedule.date <= targetDate)
+      .reduce((sum, schedule) => sum + (schedule.rencana || 0), 0)
   }
 
   const calculateRealisasiKumulatif = (targetDate: string) => {
     if (!currentMaterial?.schedules) return 0
 
-    return dateColumns
-      .filter(col => col.date <= targetDate)
-      .reduce((sum, col) => {
-        const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
-        return sum + (schedule?.realisasi || 0)
-      }, 0)
+    // Use ALL schedules, not just current month's dateColumns  
+    return currentMaterial.schedules
+      .filter(schedule => schedule.date <= targetDate)
+      .reduce((sum, schedule) => sum + (schedule.realisasi || 0), 0)
   }
 
   const handleDeleteMaterial = async (materialId: string) => {
@@ -234,16 +231,28 @@ export function MaterialFlowTable({
         if (existingIndex >= 0) {
           tempSchedules[existingIndex] = { ...tempSchedules[existingIndex], rencana: value }
         } else {
-          tempSchedules.push({ ...scheduleData, rencana: value })
+          // Create a temporary schedule object for calculation
+          tempSchedules.push({
+            id: 'temp',
+            materialId,
+            date,
+            rencana: value,
+            rencanaKumulatif: 0,
+            realisasi: 0,
+            realisasiKumulatif: 0,
+            tercapai: 'T',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
         }
 
-        // Calculate cumulative for this date and update
-        scheduleData.rencanaKumulatif = dateColumns
-          .filter(col => col.date <= date)
-          .reduce((sum, col) => {
-            const schedule = tempSchedules.find(s => s.date === col.date)
-            return sum + (schedule?.rencana || 0)
-          }, 0)
+        // Sort schedules by date to ensure proper cumulative calculation
+        tempSchedules.sort((a, b) => a.date.localeCompare(b.date))
+
+        // Calculate cumulative for this date using ALL schedules up to this date
+        scheduleData.rencanaKumulatif = tempSchedules
+          .filter(s => s.date <= date)
+          .reduce((sum, s) => sum + (s.rencana || 0), 0)
       } else if (field === 'realisasi') {
         // Similar calculation for realisasi
         const tempSchedules = [...(currentMaterial.schedules || [])]
@@ -251,15 +260,28 @@ export function MaterialFlowTable({
         if (existingIndex >= 0) {
           tempSchedules[existingIndex] = { ...tempSchedules[existingIndex], realisasi: value }
         } else {
-          tempSchedules.push({ ...scheduleData, realisasi: value })
+          // Create a temporary schedule object for calculation
+          tempSchedules.push({
+            id: 'temp',
+            materialId,
+            date,
+            rencana: 0,
+            rencanaKumulatif: 0,
+            realisasi: value,
+            realisasiKumulatif: 0,
+            tercapai: 'T',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
         }
 
-        scheduleData.realisasiKumulatif = dateColumns
-          .filter(col => col.date <= date)
-          .reduce((sum, col) => {
-            const schedule = tempSchedules.find(s => s.date === col.date)
-            return sum + (schedule?.realisasi || 0)
-          }, 0)
+        // Sort schedules by date to ensure proper cumulative calculation
+        tempSchedules.sort((a, b) => a.date.localeCompare(b.date))
+
+        // Calculate cumulative for this date using ALL schedules up to this date
+        scheduleData.realisasiKumulatif = tempSchedules
+          .filter(s => s.date <= date)
+          .reduce((sum, s) => sum + (s.realisasi || 0), 0)
       }
 
       console.log('Schedule data to upsert:', scheduleData)
