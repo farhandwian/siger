@@ -77,8 +77,8 @@ tolong munculkan tampilan tahunnya misal(pastiin dulu sistem pembagian minggunya
 **untuk api mobile pelaksanaan
 note: image nya belum
 
--tolong 
--pada tabel sub_activities tolong buatkan kolom catatan kegiatan, dan koordinat nullable
+-tolong buat satu tabel bernama daily_sub_activities. tabel ini memiliki atrribtue: id, sub_activities_id, koordinat(bertipe json), catatan_kegiatan, file(bertipe json), progres_realisasi_per_hari, tanggal_progres, created_at, updated_at
+
 -tolong buatkan satu api get /full-projects untuk mengambil data semua projek, beserta aktivitasnya dan sub aktivitasnya, tapi pertama tolong buat example response dari api yang akan dibuat terlebih dahulu.
 
 -tolong buatkan api put /daily-update pada folder sub, api ini akan memberkan payload ini:
@@ -90,17 +90,34 @@ note: image nya belum
 	catatan_kegiatan:{
 
 	},
-	tanggal:{
+	tanggal_progres:{
 
 	},
-	progrres:{
+	progres_realisasi_per_hari:{
+
+	},
+	files:{
+		{
+			file:"",
+			path:""
+		},
+		{
+			file:"",
+			path:""
+		},
 
 	}
 
 }
 
-fungsi dari api tersebut itu adalah menambahkan progres pada tabel sub-activities pada tanngal tertentu, jadi pertama cek dulu tanggal tersebut ada pada minggu yang mana, lalu jika sudah dapat datanya makan tambahkan kedalam progressnya
 
+
+fungsi dari api tersebut itu adalah mengupdate progres realisai pada minggu tertent pada tabel sub_activities  dan menambahkan daily_sub_activities pada tanngal tertentu. jadi pertama untuk mengupdate progres realisasi cek dulu tanggal tersebut ada di minggu yang mana, lalu jika sudah dapat datanya maka tambahkan kedalam progres realisasinya. pastikan bahwa tampilan activity schedule table datanya akan terupdate juga dengan merfecth ulang api nya dalam interval 15 detik.
+
+-buatkan api get /latest-daily-sub-activities
+api ini akan menampilkan list data daily-sub-activities dengan tanggal_progres paling baru, untuk satu hari yang sama datanya harus 1
+
+-tolong buatkan juga api untuk list daily-update-schedule, lengkap dengan pagination,filter,sorting, dan searching
 
 ---------------------------
 **untuk tambah usulan kegiatan
@@ -174,3 +191,4 @@ cumulative rencana juni(30–06):25
 
 ---------------------------------
 ok i want you to visualize cumulative rencana dan cumulative realisasi from material flow table in material chart, and on the chart dont forget to add filter by month like the table does
+---------------------------------

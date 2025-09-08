@@ -110,6 +110,7 @@ model SubActivity {
   
   activity      Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   schedules     ActivitySchedule[]
+  dailyActivities DailySubActivity[]
   
   @@map("sub_activities")
 }
@@ -246,4 +247,22 @@ model ReadinessCriteria {
   proposal              ActivityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   
   @@map("readiness_criteria")
+}
+
+// Model untuk daily sub activities tracking (untuk mobile)
+model DailySubActivity {
+  id                        String   @id @default(cuid())
+  subActivityId             String   @map("sub_activity_id")
+  koordinat                 Json?    @map("koordinat") // GPS coordinates
+  catatanKegiatan           String?  @map("catatan_kegiatan") // Activity notes
+  file                      Json?    @map("file") // Files array with file and path
+  progresRealisasiPerHari   Float?   @default(0) @map("progres_realisasi_per_hari") // Daily progress
+  tanggalProgres            String   @map("tanggal_progres") // Progress date (YYYY-MM-DD)
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+  
+  subActivity               SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+  
+  @@unique([subActivityId, tanggalProgres])
+  @@map("daily_sub_activities")
 }

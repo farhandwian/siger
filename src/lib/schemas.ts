@@ -385,6 +385,72 @@ export type Report = z.infer<typeof CreateReportSchema> & {
 export type Activity = z.infer<typeof ActivitySchema>
 export type SubActivity = z.infer<typeof SubActivitySchema>
 export type ActivitySchedule = z.infer<typeof ActivityScheduleSchema>
+
+// Daily Sub Activity schemas for mobile API
+export const DailySubActivitySchema = z.object({
+  id: z.any(),
+  subActivityId: z.any(),
+  koordinat: z.any().nullable().optional(), // GPS coordinates as JSON
+  catatanKegiatan: z.string().nullable().optional(),
+  file: z.any().nullable().optional(), // Files array as JSON
+  progresRealisasiPerHari: z.number().min(0).max(100).nullable().optional(),
+  tanggalProgres: z.string(), // YYYY-MM-DD format
+  createdAt: z.any(),
+  updatedAt: z.any(),
+})
+
+export const CreateDailySubActivitySchema = z.object({
+  sub_activities_id: z.string().min(1, 'Sub activity ID is required'),
+  koordinat: z
+    .object({
+      latitude: z.number().optional(),
+      longitude: z.number().optional(),
+    })
+    .optional(),
+  catatan_kegiatan: z.string().optional(),
+  tanggal_progres: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  progres_realisasi_per_hari: z.number().min(0).max(100),
+  files: z
+    .array(
+      z.object({
+        file: z.string(),
+        path: z.string(),
+      })
+    )
+    .optional(),
+})
+
+export const FullProjectSchema = z.object({
+  id: z.any(),
+  pekerjaan: z.string().nullable(),
+  penyediaJasa: z.string().nullable(),
+  nilaiKontrak: z.string().nullable(),
+  tanggalKontrak: z.string().nullable(),
+  akhirKontrak: z.string().nullable(),
+  fisikProgress: z.number().nullable(),
+  fisikTarget: z.number().nullable(),
+  activities: z.array(
+    z.object({
+      id: z.any(),
+      name: z.string(),
+      order: z.number(),
+      subActivities: z.array(
+        z.object({
+          id: z.any(),
+          name: z.string(),
+          satuan: z.string().nullable(),
+          volumeKontrak: z.number().nullable(),
+          weight: z.number(),
+          order: z.number(),
+        })
+      ),
+    })
+  ),
+})
+
+export type DailySubActivity = z.infer<typeof DailySubActivitySchema>
+export type CreateDailySubActivity = z.infer<typeof CreateDailySubActivitySchema>
+export type FullProject = z.infer<typeof FullProjectSchema>
 export type DashboardWidget = z.infer<typeof DashboardWidgetSchema>
 export type FilterOptions = z.infer<typeof FilterOptionsSchema>
 export type APIResponse<T = any> = Omit<z.infer<typeof APIResponseSchema>, 'data'> & { data?: T }

@@ -54,6 +54,8 @@ export function useActivities(projectId: string) {
       return response
     },
     enabled: !!projectId,
+    refetchInterval: 15000, // Refetch every 15 seconds for real-time updates
+    refetchIntervalInBackground: true, // Continue refetching even when tab is not active
   })
 }
 

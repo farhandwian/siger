@@ -10,6 +10,23 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: ['mapbox-gl'],
+  // Allow external access for mobile development
+  experimental: {
+    allowedOrigins: ['*'],
+  },
+  // Allow access from any IP address
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+        ],
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       {

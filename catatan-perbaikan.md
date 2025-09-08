@@ -3,6 +3,8 @@ sangat prioritas:
 
 prioritas:
 -projek api ada di file api-client.ts
-
+-alert delete activitas pada activity schedule table
+- activity schedule table lemot sangat banyak menghit api progres   
+-maisih allow all origin
 tidak prioritas:
 
