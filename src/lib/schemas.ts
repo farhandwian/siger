@@ -194,16 +194,44 @@ export const ProjectListItemSchema = z.object({
 })
 
 // User schemas
-export const UserRoleSchema = z.enum(['admin', 'operator', 'viewer'])
+export const UserRoleSchema = z.enum(['admin', 'supervisor', 'user'])
+
+export const UserSchema = z.object({
+  id: z.string(),
+  username: z
+    .string()
+    .min(3, 'Username minimal 3 karakter')
+    .max(50, 'Username maksimal 50 karakter'),
+  email: z.string().email('Format email tidak valid'),
+  name: z.string().min(1, 'Nama wajib diisi').max(100, 'Nama maksimal 100 karakter'),
+  role: UserRoleSchema,
+  phoneNumber: z.string().nullable(),
+  isActive: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
 
 export const CreateUserSchema = z.object({
-  name: z.string().min(2, 'Nama minimal 2 karakter').max(100, 'Nama maksimal 100 karakter'),
+  username: z
+    .string()
+    .min(3, 'Username minimal 3 karakter')
+    .max(50, 'Username maksimal 50 karakter'),
   email: z.string().email('Format email tidak valid'),
-  role: UserRoleSchema,
-  department: z.string().optional(),
+  name: z.string().min(1, 'Nama wajib diisi').max(100, 'Nama maksimal 100 karakter'),
+  role: UserRoleSchema.default('user'),
+  phoneNumber: z.string().nullable().optional(),
+  isActive: z.boolean().default(true),
 })
 
 export const UpdateUserSchema = CreateUserSchema.partial()
+
+export const UserQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  search: z.string().optional(),
+  role: UserRoleSchema.optional(),
+  isActive: z.coerce.boolean().optional(),
+})
 
 // Report schemas
 export const ReportTypeSchema = z.enum(['dashboard', 'analytics', 'geographic', 'custom'])
@@ -370,11 +398,6 @@ export const CreateActivityScheduleSchema = ActivityScheduleSchema.omit({
 })
 
 // Export inferred types
-export type User = z.infer<typeof CreateUserSchema> & {
-  id: string
-  createdAt: Date
-  updatedAt: Date
-}
 
 export type Report = z.infer<typeof CreateReportSchema> & {
   id: string
@@ -390,6 +413,7 @@ export type ActivitySchedule = z.infer<typeof ActivityScheduleSchema>
 export const DailySubActivitySchema = z.object({
   id: z.any(),
   subActivityId: z.any(),
+  userId: z.string(),
   koordinat: z.any().nullable().optional(), // GPS coordinates as JSON
   catatanKegiatan: z.string().nullable().optional(),
   file: z.any().nullable().optional(), // Files array as JSON
@@ -401,6 +425,7 @@ export const DailySubActivitySchema = z.object({
 
 export const CreateDailySubActivitySchema = z.object({
   sub_activities_id: z.string().min(1, 'Sub activity ID is required'),
+  user_id: z.string().min(1, 'User ID is required'),
   koordinat: z
     .object({
       latitude: z.number().optional(),
@@ -455,3 +480,8 @@ export type DashboardWidget = z.infer<typeof DashboardWidgetSchema>
 export type FilterOptions = z.infer<typeof FilterOptionsSchema>
 export type APIResponse<T = any> = Omit<z.infer<typeof APIResponseSchema>, 'data'> & { data?: T }
 export type ChartData = z.infer<typeof ChartDataSchema>
+export type User = z.infer<typeof UserSchema>
+export type CreateUser = z.infer<typeof CreateUserSchema>
+export type UpdateUser = z.infer<typeof UpdateUserSchema>
+export type UserQuery = z.infer<typeof UserQuerySchema>
+export type UserRole = z.infer<typeof UserRoleSchema>

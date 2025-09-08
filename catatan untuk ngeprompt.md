@@ -111,8 +111,7 @@ note: image nya belum
 }
 
 
-
-fungsi dari api tersebut itu adalah mengupdate progres realisai pada minggu tertent pada tabel sub_activities  dan menambahkan daily_sub_activities pada tanngal tertentu. jadi pertama untuk mengupdate progres realisasi cek dulu tanggal tersebut ada di minggu yang mana, lalu jika sudah dapat datanya maka tambahkan kedalam progres realisasinya. pastikan bahwa tampilan activity schedule table datanya akan terupdate juga dengan merfecth ulang api nya dalam interval 15 detik.
+fungsi dari api tersebut itu adalah mengupdate progres realisai pada minggu tertentu pada tabel sub_activities dan menambahkan daily_sub_activities pada tanngal tertentu. jadi pertama untuk mengupdate progres realisasi cek dulu tanggal tersebut ada di minggu yang mana, lalu jika sudah dapat datanya maka tambahkan kedalam progres realisasinya. pastikan bahwa tampilan activity schedule table datanya akan terupdate juga dengan merfecth ulang api nya dalam interval 15 detik.
 
 -buatkan api get /latest-daily-sub-activities
 api ini akan menampilkan list data daily-sub-activities dengan tanggal_progres paling baru, untuk satu hari yang sama datanya harus 1
@@ -123,6 +122,8 @@ api ini akan menampilkan list data daily-sub-activities dengan tanggal_progres p
 -tolong buatkan api untuk mengecek apakah pad
 
 -tolong buatkan api untuk user dan tolong pada tabel daily-sub-activities tambahkan id user sesuaikan untuk bagian kode yang terkait
+
+-fungsi dari api tersebut itu adalah mengupdate/menambah progres realisai pada minggu tertentu pada tabel activity_schedule dan menambahkan data pada table daily_sub_activities. jadi pertama untuk mengupdate progres realisasi pada tabel activity_schedule cek dulu tanggal tersebut ada di minggu yang mana, lalu jika sudah dapat datanya maka tambahkan data progres realisasinya. pastikan bahwa tampilan activity schedule table datanya akan terupdate juga dengan merfecth ulang api nya dalam interval 15 detik.
 
 ---------------------------
 **untuk tambah usulan kegiatan

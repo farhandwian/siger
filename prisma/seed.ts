@@ -1,9 +1,14 @@
 import { PrismaClient } from '@prisma/client'
+import seedUsers from './seed-users'
+import seedActivities from './seed-activities'
 
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Seeding database...')
+
+  // Seed users first
+  await seedUsers()
 
   // Clear existing data
   await prisma.materialSchedule.deleteMany({})
@@ -333,6 +338,10 @@ async function main() {
   }
 
   console.log('✅ Created Material Flow data')
+
+  // Seed activities and sub-activities
+  await seedActivities()
+
   console.log('🎉 Seeding completed!')
 }
 

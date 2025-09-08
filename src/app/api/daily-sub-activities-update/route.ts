@@ -37,6 +37,7 @@ export async function PUT(request: NextRequest) {
     const validatedData = CreateDailySubActivitySchema.parse(body)
     const {
       sub_activities_id,
+      user_id,
       koordinat,
       catatan_kegiatan,
       tanggal_progres,
@@ -53,6 +54,19 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Sub activity not found' }, { status: 404 })
     }
 
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: user_id },
+    })
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
+    }
+
+    if (!user.isActive) {
+      return NextResponse.json({ success: false, error: 'User is not active' }, { status: 400 })
+    }
+
     // Get week information from the date
     const weekInfo = getWeekInfo(tanggal_progres)
 
@@ -61,9 +75,10 @@ export async function PUT(request: NextRequest) {
       // 1. Create or update daily sub activity record
       const dailyActivity = await tx.dailySubActivity.upsert({
         where: {
-          subActivityId_tanggalProgres: {
+          subActivityId_tanggalProgres_userId: {
             subActivityId: sub_activities_id,
             tanggalProgres: tanggal_progres,
+            userId: user_id,
           },
         },
         update: {
@@ -74,6 +89,7 @@ export async function PUT(request: NextRequest) {
         },
         create: {
           subActivityId: sub_activities_id,
+          userId: user_id,
           koordinat: koordinat ? JSON.parse(JSON.stringify(koordinat)) : undefined,
           catatanKegiatan: catatan_kegiatan || null,
           file: files ? JSON.parse(JSON.stringify(files)) : undefined,
@@ -82,26 +98,23 @@ export async function PUT(request: NextRequest) {
         },
       })
 
-      // 2. Get all daily activities for this sub activity in the same week
-      const startOfWeek = new Date(weekInfo.year, weekInfo.month - 1, 1)
-      startOfWeek.setDate(startOfWeek.getDate() + (weekInfo.week - 1) * 7)
-      const endOfWeek = new Date(startOfWeek)
-      endOfWeek.setDate(endOfWeek.getDate() + 6)
-
-      const weeklyDailyActivities = await tx.dailySubActivity.findMany({
+      // 2. Get existing weekly schedule to add to current value
+      const existingSchedule = await tx.activitySchedule.findUnique({
         where: {
-          subActivityId: sub_activities_id,
-          tanggalProgres: {
-            gte: startOfWeek.toISOString().split('T')[0],
-            lte: endOfWeek.toISOString().split('T')[0],
+          subActivityId_month_year_week: {
+            subActivityId: sub_activities_id,
+            month: weekInfo.month,
+            year: weekInfo.year,
+            week: weekInfo.week,
           },
         },
       })
 
-      // 3. Calculate total weekly progress
-      const totalWeeklyProgress = weeklyDailyActivities.reduce(
-        (sum, activity) => sum + (activity.progresRealisasiPerHari || 0),
-        0
+      // 3. Calculate new progress by adding current daily progress to existing weekly progress
+      const currentActualPercentage = existingSchedule?.actualPercentage || 0
+      const newActualPercentage = Math.min(
+        currentActualPercentage + progres_realisasi_per_hari,
+        100
       )
 
       // 4. Update or create the weekly schedule record
@@ -115,7 +128,7 @@ export async function PUT(request: NextRequest) {
           },
         },
         update: {
-          actualPercentage: Math.min(totalWeeklyProgress, 100), // Cap at 100%
+          actualPercentage: newActualPercentage,
         },
         create: {
           subActivityId: sub_activities_id,
@@ -123,7 +136,7 @@ export async function PUT(request: NextRequest) {
           year: weekInfo.year,
           week: weekInfo.week,
           planPercentage: 0, // Default plan percentage
-          actualPercentage: Math.min(totalWeeklyProgress, 100),
+          actualPercentage: Math.min(progres_realisasi_per_hari, 100),
         },
       })
 

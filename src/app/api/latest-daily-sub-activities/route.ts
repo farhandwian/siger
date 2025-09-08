@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           subActivityId: true,
+          userId: true,
           koordinat: true,
           catatanKegiatan: true,
           file: true,
@@ -76,6 +77,14 @@ export async function GET(request: NextRequest) {
           tanggalProgres: true,
           createdAt: true,
           updatedAt: true,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              role: true,
+            },
+          },
           subActivity: {
             select: {
               id: true,
