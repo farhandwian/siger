@@ -627,7 +627,7 @@ export default function ProjectDetailPage() {
                   {/* Metrics Cards */}
                   <div>
                     <h2 className="mb-4 text-sm font-medium text-gray-900">Progress Overview</h2>
-                    <MonitoringMetrics />
+                    <MonitoringMetrics projectId={projectId} />
                   </div>
 
                   {/* Chart and AI Insights */}

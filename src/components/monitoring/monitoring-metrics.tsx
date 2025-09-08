@@ -1,8 +1,8 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import { useMonitoringData } from '@/hooks/use-monitoring-data'
-import { TrendingUp, AlertTriangle, FileText } from 'lucide-react'
+import { useRealMonitoringData } from '@/hooks/useRealMonitoringData'
+import { TrendingUp, AlertTriangle, Calendar } from 'lucide-react'
 
 const MetricCard = ({
   title,
@@ -65,10 +65,10 @@ const MetricCard = ({
   </Card>
 )
 
-export function MonitoringMetrics() {
-  const { progress } = useMonitoringData()
+export function MonitoringMetrics({ projectId = '1' }: { projectId?: string }) {
+  const { data, isLoading, isEmpty } = useRealMonitoringData(projectId)
 
-  if (progress.isLoading) {
+  if (isLoading) {
     return (
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {[1, 2, 3].map(i => (
@@ -78,28 +78,25 @@ export function MonitoringMetrics() {
     )
   }
 
-  if (progress.isError) {
+  if (isEmpty || !data) {
     return (
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div className="col-span-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-center text-red-700">
-          Error loading metrics data. Please try again.
+        <div className="col-span-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-center text-gray-500">
+          Belum ada data jadwal untuk menampilkan metrik
         </div>
       </div>
     )
   }
 
-  const data = progress.data
-  if (!data) return null
-
-  const progressPercentage = ((data.current / data.total) * 100).toFixed(1)
+  const progressPercentage = data.total > 0 ? ((data.current / data.total) * 100).toFixed(1) : '0.0'
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      {/* Progress Card */}
+      {/* Cumulative Progress Card */}
       <MetricCard
-        title="Progress Saat ini"
-        value={data.current.toLocaleString('id-ID')}
-        subtitle={`/ ${data.total.toLocaleString('id-ID')} (${progressPercentage}%)`}
+        title="Progress Kumulatif Aktual"
+        value={`${data.current.toFixed(1)}%`}
+        subtitle={`Target: ${data.total.toFixed(1)}% (${progressPercentage}%)`}
         showProgress={true}
         current={data.current}
         total={data.total}
@@ -107,19 +104,24 @@ export function MonitoringMetrics() {
         trend="up"
       />
 
-      {/* Deviation Card */}
+      {/* Cumulative Deviation Card */}
       <MetricCard
-        title="Deviasi Dengan Target"
+        title="Deviasi Kumulatif"
         value={`${data.deviation > 0 ? '+' : ''}${data.deviation}%`}
+        subtitle="Rencana vs Realisasi"
         icon={AlertTriangle}
         trend={data.deviation > 0 ? 'up' : data.deviation < 0 ? 'down' : 'neutral'}
       />
 
-      {/* Addendum Card */}
+      {/* Schedule Progress Card */}
       <MetricCard
-        title="Jumlah Adendum"
-        value={`${data.addendumCount} Kali`}
-        icon={FileText}
+        title="Progres Waktu Kontrak"
+        value={`${data.scheduleProgress.toFixed(1)}%`}
+        subtitle={`Minggu ${data.weeksPassed} dari ${data.totalWeeks}`}
+        showProgress={true}
+        current={data.weeksPassed}
+        total={data.totalWeeks}
+        icon={Calendar}
         trend="neutral"
       />
     </div>
