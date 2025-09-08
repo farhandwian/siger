@@ -634,7 +634,7 @@ export default function ProjectDetailPage() {
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="xl:col-span-2">
-                      <SCurveChart />
+                      <SCurveChart projectId={projectId} />
                     </div>
                     <div>
                       <AIInsights />

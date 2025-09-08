@@ -77,6 +77,7 @@ tolong munculkan tampilan tahunnya misal(pastiin dulu sistem pembagian minggunya
 **untuk api mobile pelaksanaan
 note: image nya belum
 
+-tolong 
 -pada tabel sub_activities tolong buatkan kolom catatan kegiatan, dan koordinat nullable
 -tolong buatkan satu api get /full-projects untuk mengambil data semua projek, beserta aktivitasnya dan sub aktivitasnya, tapi pertama tolong buat example response dari api yang akan dibuat terlebih dahulu.
 
@@ -143,3 +144,31 @@ Juli: 30–06, 07–13, 14–20, 21–27, 28–03
 Agustus: 04–10, 11–17, 18–24, 25–31
 
 September: 01–07, 08–14, 15–19
+
+
+------------------------------------
+untuk activity schedule table, cumulative nya itu
+
+implementasi yang sekarang adalah seperti ini:
+
+	juni(16–22)	23–29	30–06	07–13	14–20	21–27	28–03	04–10	11–17	18–24	25–31	01–07	08–08
+progres rencana juni(11–15) : 10    
+cumulative rencana juni(11–15) : 10
+
+progres rencana juni(23–29):0
+cumulative rencana juni(23–29):0
+
+progres rencana juni(30–06):15
+cumulative rencana juni(30–06):25
+
+saya tidak ingin seperti itu, saya inginnya seperti ini, ini berlaku untuk realisasi dan deviasinya:
+progres rencana juni(11–15) : 10    
+cumulative rencana juni(11–15) : 10
+
+progres rencana juni(23–29):0
+cumulative rencana juni(23–29):10
+
+progres rencana juni(30–06):15
+cumulative rencana juni(30–06):25
+
+
