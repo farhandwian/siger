@@ -703,7 +703,13 @@ export default function ProjectDetailPage() {
                   )}
 
                   {/* Material Chart */}
-                  {materials && materials.length > 0 && <MaterialChart materials={materials} />}
+                  {materials && materials.length > 0 && (
+                    <MaterialChart
+                      materials={materials}
+                      selectedMaterial={selectedMaterial}
+                      onMaterialChange={setSelectedMaterial}
+                    />
+                  )}
                 </div>
               )}
 

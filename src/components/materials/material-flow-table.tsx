@@ -103,7 +103,11 @@ export function MaterialFlowTable({
 
   // Initialize selected month based on current material's start date (only once when material first loads)
   useEffect(() => {
-    if (currentMaterial?.tanggalMulai && selectedMonth === new Date().getMonth() + 1 && selectedYear === new Date().getFullYear()) {
+    if (
+      currentMaterial?.tanggalMulai &&
+      selectedMonth === new Date().getMonth() + 1 &&
+      selectedYear === new Date().getFullYear()
+    ) {
       // Only set if we're still on the current month/year (initial state)
       const startDate = new Date(currentMaterial.tanggalMulai)
       setSelectedMonth(startDate.getMonth() + 1)
@@ -167,7 +171,7 @@ export function MaterialFlowTable({
   const calculateRealisasiKumulatif = (targetDate: string) => {
     if (!currentMaterial?.schedules) return 0
 
-    // Use ALL schedules, not just current month's dateColumns  
+    // Use ALL schedules, not just current month's dateColumns
     return currentMaterial.schedules
       .filter(schedule => schedule.date <= targetDate)
       .reduce((sum, schedule) => sum + (schedule.realisasi || 0), 0)
