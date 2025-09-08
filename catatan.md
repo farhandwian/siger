@@ -1,1 +1,2 @@
 -pada tabel jadwal itu perlu ada tahun pada kolom waktunya
+-npm run dev -- --hostname 0.0.0.0 --port 3000 -> supaya expo go di hp bisa akses

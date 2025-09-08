@@ -117,7 +117,12 @@ fungsi dari api tersebut itu adalah mengupdate progres realisai pada minggu tert
 -buatkan api get /latest-daily-sub-activities
 api ini akan menampilkan list data daily-sub-activities dengan tanggal_progres paling baru, untuk satu hari yang sama datanya harus 1
 
+--disini
 -tolong buatkan juga api untuk list daily-update-schedule, lengkap dengan pagination,filter,sorting, dan searching
+
+-tolong buatkan api untuk mengecek apakah pad
+
+-tolong buatkan api untuk user dan tolong pada tabel daily-sub-activities tambahkan id user sesuaikan untuk bagian kode yang terkait
 
 ---------------------------
 **untuk tambah usulan kegiatan
