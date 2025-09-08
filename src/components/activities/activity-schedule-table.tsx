@@ -4,15 +4,11 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { AddActivityModal } from '@/components/activities/add-activity-modal'
 import { EditActivityModal } from '@/components/activities/edit-activity-modal'
-import {
-  useActivities,
-  useUpdateSchedule,
-  useProject,
-  useCumulativeData,
-} from '@/hooks/useActivityQueries'
+import { useActivities, useUpdateSchedule, useProject } from '@/hooks/useActivityQueries'
 import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
 import { generateMonthsFromContract } from '@/utils/dateUtils'
+import { calculateCumulativeData, getCumulativeValue } from '@/lib/cumulativeCalculations'
 import type { Activity } from '@/lib/schemas'
 
 interface ActivityScheduleTableProps {
@@ -28,10 +24,8 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
   const { data: activities, isLoading } = useActivities(projectId)
   const { data: project } = useProject(projectId)
-  const { data: cumulativeData } = useCumulativeData(projectId)
   const updateScheduleMutation = useUpdateSchedule()
 
-  console.log('Component cumulativeData:', cumulativeData)
   console.log('Contract dates for schedule:', {
     tanggalKontrak: project?.tanggalKontrak,
     akhirKontrak: project?.akhirKontrak,
@@ -45,6 +39,9 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
   )
 
   console.log('Generated months from contract:', months)
+
+  // Calculate cumulative data on the client side
+  const cumulativeData = calculateCumulativeData(activities, months, currentYear)
 
   const getScheduleValue = (
     activityId: string,
@@ -74,28 +71,13 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
     }
   }
 
-  // Get cumulative value for a specific month/week
-  const getCumulativeValue = (
+  // Get cumulative value for a specific month/week using client-side calculations
+  const getCumulativeValueForWeek = (
     month: number,
     week: number,
     type: 'plan' | 'actual' | 'deviation'
   ): number => {
-    const cumulative = cumulativeData?.find(
-      c => c.month === month && c.week === week && c.year === currentYear
-    )
-
-    if (!cumulative) return 0
-
-    switch (type) {
-      case 'plan':
-        return cumulative.cumulativePlan
-      case 'actual':
-        return cumulative.cumulativeActual
-      case 'deviation':
-        return cumulative.cumulativeDeviation
-      default:
-        return 0
-    }
+    return getCumulativeValue(cumulativeData, month, week, type)
   }
 
   const handleCellEdit = (cellId: string, currentValue: number | null) => {
@@ -484,7 +466,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     }`}
                     style={{ backgroundColor: '#BFDBFE' }}
                   >
-                    {getCumulativeValue(month.month, weekObj.week, 'plan').toFixed(1)}%
+                    {getCumulativeValueForWeek(month.month, weekObj.week, 'plan').toFixed(1)}%
                   </td>
                 ))
               )}
@@ -507,7 +489,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     }`}
                     style={{ backgroundColor: '#FFC928' }}
                   >
-                    {getCumulativeValue(month.month, weekObj.week, 'actual').toFixed(1)}%
+                    {getCumulativeValueForWeek(month.month, weekObj.week, 'actual').toFixed(1)}%
                   </td>
                 ))
               )}
@@ -529,7 +511,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                         : ''
                     }`}
                   >
-                    {getCumulativeValue(month.month, weekObj.week, 'deviation').toFixed(1)}%
+                    {getCumulativeValueForWeek(month.month, weekObj.week, 'deviation').toFixed(1)}%
                   </td>
                 ))
               )}

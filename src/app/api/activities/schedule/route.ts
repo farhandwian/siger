@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { CreateActivityScheduleSchema } from '@/lib/schemas'
-import { updateCumulativeDataForProject } from '@/lib/cumulativeUtils'
 import { z } from 'zod'
 
 export async function PUT(request: NextRequest) {
@@ -65,8 +64,8 @@ export async function PUT(request: NextRequest) {
       projectId = subActivity!.activity.projectId
     }
 
-    // Update cumulative data for the project
-    await updateCumulativeDataForProject(projectId, validatedData.month, validatedData.week)
+    // Note: Cumulative data is now calculated on the client side
+    // No need to update cumulative data in the database
 
     return Response.json({
       success: true,
