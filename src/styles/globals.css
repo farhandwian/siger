@@ -98,6 +98,102 @@
     display: none;
   }
 
+  /* Always visible scrollbar with bigger size */
+  .scrollbar-always-visible {
+    /* Firefox */
+    scrollbar-width: thick;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+    /* Force scrollbar to always be visible */
+    overflow-x: scroll !important;
+    overflow-y: hidden;
+    /* Force scrollbar visibility on all systems */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent auto-hiding */
+    scrollbar-gutter: stable both-edges;
+  }
+  
+  /* Webkit/Chrome/Safari scrollbar styling */
+  .scrollbar-always-visible::-webkit-scrollbar {
+    height: 20px;
+    width: 20px;
+    /* Force scrollbar to always appear */
+    -webkit-appearance: none;
+    background: #f1f5f9;
+    /* Ensure it's always displayed */
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+    /* Ensure track is always visible with shadow */
+    -webkit-box-shadow: inset 0 0 2px rgba(0,0,0,0.15);
+    box-shadow: inset 0 0 2px rgba(0,0,0,0.15);
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+    border: 3px solid #f1f5f9;
+    /* Ensure thumb is always visible with shadow */
+    min-height: 30px;
+    min-width: 30px;
+    -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    /* Force visibility */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+    -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar-thumb:active {
+    background: #64748b;
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar-corner {
+    background: #f1f5f9;
+  }
+  
+  /* Force scrollbar to always show on macOS even when inactive */
+  .scrollbar-always-visible::-webkit-scrollbar-thumb:window-inactive {
+    background: #cbd5e1;
+    opacity: 1;
+  }
+  
+  /* Additional rules to force visibility */
+  .scrollbar-always-visible::-webkit-scrollbar-track:window-inactive {
+    background: #f1f5f9;
+    opacity: 1;
+  }
+  
+  /* Force scrollbar to never auto-hide */
+  .scrollbar-always-visible {
+    scrollbar-gutter: stable;
+  }
+  
+  /* Override system auto-hide behavior */
+  .scrollbar-always-visible::-webkit-scrollbar {
+    -webkit-appearance: none !important;
+  }
+  
+  /* Ensure scrollbar is always painted */
+  .scrollbar-always-visible::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1 !important;
+    opacity: 1 !important;
+  }
+  
+  .scrollbar-always-visible::-webkit-scrollbar-track {
+    background-color: #f1f5f9 !important;
+    opacity: 1 !important;
+  }
+
   /* Google Maps InfoWindow styling overrides */
   .gm-style .gm-style-iw-c {
     padding: 0 !important;
