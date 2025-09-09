@@ -383,13 +383,19 @@ async function createSampleDailyActivities() {
       const user = users[Math.floor(Math.random() * users.length)]
 
       try {
+        // Generate coordinates in the range of Lampung area (-5.385 to -5.405 lat, 105.285 to 105.31 lng)
+        const baseLatitude = -5.395
+        const baseLongitude = 105.295
+        const latitudeRange = 0.02 // ±0.01 degrees (roughly -5.385 to -5.405)
+        const longitudeRange = 0.025 // ±0.0125 degrees (roughly 105.285 to 105.31)
+
         await prisma.dailySubActivity.create({
           data: {
             subActivityId: subActivity.id,
             userId: user.id,
             koordinat: {
-              latitude: -6.2 + (Math.random() - 0.5) * 0.1,
-              longitude: 106.8 + (Math.random() - 0.5) * 0.1,
+              latitude: baseLatitude + (Math.random() - 0.5) * latitudeRange,
+              longitude: baseLongitude + (Math.random() - 0.5) * longitudeRange,
             },
             catatanKegiatan: `Progres kerja ${subActivity.name.toLowerCase()} hari ini sesuai rencana. ${getRandomProgressNote()}`,
             file: [
