@@ -71,7 +71,7 @@ jadi ketika user mengisi nilai volume, Tanggal Mulai, dan Tanggal Selesai, tolon
 ----------------------------------------
 pada activity shchedule table tolong buat waktunya itu diambil dari input tanggal kontrak dan akhir kontrola pada tab data teknis. tolong juga buat agar input field tanggal kontrak dan akhir kontrak menggunakan kalender 
 -----------------------
-disini---
++++not implemented yet
 tolong munculkan tampilan tahunnya misal(pastiin dulu sistem pembagian minggunya gimana) 
 ---------------------
 **untuk api mobile pelaksanaan
@@ -116,16 +116,13 @@ fungsi dari api tersebut itu adalah mengupdate progres realisai pada minggu tert
 -buatkan api get /latest-daily-sub-activities
 api ini akan menampilkan list data daily-sub-activities dengan tanggal_progres paling baru, untuk satu hari yang sama datanya harus 1
 
---disini
 -tolong buatkan juga api untuk list daily-update-schedule, lengkap dengan pagination,filter,sorting, dan searching
-
--tolong buatkan api untuk mengecek apakah pad
 
 -tolong buatkan api untuk user dan tolong pada tabel daily-sub-activities tambahkan id user sesuaikan untuk bagian kode yang terkait
 
 -fungsi dari api tersebut itu adalah mengupdate/menambah progres realisai pada minggu tertentu pada tabel activity_schedule dan menambahkan data pada table daily_sub_activities. jadi pertama untuk mengupdate progres realisasi pada tabel activity_schedule cek dulu tanggal tersebut ada di minggu yang mana, lalu jika sudah dapat datanya maka tambahkan data progres realisasinya. pastikan bahwa tampilan activity schedule table datanya akan terupdate juga dengan merfecth ulang api nya dalam interval 15 detik.
 
--untuk 
+-tolong buat satu api untuk menampilkan list daily sub activities, dimana akan ada filter untuk data projects, activities, dan sub_activities,buatkan juga sorting berdasarkan updated_at dengan defautlnya descending, saya ingin ada juga search berdasarkan nama sub_activities. lalu tolong buatkan juga pagination. dan untuk sementara selalu filter menggunakan user_id ini = cmfb8i5yo0000vpgc5p776720, pertama tolong buatkan dulu api kontrak nya.
 
 ---------------------------
 **untuk tambah usulan kegiatan

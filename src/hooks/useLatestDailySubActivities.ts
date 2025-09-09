@@ -69,7 +69,9 @@ const LatestDailySubActivitiesResponseSchema = z.object({
 })
 
 export type LatestDailySubActivity = z.infer<typeof DailySubActivitySchema>
-export type LatestDailySubActivitiesResponse = z.infer<typeof LatestDailySubActivitiesResponseSchema>
+export type LatestDailySubActivitiesResponse = z.infer<
+  typeof LatestDailySubActivitiesResponseSchema
+>
 
 interface UseLatestDailySubActivitiesParams {
   projectId?: string
@@ -89,7 +91,7 @@ export function useLatestDailySubActivities({
         page: page.toString(),
         limit: limit.toString(),
       })
-      
+
       if (projectId) {
         params.append('projectId', projectId)
       }

@@ -5,8 +5,10 @@ import { APIProvider, Map, Marker, InfoWindow } from '@vis.gl/react-google-maps'
 import { MapPin, Loader2 } from 'lucide-react'
 import { GOOGLE_MAPS_OPTIONS, PROJECT_WORK_MAP_OPTIONS } from '@/constants/map-config'
 import { ProjectAreaBaseLayer } from './project-area-base-layer'
-import { useLatestDailySubActivities, LatestDailySubActivity } from '@/hooks/useLatestDailySubActivities'
-
+import {
+  useLatestDailySubActivities,
+  LatestDailySubActivity,
+} from '@/hooks/useLatestDailySubActivities'
 
 interface WorkLocation {
   id: string
@@ -14,10 +16,12 @@ interface WorkLocation {
   description: string
   progress: number
   lastUpdate: string
+  lastUpdateDate: string
+  tanggalProgress: string
   position: { lat: number; lng: number }
-  status: 'completed' | 'in-progress' | 'pending'
   projectName?: string
   userName?: string
+  activityName?: string
   photos?: { path: string; filename?: string }[]
 }
 
@@ -27,9 +31,14 @@ interface ProjectWorkMapProps {
 
 export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
   const [selectedLocation, setSelectedLocation] = useState<WorkLocation | null>(null)
-  
+
   // Fetch latest daily sub activities from API
-  const { data: apiResponse, isLoading, isError, error } = useLatestDailySubActivities({
+  const {
+    data: apiResponse,
+    isLoading,
+    isError,
+    error,
+  } = useLatestDailySubActivities({
     projectId: projectId,
     limit: 100,
   })
@@ -44,48 +53,43 @@ export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
         // Calculate days since last update
         const lastUpdateDate = new Date(activity.tanggalProgres)
         const now = new Date()
-        const daysDiff = Math.floor((now.getTime() - lastUpdateDate.getTime()) / (1000 * 60 * 60 * 24))
-        const lastUpdateText = daysDiff === 0 ? 'Hari ini' : 
-                              daysDiff === 1 ? '1 Hari Lalu' : 
-                              `${daysDiff} Hari Lalu`
+        const daysDiff = Math.floor(
+          (now.getTime() - lastUpdateDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
+        const lastUpdateText =
+          daysDiff === 0 ? 'Hari ini' : daysDiff === 1 ? '1 Hari Lalu' : `${daysDiff} Hari Lalu`
 
-        // Determine status based on progress and activity
+        // Format full date
+        const fullDate = lastUpdateDate.toLocaleDateString('id-ID', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+
         const progress = activity.progresRealisasiPerHari || 0
-        const status: WorkLocation['status'] = 
-          progress >= 100 ? 'completed' : 
-          progress > 0 ? 'in-progress' : 
-          'pending'
 
         return {
           id: activity.id,
           name: activity.subActivity.name,
-          description: activity.catatanKegiatan || `Pekerjaan ${activity.subActivity.name} - ${activity.subActivity.activity.name}`,
+          description:
+            activity.catatanKegiatan ||
+            `Pekerjaan ${activity.subActivity.name} - ${activity.subActivity.activity.name}`,
           progress: progress,
           lastUpdate: lastUpdateText,
+          lastUpdateDate: fullDate,
           position: {
             lat: activity.koordinat!.latitude,
             lng: activity.koordinat!.longitude,
           },
-          status,
           projectName: activity.subActivity.activity.project.pekerjaan,
           userName: activity.user.name,
+          activityName: activity.subActivity.activity.name,
           photos: activity.file || [],
+          tanggalProgress: activity.tanggalProgres,
         }
       })
   }, [apiResponse?.data])
-
-  const getMarkerColor = (status: WorkLocation['status']) => {
-    switch (status) {
-      case 'completed':
-        return '#10B981' // green
-      case 'in-progress':
-        return '#FFC928' // yellow
-      case 'pending':
-        return '#EF4444' // red
-      default:
-        return '#FFC928'
-    }
-  }
 
   // Loading state
   if (isLoading) {
@@ -142,33 +146,27 @@ export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
               workLocations.map(location => (
                 <div key={location.id} className="rounded-lg border border-gray-200 p-3">
                   <div className="flex items-start gap-2">
-                    <div
-                      className={`mt-1 h-3 w-3 flex-shrink-0 rounded-full ${
-                        location.status === 'completed'
-                          ? 'bg-green-500'
-                          : location.status === 'in-progress'
-                            ? 'bg-yellow-400'
-                            : 'bg-red-500'
-                      }`}
-                    />
+                    <div className="mt-1 h-3 w-3 flex-shrink-0 rounded-full bg-blue-500" />
                     <div className="flex-1 space-y-1">
                       <h5 className="line-clamp-2 text-xs font-medium text-gray-900">
                         {location.name}
                       </h5>
-                      <p className="line-clamp-2 text-xs text-gray-600">
-                        {location.description}
-                      </p>
+                      <p className="line-clamp-2 text-xs text-gray-600">{location.description}</p>
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-gray-500">
                           Progress: {location.progress.toFixed(1)}%
                         </span>
-                        <span className="text-gray-500">{location.lastUpdate}</span>
                       </div>
-                      {location.userName && (
-                        <p className="text-xs text-gray-500">
-                          Pekerja: {location.userName}
-                        </p>
+                      {location.activityName && (
+                        <p className="text-xs text-gray-500">Pekerjaan: {location.activityName}</p>
                       )}
+                      <div className="mt-2 border-t border-gray-100 pt-1">
+                        <div className="flex items-center gap-1 text-xs">
+                          <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                          <span className="font-medium text-blue-600">{location.lastUpdate}</span>
+                        </div>
+                        <p className="text-xs text-gray-400">{location.lastUpdateDate}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -220,7 +218,7 @@ export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
                         src={selectedLocation.photos[0].path}
                         alt="Progress"
                         className="h-full w-full object-cover"
-                        onError={(e) => {
+                        onError={e => {
                           // Fallback to icon if image fails to load
                           const target = e.target as HTMLImageElement
                           target.style.display = 'none'
@@ -253,38 +251,46 @@ export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
                     <p className="line-clamp-3 text-xs leading-tight text-gray-700">
                       {selectedLocation.description}
                     </p>
-                    {selectedLocation.userName && (
+                    {/* {selectedLocation.userName && (
                       <p className="text-xs text-gray-600">
                         <span className="font-medium">Pekerja:</span> {selectedLocation.userName}
                       </p>
-                    )}
+                    )} */}
                     <div className="flex items-center gap-2 text-xs">
                       <span className="text-gray-500">Progress:</span>
                       <span className="font-semibold text-gray-900">
                         {selectedLocation.progress.toFixed(2)}%
                       </span>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                          selectedLocation.status === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : selectedLocation.status === 'in-progress'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {selectedLocation.status === 'completed'
-                          ? 'Selesai'
-                          : selectedLocation.status === 'in-progress'
-                            ? 'Berjalan'
-                            : 'Pending'}
-                      </span>
                     </div>
-                    <p className="text-xs text-gray-500">Update {selectedLocation.lastUpdate}</p>
+                    {selectedLocation.activityName && (
+                      <p className="text-xs text-gray-600">
+                        <span className="font-medium">Pekerjaan:</span>{' '}
+                        {selectedLocation.activityName}
+                      </p>
+                    )}
+
                     {selectedLocation.projectName && (
                       <p className="line-clamp-2 text-xs text-gray-500">
                         <span className="font-medium">Proyek:</span> {selectedLocation.projectName}
                       </p>
                     )}
+
+                    {/* Update section with distinct styling */}
+                    <div className="mt-3 border-t border-gray-200 pt-2">
+                      <div className="flex items-center gap-1 text-xs">
+                        <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                        <span className="font-medium text-blue-600">
+                          Update {selectedLocation.lastUpdate}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {selectedLocation.lastUpdateDate}
+                      </p>
+                      {/* <p className="mt-0.5 text-xs text-gray-400">
+                        Tanggal Progress:{' '}
+                        {new Date(selectedLocation.tanggalProgress).toLocaleDateString('id-ID')}
+                      </p> */}
+                    </div>
                   </div>
                 </div>
               </div>
