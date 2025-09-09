@@ -24,16 +24,32 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Get the latest date from daily_sub_activities
-    const latestDateResult = await prisma.dailySubActivity.findFirst({
-      orderBy: { tanggalProgres: 'desc' },
-      select: { tanggalProgres: true },
+    // Build where clause for subActivities filter
+    const subActivityWhere: any = {}
+    if (projectId) {
+      subActivityWhere.activity = {
+        projectId: projectId,
+      }
+    }
+
+    // First, get all unique subActivityIds with their latest tanggalProgres
+    const latestEntriesRaw = await prisma.dailySubActivity.groupBy({
+      by: ['subActivityId'],
+      _max: {
+        tanggalProgres: true,
+      },
+      where: subActivityWhere.activity
+        ? {
+            subActivity: subActivityWhere,
+          }
+        : undefined,
     })
 
-    if (!latestDateResult) {
+    if (!latestEntriesRaw.length) {
       return NextResponse.json({
         success: true,
         data: [],
+        latestDate: null,
         pagination: {
           page,
           limit,
@@ -43,29 +59,43 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const latestDate = latestDateResult.tanggalProgres
+    // Get the overall latest date for response
+    const globalLatestDate = latestEntriesRaw
+      .map(entry => entry._max.tanggalProgres)
+      .filter(date => date !== null)
+      .sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime())[0]
 
-    // Build where clause
-    const where: any = {
-      tanggalProgres: latestDate,
-    }
+    // Create conditions to find the actual records
+    const orConditions = latestEntriesRaw
+      .filter(entry => entry._max.tanggalProgres !== null)
+      .map(entry => ({
+        subActivityId: entry.subActivityId,
+        tanggalProgres: entry._max.tanggalProgres!,
+      }))
 
-    // Add project filter if provided
-    if (projectId) {
-      where.subActivity = {
-        activity: {
-          projectId: projectId,
+    if (!orConditions.length) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        latestDate: globalLatestDate,
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
         },
-      }
+      })
     }
 
-    // Get daily activities for the latest date (one per sub activity)
+    // Get the actual daily activities with latest dates per subActivityId
     const [dailyActivities, total] = await Promise.all([
       prisma.dailySubActivity.findMany({
-        where,
+        where: {
+          OR: orConditions,
+        },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ tanggalProgres: 'desc' }, { createdAt: 'desc' }],
         select: {
           id: true,
           subActivityId: true,
@@ -109,13 +139,17 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.dailySubActivity.count({ where }),
+      prisma.dailySubActivity.count({
+        where: {
+          OR: orConditions,
+        },
+      }),
     ])
 
     return NextResponse.json({
       success: true,
       data: dailyActivities,
-      latestDate,
+      latestDate: globalLatestDate,
       pagination: {
         page,
         limit,

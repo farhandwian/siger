@@ -125,6 +125,8 @@ api ini akan menampilkan list data daily-sub-activities dengan tanggal_progres p
 
 -fungsi dari api tersebut itu adalah mengupdate/menambah progres realisai pada minggu tertentu pada tabel activity_schedule dan menambahkan data pada table daily_sub_activities. jadi pertama untuk mengupdate progres realisasi pada tabel activity_schedule cek dulu tanggal tersebut ada di minggu yang mana, lalu jika sudah dapat datanya maka tambahkan data progres realisasinya. pastikan bahwa tampilan activity schedule table datanya akan terupdate juga dengan merfecth ulang api nya dalam interval 15 detik.
 
+-untuk 
+
 ---------------------------
 **untuk tambah usulan kegiatan
 
