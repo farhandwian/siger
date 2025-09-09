@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { QueryProvider } from '@/providers/query-provider'
+import ChunkErrorHandler from '@/components/client/chunk-error-handler'
 import { Toaster } from 'sonner'
 import '@/styles/globals.css'
 
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id">
       <body className={inter.className}>
         <QueryProvider>
+          <ChunkErrorHandler />
           {children}
           <Toaster position="top-right" />
         </QueryProvider>
