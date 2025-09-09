@@ -485,3 +485,6 @@ export type CreateUser = z.infer<typeof CreateUserSchema>
 export type UpdateUser = z.infer<typeof UpdateUserSchema>
 export type UserQuery = z.infer<typeof UserQuerySchema>
 export type UserRole = z.infer<typeof UserRoleSchema>
+
+// Re-export daily sub activities schemas
+export * from './schemas/daily-sub-activities'
