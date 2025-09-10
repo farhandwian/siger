@@ -117,7 +117,7 @@ export function AIInsights() {
   }
 
   return (
-    <Card className="h-[500px] overflow-y-scroll rounded-2xl border border-gray-200 transition-shadow hover:shadow-md">
+    <Card className="h-full overflow-y-auto rounded-2xl border border-gray-200 transition-shadow hover:shadow-md">
       <div className="flex h-full flex-col p-4">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
