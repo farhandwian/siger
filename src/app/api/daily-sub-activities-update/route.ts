@@ -29,11 +29,22 @@ function getWeekInfo(dateString: string) {
   }
 }
 
+/**
+ * PUT endpoint to create or update daily sub-activity progress
+ *
+ * This API ensures that only one daily progress record exists per:
+ * - Sub Activity ID
+ * - User ID
+ * - Progress Date
+ *
+ * If a record already exists with the same combination, it will be updated.
+ * The weekly activity schedule is also recalculated to reflect the changes.
+ */
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Validate request body
+    // Validate request body using Zod schema
     const validatedData = CreateDailySubActivitySchema.parse(body)
     const {
       sub_activities_id,
@@ -71,8 +82,22 @@ export async function PUT(request: NextRequest) {
     const weekInfo = getWeekInfo(tanggal_progres)
 
     // Start transaction to update both daily activity and weekly schedule
+    // This ensures data consistency between daily records and weekly aggregates
     const result = await prisma.$transaction(async tx => {
-      // 1. Create or update daily sub activity record
+      // 1. Get the existing daily activity record (if any) to track previous progress
+      // This is needed to calculate the net change in progress for weekly updates
+      const existingDailyActivity = await tx.dailySubActivity.findUnique({
+        where: {
+          subActivityId_tanggalProgres_userId: {
+            subActivityId: sub_activities_id,
+            tanggalProgres: tanggal_progres,
+            userId: user_id,
+          },
+        },
+      })
+
+      // 2. Create or update daily sub activity record using upsert
+      // The unique constraint (subActivityId, tanggalProgres, userId) ensures only one record per date per user
       const dailyActivity = await tx.dailySubActivity.upsert({
         where: {
           subActivityId_tanggalProgres_userId: {
@@ -98,7 +123,7 @@ export async function PUT(request: NextRequest) {
         },
       })
 
-      // 2. Get existing weekly schedule to add to current value
+      // 3. Get existing weekly schedule
       const existingSchedule = await tx.activitySchedule.findUnique({
         where: {
           subActivityId_month_year_week: {
@@ -110,14 +135,23 @@ export async function PUT(request: NextRequest) {
         },
       })
 
-      // 3. Calculate new progress by adding current daily progress to existing weekly progress
-      const currentActualPercentage = existingSchedule?.actualPercentage || 0
-      const newActualPercentage = Math.min(
-        currentActualPercentage + progres_realisasi_per_hari,
-        100
-      )
+      // 4. Calculate new weekly progress properly handling updates
+      const currentWeeklyProgress = existingSchedule?.actualPercentage || 0
+      let newWeeklyProgress: number
 
-      // 4. Update or create the weekly schedule record
+      if (existingDailyActivity) {
+        // Update case: subtract old progress, then add new progress
+        const oldDailyProgress = existingDailyActivity.progresRealisasiPerHari || 0
+        newWeeklyProgress = Math.max(
+          0,
+          Math.min(100, currentWeeklyProgress - oldDailyProgress + progres_realisasi_per_hari)
+        )
+      } else {
+        // Create case: just add new progress to weekly total
+        newWeeklyProgress = Math.min(currentWeeklyProgress + progres_realisasi_per_hari, 100)
+      }
+
+      // 5. Update or create the weekly schedule record
       await tx.activitySchedule.upsert({
         where: {
           subActivityId_month_year_week: {
@@ -128,7 +162,7 @@ export async function PUT(request: NextRequest) {
           },
         },
         update: {
-          actualPercentage: newActualPercentage,
+          actualPercentage: newWeeklyProgress,
         },
         create: {
           subActivityId: sub_activities_id,
@@ -140,13 +174,18 @@ export async function PUT(request: NextRequest) {
         },
       })
 
-      return dailyActivity
+      return {
+        dailyActivity,
+        isUpdate: !!existingDailyActivity,
+      }
     })
 
     return NextResponse.json({
       success: true,
-      data: result,
-      message: 'Daily progress updated successfully',
+      data: result.dailyActivity,
+      message: result.isUpdate
+        ? 'Daily progress updated successfully'
+        : 'Daily progress created successfully',
     })
   } catch (error) {
     console.error('Error updating daily sub activity:', error)
