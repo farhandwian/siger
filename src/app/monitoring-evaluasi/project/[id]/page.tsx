@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
 import { CSVImportModal } from '@/components/activities/csv-import-modal'
@@ -180,6 +181,7 @@ export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Get tab from URL search params, default to 'Data Teknis'
@@ -252,6 +254,10 @@ export default function ProjectDetailPage() {
       ...prev,
       [fieldName]: value,
     }))
+  }
+
+  const refreshActivities = () => {
+    queryClient.invalidateQueries({ queryKey: ['activities', 'list', projectId] })
   }
 
   const tabs = [
@@ -853,6 +859,7 @@ export default function ProjectDetailPage() {
           isOpen={csvImportModalOpen}
           onClose={() => setCsvImportModalOpen(false)}
           projectId={String(params.id)}
+          onSuccess={refreshActivities}
         />
 
         {/* Add Material Modal */}

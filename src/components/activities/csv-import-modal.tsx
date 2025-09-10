@@ -9,6 +9,7 @@ interface CSVImportModalProps {
   isOpen: boolean
   onClose: () => void
   projectId: string
+  onSuccess?: () => void
 }
 
 interface ParsedActivity {
@@ -29,10 +30,12 @@ interface ParsedActivity {
   }>
 }
 
-export function CSVImportModal({ isOpen, onClose, projectId }: CSVImportModalProps) {
+export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImportModalProps) {
   const [file, setFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
   const [parseResult, setParseResult] = useState<ParsedActivity[] | null>(null)
+  const [importResult, setImportResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -87,6 +90,10 @@ export function CSVImportModal({ isOpen, onClose, projectId }: CSVImportModalPro
     let currentActivity: string | null = null
     let i = startRowIndex
 
+    // Track processed activities and sub-activities to prevent duplicates
+    const processedActivities = new Set<string>()
+    const processedSubActivities = new Set<string>()
+
     while (i < rows.length) {
       const row = rows[i]
       if (!row || row.length < 2) {
@@ -100,66 +107,90 @@ export function CSVImportModal({ isOpen, onClose, projectId }: CSVImportModalPro
       // Check if this is a main activity (has Roman numeral)
       if (firstCol && /^[IVX]+$/.test(firstCol)) {
         currentActivity = secondCol
-        activities.push({
-          name: secondCol,
-          type: 'activity',
-          scheduleData: []
-        })
+        
+        // Only add if not already processed
+        if (!processedActivities.has(secondCol)) {
+          activities.push({
+            name: secondCol,
+            type: 'activity',
+            scheduleData: []
+          })
+          processedActivities.add(secondCol)
+        }
         i++
         continue
       }
 
       // Check if this is a sub-activity (no Roman numeral but has content in second column)
       if (!firstCol && secondCol && currentActivity) {
-        const satuan = row[2]?.trim()
-        const volumeKontrak = parseFloat(row[3]?.replace(',', '.') || '0')
-        const bobotMC0 = parseFloat(row[4]?.replace(',', '.') || '0')
-        const volumeMC0 = parseFloat(row[5]?.replace(',', '.') || '0')
+        const subActivityKey = `${currentActivity}::${secondCol}`
+        
+        // Only process if not already processed
+        if (!processedSubActivities.has(subActivityKey)) {
+          const satuan = row[2]?.trim()
+          const volumeKontrak = parseFloat(row[3]?.replace(',', '.') || '0')
+          const bobotMC0 = parseFloat(row[4]?.replace(',', '.') || '0')
+          const volumeMC0 = parseFloat(row[5]?.replace(',', '.') || '0')
 
-        // Extract plan values (current row) - schedule data starts from column 7
-        const planScheduleData = []
-        for (let colIndex = 7; colIndex < row.length; colIndex++) {
-          const value = parseFloat(row[colIndex]?.replace(',', '.') || '0')
-          const dateInfo = mapPeriodToDate(colIndex - 7)
-          
-          if (value > 0 || colIndex < 25) { // Include even 0 values for valid periods
-            planScheduleData.push({
-              period: `${dateInfo.year}-${dateInfo.month.toString().padStart(2, '0')}-W${dateInfo.week}`,
-              month: dateInfo.month,
-              year: dateInfo.year,
-              week: dateInfo.week,
-              planPercentage: value,
-              actualPercentage: 0
-            })
-          }
-        }
-
-        // Check next row for actual values
-        let actualScheduleData = planScheduleData.map(item => ({ ...item, actualPercentage: 0 }))
-        if (i + 1 < rows.length) {
-          const nextRow = rows[i + 1]
-          if (nextRow && !nextRow[0]?.trim() && !nextRow[1]?.trim()) {
-            // This is the actual values row
-            for (let colIndex = 7; colIndex < nextRow.length && colIndex - 7 < actualScheduleData.length; colIndex++) {
-              const actualValue = parseFloat(nextRow[colIndex]?.replace(',', '.') || '0')
-              if (actualScheduleData[colIndex - 7]) {
-                actualScheduleData[colIndex - 7].actualPercentage = actualValue
-              }
+          // Extract plan values (current row) - schedule data starts from column 7
+          const planScheduleData = []
+          for (let colIndex = 7; colIndex < row.length; colIndex++) {
+            const value = parseFloat(row[colIndex]?.replace(',', '.') || '0')
+            const dateInfo = mapPeriodToDate(colIndex - 7)
+            
+            if (value > 0 || colIndex < 25) { // Include even 0 values for valid periods
+              planScheduleData.push({
+                period: `${dateInfo.year}-${dateInfo.month.toString().padStart(2, '0')}-W${dateInfo.week}`,
+                month: dateInfo.month,
+                year: dateInfo.year,
+                week: dateInfo.week,
+                planPercentage: value,
+                actualPercentage: 0
+              })
             }
-            i++ // Skip the actual values row
           }
-        }
 
-        activities.push({
-          name: secondCol,
-          type: 'subActivity',
-          parentActivity: currentActivity,
-          satuan,
-          volumeKontrak: volumeKontrak || undefined,
-          bobotMC0: bobotMC0 || undefined,
-          volumeMC0: volumeMC0 || undefined,
-          scheduleData: actualScheduleData
-        })
+          // Check next row for actual values
+          let actualScheduleData = planScheduleData.map(item => ({ ...item, actualPercentage: 0 }))
+          if (i + 1 < rows.length) {
+            const nextRow = rows[i + 1]
+            if (nextRow && !nextRow[0]?.trim() && !nextRow[1]?.trim()) {
+              // This is the actual values row
+              for (let colIndex = 7; colIndex < nextRow.length && colIndex - 7 < actualScheduleData.length; colIndex++) {
+                const actualValue = parseFloat(nextRow[colIndex]?.replace(',', '.') || '0')
+                if (actualScheduleData[colIndex - 7]) {
+                  actualScheduleData[colIndex - 7].actualPercentage = actualValue
+                }
+              }
+              i++ // Skip the actual values row
+            }
+          }
+
+          // Deduplicate schedule data within the same sub-activity
+          const uniqueScheduleData = []
+          const scheduleKeys = new Set()
+          
+          for (const schedule of actualScheduleData) {
+            const key = `${schedule.month}-${schedule.year}-${schedule.week}`
+            if (!scheduleKeys.has(key)) {
+              scheduleKeys.add(key)
+              uniqueScheduleData.push(schedule)
+            }
+          }
+
+          activities.push({
+            name: secondCol,
+            type: 'subActivity',
+            parentActivity: currentActivity,
+            satuan,
+            volumeKontrak: volumeKontrak || undefined,
+            bobotMC0: bobotMC0 || undefined,
+            volumeMC0: volumeMC0 || undefined,
+            scheduleData: uniqueScheduleData
+          })
+          
+          processedSubActivities.add(subActivityKey)
+        }
       }
 
       i++
@@ -220,9 +251,51 @@ export function CSVImportModal({ isOpen, onClose, projectId }: CSVImportModalPro
   const resetModal = () => {
     setFile(null)
     setParseResult(null)
+    setImportResult(null)
     setError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+  }
+
+  const importToDatabase = async () => {
+    if (!parseResult) return
+
+    setIsImporting(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}/schedule/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId,
+          activities: parseResult,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Import failed')
+      }
+
+      setImportResult(result)
+      console.log('=== IMPORT TO DATABASE SUCCESSFUL ===')
+      console.log('Result:', result)
+
+      // Call onSuccess callback to refresh data
+      if (onSuccess) {
+        onSuccess()
+      }
+
+    } catch (err) {
+      console.error('Import to database error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to import to database')
+    } finally {
+      setIsImporting(false)
     }
   }
 
@@ -324,7 +397,7 @@ export function CSVImportModal({ isOpen, onClose, projectId }: CSVImportModalPro
           </div>
 
           {/* Results Preview */}
-          {parseResult && (
+          {parseResult && !importResult && (
             <div className="space-y-4 border-t pt-4">
               <h3 className="font-medium text-sm">Import Preview</h3>
               <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
@@ -332,9 +405,62 @@ export function CSVImportModal({ isOpen, onClose, projectId }: CSVImportModalPro
                 <p>📁 Activities: {parseResult.filter(item => item.type === 'activity').length}</p>
                 <p>📋 Sub-Activities: {parseResult.filter(item => item.type === 'subActivity').length}</p>
                 <p className="mt-2 text-xs">
-                  Check browser console for detailed output. In production, this will save to database.
+                  Ready to import to database. Click the button below to proceed.
                 </p>
               </div>
+              
+              {/* Import to Database Button */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={importToDatabase}
+                  disabled={isImporting}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  {isImporting ? 'Importing...' : 'Import to Database'}
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => setParseResult(null)}
+                  disabled={isImporting}
+                >
+                  Edit CSV
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Import Success */}
+          {importResult && (
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="font-medium text-sm text-green-700">Import Successful!</h3>
+              <div className="text-sm bg-green-50 border border-green-200 p-3 rounded">
+                <p className="font-medium text-green-800">✅ {importResult.message}</p>
+                <div className="mt-2 space-y-1 text-green-700">
+                  <div>
+                    <p className="font-semibold">📁 Activities:</p>
+                    <p className="ml-4 text-sm">Created: {importResult.data?.imported?.activities || 0} | Updated: {importResult.data?.updated?.activities || 0}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold">📋 Sub-Activities:</p>
+                    <p className="ml-4 text-sm">Created: {importResult.data?.imported?.subActivities || 0} | Updated: {importResult.data?.updated?.subActivities || 0}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold">📅 Schedules:</p>
+                    <p className="ml-4 text-sm">Created: {importResult.data?.imported?.schedules || 0} | Updated: {importResult.data?.updated?.schedules || 0}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Button
+                onClick={() => {
+                  resetModal()
+                  onClose()
+                }}
+                className="w-full"
+              >
+                Close
+              </Button>
             </div>
           )}
         </CardContent>
