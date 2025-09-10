@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useEffect } from 'react'
 
@@ -9,7 +9,11 @@ export default function ChunkErrorHandler() {
       const msg = e?.message || (e?.reason && e.reason.message) || ''
       const name = e?.name || (e?.reason && e.reason.name) || ''
 
-      if (msg.includes('Loading chunk') || msg.includes('ChunkLoadError') || name === 'ChunkLoadError') {
+      if (
+        msg.includes('Loading chunk') ||
+        msg.includes('ChunkLoadError') ||
+        name === 'ChunkLoadError'
+      ) {
         // schedule a short delay to allow any logging to complete
         setTimeout(async () => {
           try {

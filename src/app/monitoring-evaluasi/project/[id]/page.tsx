@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
+import { CSVImportModal } from '@/components/activities/csv-import-modal'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
 import { AddMaterialModal } from '@/components/materials/add-material-modal'
@@ -21,7 +23,7 @@ import { useMaterials } from '@/hooks/useMaterialQueries'
 import { useProjectDetail, useUpdateProjectField } from '@/hooks/useProjectQueries'
 import { cn } from '@/lib/utils'
 import { formatDateForInput } from '@/utils/dateUtils'
-import { ChevronDown, Plus, RefreshCw, Wifi, WifiOff } from 'lucide-react'
+import { ChevronDown, Plus, RefreshCw, Wifi, WifiOff, Upload } from 'lucide-react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ActionPlanMetrics } from '@/components/monitoring/action-plan-metrics'
 
@@ -179,13 +181,15 @@ export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  
+
   // Get tab from URL search params, default to 'Data Teknis'
   const tabFromUrl = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(tabFromUrl || 'Data Teknis')
-  
+
   const [addMaterialModalOpen, setAddMaterialModalOpen] = useState(false)
+  const [csvImportModalOpen, setCsvImportModalOpen] = useState(false)
   const [selectedMaterial, setSelectedMaterial] = useState<string>('')
 
   const projectId = (params?.id as string) || '1'
@@ -250,6 +254,10 @@ export default function ProjectDetailPage() {
       ...prev,
       [fieldName]: value,
     }))
+  }
+
+  const refreshActivities = () => {
+    queryClient.invalidateQueries({ queryKey: ['activities', 'list', projectId] })
   }
 
   const tabs = [
@@ -657,7 +665,18 @@ export default function ProjectDetailPage() {
 
                   {/* Activity Schedule Table */}
                   <div>
-                    <h2 className="mb-4 text-sm font-medium text-gray-900">Activity Schedule</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-sm font-medium text-gray-900">Activity Schedule</h2>
+                      <Button
+                        onClick={() => setCsvImportModalOpen(true)}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Import CSV
+                      </Button>
+                    </div>
                     <ActivityScheduleTable projectId={projectId} />
                   </div>
                 </div>
@@ -711,8 +730,8 @@ export default function ProjectDetailPage() {
                   {/* Metrics Cards */}
                   <div>
                     <h2 className="mb-4 text-sm font-medium text-gray-900">Progress Overview</h2>
-                    <ActionPlanMetrics 
-                      projectId={projectId} 
+                    <ActionPlanMetrics
+                      projectId={projectId}
                       onNavigateToMap={() => setActiveTab('Peta Pekerjaan')}
                     />
                   </div>
@@ -729,7 +748,18 @@ export default function ProjectDetailPage() {
 
                   {/* Activity Schedule Table */}
                   <div>
-                    <h2 className="mb-4 text-sm font-medium text-gray-900">Activity Schedule</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-sm font-medium text-gray-900">Activity Schedule</h2>
+                      <Button
+                        onClick={() => setCsvImportModalOpen(true)}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Import CSV
+                      </Button>
+                    </div>
                     <ActivityScheduleTable projectId={projectId} />
                   </div>
                 </div>
@@ -823,6 +853,14 @@ export default function ProjectDetailPage() {
             </div>
           </div>
         </main>
+
+        {/* CSV Import Modal */}
+        <CSVImportModal
+          isOpen={csvImportModalOpen}
+          onClose={() => setCsvImportModalOpen(false)}
+          projectId={String(params.id)}
+          onSuccess={refreshActivities}
+        />
 
         {/* Add Material Modal */}
         <AddMaterialModal
