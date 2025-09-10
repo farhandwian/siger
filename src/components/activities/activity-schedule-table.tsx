@@ -326,11 +326,13 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
               {/* First header row - Month names */}
               <tr>
                 <th
+                  rowSpan={2}
                   className="activity-table-sticky-left border-b border-gray-200 bg-gray-50 p-1.5 table-text-sm font-bold text-gray-900"
                 >
                   URAIAN PEKERJAAN
                 </th>
                 <th
+                  rowSpan={2}
                   className="border-b border-gray-200 bg-gray-50 p-1.5 table-text-sm font-bold text-gray-900"
                 >
                   <div>Bobot</div>
@@ -350,8 +352,6 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
               {/* Second header row - Week ranges */}
               <tr>
-                <th className="activity-table-sticky-left border-b border-gray-200 bg-gray-50 p-1.5 table-text-sm font-bold text-gray-900"></th>
-                <th className="border-b border-gray-200 bg-gray-50 p-1.5 table-text-sm font-bold text-gray-900"></th>
                 {months.map((month, monthIndex) =>
                   month.weeks.map((weekObj, weekIndex) => (
                     <th
@@ -564,6 +564,97 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 </React.Fragment>
               ))}
 
+              {/* Total Section */}
+              <tr className="h-[27px] border-b border-gray-200">
+                <td
+                  colSpan={2 + months.reduce((acc, month) => acc + month.weeks.length, 0)}
+                  className="border-gray-200"
+                ></td>
+              </tr>
+
+              {/* Total Header */}
+              <tr>
+                <td className="cumulative-header-cell" style={{ width: '200px' }}>
+                  TOTAL
+                </td>
+                <td className="sticky z-10 border-b border-gray-200 bg-white" style={{ left: '200px', width: '60px' }}></td>
+                {months.map((month, monthIndex) =>
+                  month.weeks.map((weekObj, weekIndex) => (
+                    <td
+                      key={`total-header-${month.month}-${weekObj.week}`}
+                      className={`border-b border-gray-200 ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                        ? 'border-r-2 border-white'
+                        : ''
+                        }`}
+                    ></td>
+                  ))
+                )}
+              </tr>
+
+              {/* Total Rencana Row */}
+              <tr>
+                <td className="cumulative-label-cell" style={{ width: '200px' }}>
+                  Rencana
+                </td>
+                <td className="sticky border-b border-gray-200"></td>
+                {months.map((month, monthIndex) =>
+                  month.weeks.map((weekObj, weekIndex) => {
+                    // Calculate total for this week (plan)
+                    const weekTotal = activities?.reduce((total, activity) => {
+                      const subActivityTotal = activity.subActivities?.reduce((subTotal, subActivity) => {
+                        const value = getScheduleValue(activity.id, subActivity.id, month.month, weekObj.week, 'plan')
+                        return subTotal + (value || 0)
+                      }, 0) || 0
+                      return total + subActivityTotal
+                    }, 0) || 0
+
+                    return (
+                      <td
+                        key={`total-plan-${month.month}-${weekObj.week}`}
+                        className={`progress-cell-plan ${weekTotal > 0 ? 'has-value' : ''} ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                          ? 'month-separator'
+                          : ''
+                          }`}
+                      >
+                        {weekTotal > 0 ? weekTotal.toFixed(3) : '-'}
+                      </td>
+                    )
+                  })
+                )}
+              </tr>
+
+              {/* Total Realisasi Row */}
+              <tr>
+                <td className="cumulative-label-cell" style={{ width: '200px' }}>
+                  Realisasi
+                </td>
+                <td className="sticky border-b border-gray-200"></td>
+                {months.map((month, monthIndex) =>
+                  month.weeks.map((weekObj, weekIndex) => {
+                    // Calculate total for this week (actual)
+                    const weekTotal = activities?.reduce((total, activity) => {
+                      const subActivityTotal = activity.subActivities?.reduce((subTotal, subActivity) => {
+                        const value = getScheduleValue(activity.id, subActivity.id, month.month, weekObj.week, 'actual')
+                        return subTotal + (value || 0)
+                      }, 0) || 0
+                      return total + subActivityTotal
+                    }, 0) || 0
+
+                    return (
+                      <td
+                        key={`total-actual-${month.month}-${weekObj.week}`}
+                        className={`progress-cell-actual ${weekTotal > 0 ? 'has-value' : ''} ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                          ? 'month-separator'
+                          : ''
+                          }`}
+                      >
+                        {weekTotal > 0 ? weekTotal.toFixed(3) : '-'}
+                      </td>
+                    )
+                  })
+                )}
+              </tr>
+
               {/* Kumulatif Section */}
               <tr className="h-[27px] border-b border-gray-200">
                 <td
@@ -596,7 +687,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 <td className="cumulative-label-cell" style={{ width: '200px' }}>
                   Rencana
                 </td>
-                <td></td>
+                <td className="sticky border-b border-gray-200"></td>
                 {months.map((month, monthIndex) =>
                   month.weeks.map((weekObj, weekIndex) => (
                     <td
@@ -617,7 +708,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 <td className="cumulative-label-cell" style={{ width: '200px' }}>
                   Realisasi
                 </td>
-                <td></td>
+                <td className="sticky border-b border-gray-200"></td>
                 {months.map((month, monthIndex) =>
                   month.weeks.map((weekObj, weekIndex) => (
                     <td
@@ -638,7 +729,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 <td className="cumulative-label-cell" style={{ width: '200px' }}>
                   Deviasi
                 </td>
-                <td className="sticky z-10 border-b border-gray-200 bg-white" style={{ left: '200px', width: '60px' }}></td>
+                <td className="sticky border-b border-gray-200"></td>
                 {months.map((month, monthIndex) =>
                   month.weeks.map((weekObj, weekIndex) => (
                     <td

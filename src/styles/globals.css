@@ -254,7 +254,7 @@
   }
   
   .progress-value-input {
-    @apply h-6 w-full border-0 bg-transparent p-0 text-center text-xs focus:ring-0;
+    @apply h-5 w-full border-0 bg-transparent p-0 text-center text-xs focus:ring-0;
   }
   
   /* Activity Row Styles */
@@ -288,7 +288,7 @@
   }
   
   .cumulative-label-cell {
-    @apply activity-table-sticky-left border-b border-r-2 border-white bg-white px-6 py-1.5 text-xs font-semibold text-gray-700;
+    @apply activity-table-sticky-left border-b border-b-gray-200 border-r-2 border-white bg-white px-6 py-1.5 text-xs font-semibold text-gray-700;
   }
   
   /* Border Utilities for Month Separators */
