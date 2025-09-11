@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,278 +8,242 @@ datasource db {
 }
 
 model Project {
-  id                  String   @id @default(cuid())
-  
-  // Informasi Umum Proyek
-  penyediaJasa        String?  @map("penyedia_jasa")
-  pekerjaan           String?
-  jenisPaket          String?  @map("jenis_paket")
-  jenisPengadaan      String?  @map("jenis_pengadaan")
-  
-  // Informasi Kontrak & Anggaran
-  paguAnggaran        String?  @map("pagu_anggaran")
-  nilaiKontrak        String?  @map("nilai_kontrak")
-  nomorKontrak        String?  @map("nomor_kontrak")
-  spmk                String?
-  masaKontrak         String?  @map("masa_kontrak")
-  tanggalKontrak      String?  @map("tanggal_kontrak")
-  akhirKontrak        String?  @map("akhir_kontrak")
-  pembayaranTerakhir  String?  @map("pembayaran_terakhir")
-  
-  // Progress data
-  fisikProgress       Float?   @default(0) @map("fisik_progress")
-  fisikDeviasi        Float?   @default(0) @map("fisik_deviasi")
-  fisikTarget         Float?   @default(100) @map("fisik_target")
-  
-  saluranProgress     Float?   @default(0) @map("saluran_progress")
-  saluranDeviasi      Float?   @default(0) @map("saluran_deviasi")
-  saluranTarget       Float?   @default(0) @map("saluran_target")
-  
-  bangunanProgress    Float?   @default(0) @map("bangunan_progress")
-  bangunanDeviasi     Float?   @default(0) @map("bangunan_deviasi")
-  bangunanTarget      Float?   @default(0) @map("bangunan_target")
-  
-  keuanganProgress    Float?   @default(0) @map("keuangan_progress")
-  keuanganDeviasi     Float?   @default(0) @map("keuangan_deviasi")
-  keuanganTarget      Float?   @default(0) @map("keuangan_target")
-  
-  // Realisasi data (JSON untuk fleksibilitas)
-  outputData          Json?    @map("output_data")
-  tenagaKerjaData     Json?    @map("tenaga_kerja_data")
-  alatData            Json?    @map("alat_data")
-  materialData        Json?    @map("material_data")
-  
-  // Metadata
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-  
-  // Relations
-  auditLogs           ProjectAuditLog[]
-  activities          Activity[]
-  materials           Material[]
-  
+  id                 String            @id @default(cuid())
+  penyediaJasa       String?           @map("penyedia_jasa")
+  pekerjaan          String?
+  jenisPaket         String?           @map("jenis_paket")
+  jenisPengadaan     String?           @map("jenis_pengadaan")
+  paguAnggaran       String?           @map("pagu_anggaran")
+  nilaiKontrak       String?           @map("nilai_kontrak")
+  nomorKontrak       String?           @map("nomor_kontrak")
+  spmk               String?
+  masaKontrak        String?           @map("masa_kontrak")
+  tanggalKontrak     String?           @map("tanggal_kontrak")
+  akhirKontrak       String?           @map("akhir_kontrak")
+  pembayaranTerakhir String?           @map("pembayaran_terakhir")
+  fisikProgress      Float?            @default(0) @map("fisik_progress")
+  fisikDeviasi       Float?            @default(0) @map("fisik_deviasi")
+  fisikTarget        Float?            @default(100) @map("fisik_target")
+  saluranProgress    Float?            @default(0) @map("saluran_progress")
+  saluranDeviasi     Float?            @default(0) @map("saluran_deviasi")
+  saluranTarget      Float?            @default(0) @map("saluran_target")
+  bangunanProgress   Float?            @default(0) @map("bangunan_progress")
+  bangunanDeviasi    Float?            @default(0) @map("bangunan_deviasi")
+  bangunanTarget     Float?            @default(0) @map("bangunan_target")
+  keuanganProgress   Float?            @default(0) @map("keuangan_progress")
+  keuanganDeviasi    Float?            @default(0) @map("keuangan_deviasi")
+  keuanganTarget     Float?            @default(0) @map("keuangan_target")
+  outputData         Json?             @map("output_data")
+  tenagaKerjaData    Json?             @map("tenaga_kerja_data")
+  alatData           Json?             @map("alat_data")
+  materialData       Json?             @map("material_data")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  tanggalSpmk        String?           @map("tanggal_spmk")
+  lokasiProyek       String?           @map("lokasi_proyek")
+  petaPekerjaan      Json?             @map("peta_pekerjaan")
+  activities         Activity[]
+  materials          Material[]
+  auditLogs          ProjectAuditLog[]
+
   @@map("projects")
 }
 
-// Model untuk tracking perubahan otomatis
 model ProjectAuditLog {
-  id          String   @id @default(cuid())
-  projectId   String   @map("project_id")
-  fieldName   String   @map("field_name")
-  oldValue    String?  @map("old_value")
-  newValue    String?  @map("new_value")
-  changedAt   DateTime @default(now()) @map("changed_at")
-  
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  projectId String   @map("project_id")
+  fieldName String   @map("field_name")
+  oldValue  String?  @map("old_value")
+  newValue  String?  @map("new_value")
+  changedAt DateTime @default(now()) @map("changed_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@map("project_audit_logs")
 }
 
-// Model untuk kegiatan pekerjaan
 model Activity {
-  id            String   @id @default(cuid())
-  projectId     String   @map("project_id")
-  name          String   @map("name")
-  order         Int      @default(0)    @map("order") // Urutan tampilan
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  
-  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  subActivities SubActivity[]
+  id            String             @id @default(cuid())
+  projectId     String             @map("project_id")
+  name          String             @map("name")
+  order         Int                @default(0) @map("order")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  project       Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   schedules     ActivitySchedule[]
-  
+  subActivities SubActivity[]
+
   @@map("activities")
 }
 
-// Model untuk sub kegiatan pekerjaan
 model SubActivity {
-  id            String   @id @default(cuid())
-  activityId    String   @map("activity_id")
-  name          String   @map("name")
-  satuan        String?  @map("satuan") // Unit measurement
-  volumeKontrak Float?   @map("volume_kontrak") // Contract volume
-  volumeMC0     Float?   @map("volume_mc0") // MC 0 volume
-  bobotMC0      Float?   @map("bobot_mc0") // MC 0 weight in percentage
-  weight        Float    @map("weight") // Bobot dalam persen dari activity parent
-  order         Int      @default(0) @map("order") // Urutan tampilan
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  
-  activity      Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  schedules     ActivitySchedule[]
+  id              String             @id @default(cuid())
+  activityId      String             @map("activity_id")
+  name            String             @map("name")
+  satuan          String?            @map("satuan")
+  volumeKontrak   Float?             @map("volume_kontrak")
+  volumeMC0       Float?             @map("volume_mc0")
+  bobotMC0        Float?             @map("bobot_mc0")
+  weight          Float              @map("weight")
+  order           Int                @default(0) @map("order")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  schedules       ActivitySchedule[]
   dailyActivities DailySubActivity[]
-  
+  activity        Activity           @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
   @@map("sub_activities")
 }
 
-// Model untuk jadwal kegiatan (rencana vs realisasi)
 model ActivitySchedule {
-  id              String    @id @default(cuid())
-  activityId      String?   @map("activity_id")
-  subActivityId   String?   @map("sub_activity_id")
-  month           Int       @map("month") // 1-12
-  year            Int       @map("year")
-  week            Int       @map("week") // 1-4 (minggu ke berapa dalam bulan)
-  planPercentage  Float?    @default(0) @map("plan_percentage") // Persentase rencana
-  actualPercentage Float?   @default(0) @map("actual_percentage") // Persentase realisasi
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  
-  activity        Activity?    @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  subActivity     SubActivity? @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
-  
+  id               String       @id @default(cuid())
+  activityId       String?      @map("activity_id")
+  subActivityId    String?      @map("sub_activity_id")
+  month            Int          @map("month")
+  year             Int          @map("year")
+  week             Int          @map("week")
+  planPercentage   Float?       @default(0) @map("plan_percentage")
+  actualPercentage Float?       @default(0) @map("actual_percentage")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  activity         Activity?    @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  subActivity      SubActivity? @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+
   @@unique([activityId, month, year, week])
   @@unique([subActivityId, month, year, week])
   @@map("activity_schedules")
 }
 
-// Model untuk material flow
 model Material {
-  id              String   @id @default(cuid())
-  projectId       String   @map("project_id")
-  jenisMaterial   String   @map("jenis_material") // Jenis material (e.g., Pasir, Semen)
-  volumeSatuan    String   @default("m3") @map("volume_satuan") // m3 atau buah
-  volumeTarget    Float?   @default(0) @map("volume_target") // Target volume
-  tanggalMulai    String?  @map("tanggal_mulai") // Start date
-  tanggalSelesai  String?  @map("tanggal_selesai") // End date
-  waktuSelesai    Int?     @map("waktu_selesai") // Duration in days
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  
-  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  schedules       MaterialSchedule[]
-  
+  id             String             @id @default(cuid())
+  projectId      String             @map("project_id")
+  jenisMaterial  String             @map("jenis_material")
+  volumeSatuan   String             @default("m3") @map("volume_satuan")
+  volumeTarget   Float?             @default(0) @map("volume_target")
+  tanggalMulai   String?            @map("tanggal_mulai")
+  tanggalSelesai String?            @map("tanggal_selesai")
+  waktuSelesai   Int?               @map("waktu_selesai")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  schedules      MaterialSchedule[]
+  project        Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@map("materials")
 }
 
-// Model untuk jadwal material progress (daily tracking)
 model MaterialSchedule {
-  id                  String   @id @default(cuid())
-  materialId          String   @map("material_id")
-  date                String   @map("date") // Format: YYYY-MM-DD
-  rencana             Float?   @default(0) @map("rencana") // Daily plan
-  rencanaKumulatif    Float?   @default(0) @map("rencana_kumulatif") // Cumulative plan
-  realisasi           Float?   @default(0) @map("realisasi") // Daily actual
-  realisasiKumulatif  Float?   @default(0) @map("realisasi_kumulatif") // Cumulative actual
-  tercapai            String?  @default("Y") @map("tercapai") // Y/T (Yes/No)
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-  
-  material            Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  
+  id                 String   @id @default(cuid())
+  materialId         String   @map("material_id")
+  date               String   @map("date")
+  rencana            Float?   @default(0) @map("rencana")
+  rencanaKumulatif   Float?   @default(0) @map("rencana_kumulatif")
+  realisasi          Float?   @default(0) @map("realisasi")
+  realisasiKumulatif Float?   @default(0) @map("realisasi_kumulatif")
+  tercapai           String?  @default("Y") @map("tercapai")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  material           Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
   @@unique([materialId, date])
   @@map("material_schedules")
 }
 
-// Model untuk usulan kegiatan
 model ActivityProposal {
-  id                    String   @id @default(cuid())
-  
-  // Informasi Dasar
-  tahun                 String   @map("tahun") // Year
-  prioritas             String   @map("prioritas") // Priority
-  kategoriKegiatan      String   @map("kategori_kegiatan") // Activity category
-  
-  // Data Irigasi
-  jenisDaerahIrigasi    String?  @map("jenis_daerah_irigasi") // Irrigation area type
-  daerahIrigasi         String?  @map("daerah_irigasi") // Irrigation area
-  outcome               Float?   @default(0) @map("outcome") // Outcome in hectares
-  kebutuhanAnggaran     Float?   @default(0) @map("kebutuhan_anggaran") // Budget requirement
-  anggaranPerHektar     Float?   @default(0) @map("anggaran_per_hektar") // Budget per hectare
-  
-  // Informasi IP
-  ipExisting            Float?   @default(0) @map("ip_existing") // IP Existing percentage
-  ipRencana             Float?   @default(0) @map("ip_rencana") // IP Plan percentage
-  
-  // Status dan metadata
-  status                String   @default("Draft") @map("status") // Status: Draft, Submitted, Approved, Rejected
-  readinessLevel        String   @default("0%") @map("readiness_level") // Readiness level
-  submittedBy           String?  @map("submitted_by") // Who submitted
-  reviewedBy            String?  @map("reviewed_by") // Who reviewed
-  approvedBy            String?  @map("approved_by") // Who approved
-  reviewNotes           String?  @map("review_notes") // Review notes
-  submittedAt           DateTime? @map("submitted_at")
-  reviewedAt            DateTime? @map("reviewed_at")
-  approvedAt            DateTime? @map("approved_at")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-  
-  // Relations
-  lingkupUsulan         LingkupUsulan[]
-  readinessCriteria     ReadinessCriteria[]
-  
+  id                 String              @id @default(cuid())
+  tahun              String              @map("tahun")
+  prioritas          String              @map("prioritas")
+  kategoriKegiatan   String              @map("kategori_kegiatan")
+  jenisDaerahIrigasi String?             @map("jenis_daerah_irigasi")
+  daerahIrigasi      String?             @map("daerah_irigasi")
+  outcome            Float?              @default(0) @map("outcome")
+  kebutuhanAnggaran  Float?              @default(0) @map("kebutuhan_anggaran")
+  anggaranPerHektar  Float?              @default(0) @map("anggaran_per_hektar")
+  ipExisting         Float?              @default(0) @map("ip_existing")
+  ipRencana          Float?              @default(0) @map("ip_rencana")
+  status             String              @default("Draft") @map("status")
+  readinessLevel     String              @default("0%") @map("readiness_level")
+  submittedBy        String?             @map("submitted_by")
+  reviewedBy         String?             @map("reviewed_by")
+  approvedBy         String?             @map("approved_by")
+  reviewNotes        String?             @map("review_notes")
+  submittedAt        DateTime?           @map("submitted_at")
+  reviewedAt         DateTime?           @map("reviewed_at")
+  approvedAt         DateTime?           @map("approved_at")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  lingkupUsulan      LingkupUsulan[]
+  readinessCriteria  ReadinessCriteria[]
+
   @@map("activity_proposals")
 }
 
-// Model untuk lingkup usulan
 model LingkupUsulan {
-  id                    String   @id @default(cuid())
-  proposalId            String   @map("proposal_id")
-  namaLingkupUsulan     String   @map("nama_lingkup_usulan") // Scope name
-  nomenkaltur           String?  @map("nomenkaltur") // Nomenclature
-  koordinatGeoJson      Json?    @map("koordinat_geojson") // Coordinate data as GeoJSON
-  perimeter             Float?   @map("perimeter") // Perimeter
-  area                  Float?   @map("area") // Area
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-  
-  proposal              ActivityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  
+  id                String           @id @default(cuid())
+  proposalId        String           @map("proposal_id")
+  namaLingkupUsulan String           @map("nama_lingkup_usulan")
+  nomenkaltur       String?          @map("nomenkaltur")
+  koordinatGeoJson  Json?            @map("koordinat_geojson")
+  perimeter         Float?           @map("perimeter")
+  area              Float?           @map("area")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  proposal          ActivityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
   @@map("lingkup_usulan")
 }
 
-// Model untuk readiness criteria documents
 model ReadinessCriteria {
-  id                    String   @id @default(cuid())
-  proposalId            String   @map("proposal_id")
-  dokumenType           String   @map("dokumen_type") // Document type
-  keterangan            String?  @map("keterangan") // Description
-  fileName              String?  @map("file_name") // Uploaded file name
-  filePath              String?  @map("file_path") // File storage path
-  fileSize              Int?     @map("file_size") // File size in bytes
-  uploadedAt            DateTime? @map("uploaded_at")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-  
-  proposal              ActivityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  
+  id          String           @id @default(cuid())
+  proposalId  String           @map("proposal_id")
+  dokumenType String           @map("dokumen_type")
+  keterangan  String?          @map("keterangan")
+  fileName    String?          @map("file_name")
+  filePath    String?          @map("file_path")
+  fileSize    Int?             @map("file_size")
+  uploadedAt  DateTime?        @map("uploaded_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  proposal    ActivityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
   @@map("readiness_criteria")
 }
 
-// Model untuk user management
 model User {
-  id                        String   @id @default(cuid())
-  username                  String   @unique @map("username")
-  email                     String   @unique @map("email")
-  name                      String   @map("name")
-  role                      String   @default("user") @map("role") // admin, user, supervisor
-  phoneNumber               String?  @map("phone_number")
-  isActive                  Boolean  @default(true) @map("is_active")
-  createdAt                 DateTime @default(now()) @map("created_at")
-  updatedAt                 DateTime @updatedAt @map("updated_at")
-  
-  // Relations
-  dailyActivities           DailySubActivity[]
-  
+  id              String             @id @default(cuid())
+  username        String             @unique @map("username")
+  email           String             @unique @map("email")
+  name            String             @map("name")
+  role            String             @default("user") @map("role")
+  phoneNumber     String?            @map("phone_number")
+  isActive        Boolean            @default(true) @map("is_active")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  dailyActivities DailySubActivity[]
+
   @@map("users")
 }
 
-// Model untuk daily sub activities tracking (untuk mobile)
 model DailySubActivity {
-  id                        String   @id @default(cuid())
-  subActivityId             String   @map("sub_activity_id")
-  userId                    String   @map("user_id")
-  koordinat                 Json?    @map("koordinat") // GPS coordinates
-  catatanKegiatan           String?  @map("catatan_kegiatan") // Activity notes
-  file                      Json?    @map("file") // Files array with file and path
-  progresRealisasiPerHari   Float?   @default(0) @map("progres_realisasi_per_hari") // Daily progress
-  tanggalProgres            String   @map("tanggal_progres") // Progress date (YYYY-MM-DD)
-  createdAt                 DateTime @default(now()) @map("created_at")
-  updatedAt                 DateTime @updatedAt @map("updated_at")
-  
-  subActivity               SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
-  user                      User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id                      String      @id @default(cuid())
+  subActivityId           String      @map("sub_activity_id")
+  userId                  String      @map("user_id")
+  koordinat               Json?       @map("koordinat")
+  catatanKegiatan         String?     @map("catatan_kegiatan")
+  file                    Json?       @map("file")
+  progresRealisasiPerHari Float?      @default(0) @map("progres_realisasi_per_hari")
+  tanggalProgres          String      @map("tanggal_progres")
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+  subActivity             SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+  user                    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([subActivityId, tanggalProgres, userId])
   @@map("daily_sub_activities")
+}
+
+model Wilayah {
+  kode String @id
+  nama String
+
+  @@index([nama])
+  @@map("wilayah")
 }

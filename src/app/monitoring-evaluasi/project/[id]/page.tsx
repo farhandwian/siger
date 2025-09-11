@@ -26,6 +26,7 @@ import { formatDateForInput } from '@/utils/dateUtils'
 import { ChevronDown, Plus, RefreshCw, Wifi, WifiOff, Upload } from 'lucide-react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ActionPlanMetrics } from '@/components/monitoring/action-plan-metrics'
+import { ArrowLeft } from 'lucide-react'
 
 interface TabProps {
   label: string
@@ -400,6 +401,28 @@ export default function ProjectDetailPage() {
         {/* Content */}
         <main className="p-2 lg:p-3 xl:p-6">
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm lg:p-5 xl:p-8">
+            <div className="flex items-center gap-4">
+              {/* Back Button */}
+              <Button
+                onClick={() => router.push('/monitoring-evaluasi')}
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Kembali</span>
+              </Button>
+
+              {/* Project Title */}
+            </div>
+            <div className="flex-1 py-4">
+              <h1 className="text-lg font-semibold text-gray-900 lg:text-xl">
+                {project?.pekerjaan || 'Detail Proyek'}
+              </h1>
+              {project?.penyediaJasa && (
+                <p className="text-xs text-gray-600 lg:text-base">{project.penyediaJasa}</p>
+              )}
+            </div>
             {/* Tab Navigation */}
             <div className="border-b border-gray-200 pb-2 lg:pb-3">
               <div className="rounded-lg bg-gray-100 p-0.5">
@@ -778,6 +801,7 @@ export default function ProjectDetailPage() {
                         <select
                           value={selectedMaterial}
                           onChange={e => setSelectedMaterial(e.target.value)}
+                          aria-label="Pilih jenis material"
                           className="appearance-none rounded-lg border border-gray-200 bg-gray-100 px-4 py-1.5 pr-8 text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           {materials && materials.length > 0 ? (

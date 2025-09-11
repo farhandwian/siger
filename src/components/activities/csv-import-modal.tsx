@@ -60,34 +60,53 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
   const parseMonthName = (monthName: string): number => {
     const monthMap: { [key: string]: number } = {
-      'JANUARI': 1, 'JAN': 1,
-      'FEBRUARI': 2, 'FEB': 2,
-      'MARET': 3, 'MAR': 3,
-      'APRIL': 4, 'APR': 4,
-      'MEI': 5, 'MAY': 5,
-      'JUNI': 6, 'JUN': 6,
-      'JULY': 7, 'JUL': 7, 'JULI': 7,
-      'AGUSTUS': 8, 'AGU': 8, 'AUG': 8,
-      'SEPTEMBER': 9, 'SEP': 9, 'SEPT': 9,
-      'OKTOBER': 10, 'OKT': 10, 'OCT': 10,
-      'NOVEMBER': 11, 'NOV': 11,
-      'DESEMBER': 12, 'DES': 12, 'DEC': 12
+      JANUARI: 1,
+      JAN: 1,
+      FEBRUARI: 2,
+      FEB: 2,
+      MARET: 3,
+      MAR: 3,
+      APRIL: 4,
+      APR: 4,
+      MEI: 5,
+      MAY: 5,
+      JUNI: 6,
+      JUN: 6,
+      JULY: 7,
+      JUL: 7,
+      JULI: 7,
+      AGUSTUS: 8,
+      AGU: 8,
+      AUG: 8,
+      SEPTEMBER: 9,
+      SEP: 9,
+      SEPT: 9,
+      OKTOBER: 10,
+      OKT: 10,
+      OCT: 10,
+      NOVEMBER: 11,
+      NOV: 11,
+      DESEMBER: 12,
+      DES: 12,
+      DEC: 12,
     }
     return monthMap[monthName.toUpperCase()] || 1
   }
 
-  const parseDateRange = (dateRange: string): { startDay: number, endDay: number } => {
+  const parseDateRange = (dateRange: string): { startDay: number; endDay: number } => {
     const match = dateRange.match(/(\d{1,2})\s*-\s*(\d{1,2})/)
     if (match) {
       return {
         startDay: parseInt(match[1]),
-        endDay: parseInt(match[2])
+        endDay: parseInt(match[2]),
       }
     }
     return { startDay: 1, endDay: 7 }
   }
 
-  const buildPeriodMapping = (rows: string[][]): Array<{ month: number, year: number, week: number }> => {
+  const buildPeriodMapping = (
+    rows: string[][]
+  ): Array<{ month: number; year: number; week: number }> => {
     if (rows.length < 5) {
       console.log('⚠️ CSV headers incomplete, using fallback dates')
       // Fallback to default if headers are missing
@@ -115,7 +134,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     }
     console.log('📅 Extracted year:', year)
 
-    const periods: Array<{ month: number, year: number, week: number }> = []
+    const periods: Array<{ month: number; year: number; week: number }> = []
     let currentMonth = 1
     let weekInMonth = 1
 
@@ -134,7 +153,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       // If we have a date range, calculate the week
       if (dateCell && dateCell !== '') {
         const { startDay } = parseDateRange(dateCell)
-        
+
         // Estimate week based on start day
         if (startDay <= 7) weekInMonth = 1
         else if (startDay <= 14) weekInMonth = 2
@@ -144,9 +163,9 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
         const periodInfo = {
           month: currentMonth,
           year: year,
-          week: weekInMonth
+          week: weekInMonth,
         }
-        
+
         periods.push(periodInfo)
         console.log(`📅 Column ${colIndex}: ${dateCell} -> ${currentMonth}/${year}/W${weekInMonth}`)
 
@@ -158,7 +177,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
         const periodInfo = {
           month: currentMonth,
           year: year,
-          week: weekInMonth
+          week: weekInMonth,
         }
         periods.push(periodInfo)
         weekInMonth++
@@ -170,14 +189,17 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     return periods
   }
 
-  const mapPeriodToDate = (periodIndex: number, periodMapping: Array<{ month: number, year: number, week: number }>): { month: number; year: number; week: number } => {
+  const mapPeriodToDate = (
+    periodIndex: number,
+    periodMapping: Array<{ month: number; year: number; week: number }>
+  ): { month: number; year: number; week: number } => {
     return periodMapping[periodIndex] || { month: 1, year: 2025, week: 1 }
   }
 
   const parseScheduleData = (rows: string[][], headerSkip: number): ParsedActivity[] => {
     // Skip header rows
     const dataRows = rows.slice(headerSkip)
-    
+
     // Build dynamic period mapping from CSV headers
     const periodMapping = buildPeriodMapping(rows)
 
@@ -269,7 +291,9 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           const uniqueScheduleData = actualScheduleData.filter(
             (item, index, self) =>
               index ===
-              self.findIndex(t => t.period === item.period && t.month === item.month && t.week === item.week)
+              self.findIndex(
+                t => t.period === item.period && t.month === item.month && t.week === item.week
+              )
           )
 
           const subActivity: ParsedActivity = {
@@ -330,20 +354,22 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           console.log(`   Bobot MC0: ${item.bobotMC0}%`)
           console.log(`   Volume MC0: ${item.volumeMC0}`)
           console.log(`   Schedule Data (${item.scheduleData.length} periods):`)
-          item.scheduleData.forEach((schedule: {
-            period: string
-            month: number
-            year: number
-            week: number
-            planPercentage: number
-            actualPercentage: number
-          }) => {
-            if (schedule.planPercentage > 0 || schedule.actualPercentage > 0) {
-              console.log(
-                `     ${schedule.period}: Plan=${schedule.planPercentage}%, Actual=${schedule.actualPercentage}%`
-              )
+          item.scheduleData.forEach(
+            (schedule: {
+              period: string
+              month: number
+              year: number
+              week: number
+              planPercentage: number
+              actualPercentage: number
+            }) => {
+              if (schedule.planPercentage > 0 || schedule.actualPercentage > 0) {
+                console.log(
+                  `     ${schedule.period}: Plan=${schedule.planPercentage}%, Actual=${schedule.actualPercentage}%`
+                )
+              }
             }
-          })
+          )
         }
       })
     } catch (err) {
@@ -534,23 +560,23 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                 <p className="font-medium text-green-800">✅ {importResult.message}</p>
                 <div className="mt-2 space-y-1 text-green-700">
                   <div>
-                    <p className="font-semibold">📁 Activities:</p>
+                    <p className="font-semibold">📁 Pekerjaan:</p>
                     <p className="ml-4 text-sm">
-                      Created: {importResult.data?.imported?.activities || 0} | Updated:{' '}
+                      Ditambahkan: {importResult.data?.imported?.activities || 0} | Diubah:{' '}
                       {importResult.data?.updated?.activities || 0}
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold">📋 Sub-Activities:</p>
+                    <p className="font-semibold">📋 Kegiatan:</p>
                     <p className="ml-4 text-sm">
-                      Created: {importResult.data?.imported?.subActivities || 0} | Updated:{' '}
+                      Ditambahkan: {importResult.data?.imported?.subActivities || 0} | Diubah:{' '}
                       {importResult.data?.updated?.subActivities || 0}
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold">📅 Schedules:</p>
+                    <p className="font-semibold">📅 Rencana dan Realisasi:</p>
                     <p className="ml-4 text-sm">
-                      Created: {importResult.data?.imported?.schedules || 0} | Updated:{' '}
+                      Ditambahkan: {importResult.data?.imported?.schedules || 0} | Diubah:{' '}
                       {importResult.data?.updated?.schedules || 0}
                     </p>
                   </div>
