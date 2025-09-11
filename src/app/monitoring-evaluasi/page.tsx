@@ -8,10 +8,13 @@ import { ProjectList } from '@/components/monitoring/project-list'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/hooks/useAuth'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 // Import the AddProjectModal component
 import AddProjectModal from '@/components/monitoring/add-project-modal'
 
 export default function MonitoringEvaluasiPage() {
+  const { isAuthenticated, isLoading, permissions } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isAddProjectModalOpen, setIsAddProjectModalOpen] = useState(false)
   const queryClient = useQueryClient()
@@ -19,6 +22,29 @@ export default function MonitoringEvaluasiPage() {
   const handleProjectCreated = () => {
     // Invalidate project queries to trigger a refetch
     queryClient.invalidateQueries({ queryKey: ['projects'] })
+  }
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect to sign in if not authenticated (handled by middleware)
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <Alert>
+          <AlertDescription>Please sign in to access this page.</AlertDescription>
+        </Alert>
+      </div>
+    )
   }
 
   return (
@@ -94,10 +120,16 @@ export default function MonitoringEvaluasiPage() {
                   </h2>
                   <Button
                     onClick={() => setIsAddProjectModalOpen(true)}
-                    className="flex items-center gap-2 rounded-lg bg-[#ffc928] px-4 py-2.5 text-sm font-medium text-[#364878] hover:bg-[#ffc928]/90 focus:bg-[#ffc928]/90"
+                    disabled={!permissions.canCreateProjects}
+                    className="flex items-center gap-2 rounded-lg bg-[#ffc928] px-4 py-2.5 text-sm font-medium text-[#364878] hover:bg-[#ffc928]/90 focus:bg-[#ffc928]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                    title={
+                      !permissions.canCreateProjects
+                        ? 'You do not have permission to create projects'
+                        : undefined
+                    }
                   >
                     <Plus className="h-5 w-5" />
-                    Tambah Proyek
+                    {permissions.canCreateProjects ? 'Tambah Proyek' : 'View Only'}
                   </Button>
                 </div>
                 <ProjectList />

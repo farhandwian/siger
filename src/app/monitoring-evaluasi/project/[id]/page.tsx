@@ -788,6 +788,15 @@ export default function ProjectDetailPage() {
                 </div>
               )}
 
+              {/* Peta Pekerjaan Tab Content */}
+              {activeTab === 'Peta Pekerjaan' && (
+                <div className="space-y-6">
+                  <div className="relative">
+                    <ProjectWorkMap projectId={projectId} />
+                  </div>
+                </div>
+              )}
+
               {/* Material Flow Tab Content */}
               {activeTab === 'Material Flow' && (
                 <div className="space-y-6">
@@ -854,12 +863,9 @@ export default function ProjectDetailPage() {
                 </div>
               )}
 
-              {/* Peta Pekerjaan Tab Content */}
-              {activeTab === 'Peta Pekerjaan' && (
+              {activeTab === 'Analisa Kebutuhan' && (
                 <div className="space-y-6">
-                  <div className="relative">
-                    <ProjectWorkMap projectId={projectId} />
-                  </div>
+                  {/* <AnalisaKebutuhanNew projectId={projectId} /> */}
                 </div>
               )}
 

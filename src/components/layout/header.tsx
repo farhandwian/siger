@@ -3,6 +3,9 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '../ui/button'
+import { useAuth } from '@/hooks/useAuth'
+import { AuthStatus } from './user-nav'
+import { Bell, Search } from 'lucide-react'
 
 interface HeaderProps {
   title?: string
@@ -42,18 +45,23 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
         </div>
 
-        {/* User Info and AI Assistant */}
-        <div className="flex flex-shrink-0 items-center gap-2 lg:gap-3 xl:gap-6">
-          {/* User Profile */}
-          <div className="hidden items-center gap-1.5 md:flex lg:gap-2 xl:gap-3">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-300 lg:h-7 lg:w-7 xl:h-10 xl:w-10">
-              <div className="h-2.5 w-2.5 rounded-full bg-gray-600 lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
-            </div>
-            <div className="hidden text-[10px] lg:block lg:text-xs xl:text-sm">
-              <div className="font-medium text-black">BBWS Mesuji Sekampung</div>
-              <div className="text-gray-600">Admin</div>
-            </div>
-          </div>
+        {/* Actions and User Info */}
+        <div className="flex flex-shrink-0 items-center gap-2 lg:gap-3 xl:gap-4">
+          {/* Search Button (Mobile/Tablet) */}
+          <Button variant="ghost" size="sm" className="p-1.5 lg:hidden">
+            <Search className="h-4 w-4" />
+          </Button>
+
+          {/* Notifications */}
+          <Button variant="ghost" size="sm" className="relative p-1.5">
+            <Bell className="h-4 w-4 lg:h-5 lg:w-5" />
+            <span className="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] text-white">
+              3
+            </span>
+          </Button>
+
+          {/* User Navigation */}
+          <AuthStatus />
 
           {/* AI Assistant Button */}
           <Button

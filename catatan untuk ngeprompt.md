@@ -198,3 +198,17 @@ cumulative rencana juni(30–06):25
 ok i want you to visualize cumulative rencana dan cumulative realisasi from material flow table in material chart, and on the chart dont forget to add filter by month like the table does
 ---------------------------------
 i want you to get the image from db, and then if user click the image it will show all the image preview
+---------------------------------
+ANALISIS KEBUTUHAN:
+please make activity schedule as reference.
+
+please implement this ui:
+
+
+
+detail sepecification on table
+-on analisis kebutuhan column the input is fillable, and it is autosave.
+-the values in column kegiatan is from db, user will input that data by clicking button atur pekerjaan, value on this colum doesnt fillable
+-the rest of column is also fillable
+
+
