@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       activityId,
       subActivityId,
       userId,
+      tanggalProgres,
       startDate,
       endDate,
     } = parsedQuery
@@ -60,8 +61,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Add date range filter
-    if (startDate || endDate) {
+    // Add date filter - prioritize tanggalProgres over startDate/endDate
+    if (tanggalProgres) {
+      // Use exact date match if tanggalProgres is provided
+      whereClause.tanggalProgres = tanggalProgres
+    } else if (startDate || endDate) {
+      // Fall back to date range filter if tanggalProgres is not provided
       const dateFilter: any = {}
       if (startDate) {
         dateFilter.gte = startDate
@@ -161,6 +166,7 @@ export async function GET(req: NextRequest) {
         subActivityId,
         userId,
         search,
+        tanggalProgres,
         startDate,
         endDate,
         sortBy,

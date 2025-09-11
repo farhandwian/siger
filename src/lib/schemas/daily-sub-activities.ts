@@ -63,6 +63,7 @@ export const DailySubActivitiesQuerySchema = z.object({
   userId: z.string().optional(), // User ID filter - temporarily optional
 
   // Date filters
+  tanggalProgres: z.string().optional(), // YYYY-MM-DD format - exact date filter
   startDate: z.string().optional(), // YYYY-MM-DD format
   endDate: z.string().optional(), // YYYY-MM-DD format
 })
@@ -85,6 +86,7 @@ export const DailySubActivitiesResponseSchema = z.object({
     subActivityId: z.string().optional(),
     userId: z.string().optional(), // Made optional since it's temporarily disabled
     search: z.string().optional(),
+    tanggalProgres: z.string().optional(),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
     sortBy: z.string(),
