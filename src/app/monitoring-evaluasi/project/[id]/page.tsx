@@ -650,15 +650,15 @@ export default function ProjectDetailPage() {
                   {/* Metrics Cards */}
                   <div>
                     <h2 className="mb-4 text-sm font-medium text-gray-900">Progress Overview</h2>
-                    <MonitoringMetrics projectId={projectId} />
                   </div>
 
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <div className="xl:col-span-2">
+                    <div className="xl:col-span-2 flex flex-col gap-6">
+                      <MonitoringMetrics projectId={projectId} />
                       <SCurveChart projectId={projectId} />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <AIInsights />
                     </div>
                   </div>
@@ -738,10 +738,10 @@ export default function ProjectDetailPage() {
 
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <div className="xl:col-span-2">
+                    <div className="xl:col-span-2 flex flex-col">
                       <SCurveChart projectId={projectId} />
                     </div>
-                    <div>
+                    <div className="flex flex-col">
                       <AIInsights />
                     </div>
                   </div>
