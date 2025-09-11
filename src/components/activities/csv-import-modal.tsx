@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Upload, X, FileText, AlertCircle, CheckCircle } from 'lucide-react'
+import { Upload, X, FileText, AlertCircle, CheckCircle, Calendar } from 'lucide-react'
 import { useProject } from '@/hooks/useActivityQueries'
 
 interface CSVImportModalProps {
@@ -124,8 +124,8 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
   ): Array<{ month: number; year: number; week: number }> => {
     if (!spmkDate) {
       console.log('⚠️ No SPMK date available, using fallback mapping')
-      // Fallback mapping starting from May 2025
-      const fallbackStart = new Date('2025-05-23')
+      // Fallback mapping starting from last week of May 2025 (May 26, 2025)
+      const fallbackStart = new Date('2025-05-26')
       return generateWeekMapping(fallbackStart, totalWeeks)
     }
 
@@ -190,8 +190,8 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       return generateWeekMapping(startDate, totalWeeks)
     } catch (error) {
       console.error('❌ Error parsing SPMK date:', spmkDate, error)
-      // Fallback to May 2025
-      const fallbackStart = new Date('2025-05-23')
+      // Fallback to May 26, 2025 - should align with CSV Period 1 in last week of May
+      const fallbackStart = new Date('2025-05-26')
       return generateWeekMapping(fallbackStart, totalWeeks)
     }
   }
@@ -202,30 +202,80 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     totalWeeks: number
   ): Array<{ month: number; year: number; week: number }> => {
     const periods: Array<{ month: number; year: number; week: number }> = []
-    const currentDate = new Date(startDate)
 
-    console.log('📅 Generating week mapping starting from:', currentDate.toISOString())
+    console.log('📅 Generating week mapping starting from:', startDate.toISOString())
 
     for (let weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
-      const weekDate = new Date(currentDate)
-      weekDate.setDate(currentDate.getDate() + weekIndex * 7)
+      // Calculate the actual date for this week (7 days per week)
+      const weekDate = new Date(startDate)
+      weekDate.setDate(startDate.getDate() + weekIndex * 7)
 
-      const month = weekDate.getMonth() + 1 // JavaScript months are 0-indexed
-      const year = weekDate.getFullYear()
+      // Find the Monday and Thursday of the week containing this date
+      const monday = getMonday(weekDate)
+      const thursday = new Date(monday)
+      thursday.setDate(monday.getDate() + 3)
 
-      // Calculate week number within the month
+      // Use Thursday's month and year (Thursday ownership rule)
+      const month = thursday.getMonth() + 1
+      const year = thursday.getFullYear()
+
+      // Calculate week number within that month
+      // Find all Mondays in the month that have Thursday in the same month
+      let week = 1
       const firstDayOfMonth = new Date(year, month - 1, 1)
-      const dayOfMonth = weekDate.getDate()
-      const week = Math.ceil(dayOfMonth / 7)
+      let currentMonday = getMonday(firstDayOfMonth)
+
+      while (currentMonday <= thursday) {
+        const currentThursday = new Date(currentMonday)
+        currentThursday.setDate(currentMonday.getDate() + 3)
+
+        // If this Thursday belongs to our target month
+        if (currentThursday.getMonth() === month - 1 && currentThursday.getFullYear() === year) {
+          if (currentMonday.getTime() === monday.getTime()) {
+            break // Found our week number
+          }
+          week++
+        }
+
+        currentMonday.setDate(currentMonday.getDate() + 7)
+      }
 
       periods.push({ month, year, week })
 
       console.log(
-        `📅 Week ${weekIndex + 1}: ${weekDate.toISOString().slice(0, 10)} -> ${year}-${month}-W${week}`
+        `📅 Week ${weekIndex + 1}: ${weekDate.toISOString().slice(0, 10)} -> ${year}-${month.toString().padStart(2, '0')}-W${week} (Monday: ${monday.toISOString().slice(0, 10)}, Thursday: ${thursday.toISOString().slice(0, 10)})`
       )
     }
 
     return periods
+  }
+
+  // Helper function to get the Monday of the week containing the given date
+  const getMonday = (date: Date): Date => {
+    const day = date.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysFromMonday = day === 0 ? 6 : day - 1 // Convert Sunday (0) to 6
+    const monday = new Date(date)
+    monday.setDate(date.getDate() - daysFromMonday)
+    return monday
+  }
+
+  // Helper function to get month name
+  const getMonthName = (month: number): string => {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ]
+    return months[month - 1] || 'Unknown'
   }
 
   const buildPeriodMapping = (
@@ -499,7 +549,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <Card className="max-h-[90vh] w-full max-w-2xl overflow-hidden">
+      <Card className="overflow  w-full max-w-2xl">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">Import Jadwal from CSV</CardTitle>
           <Button
@@ -531,6 +581,22 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
               CSV columns (1, 2, 3, 4...) will be mapped as consecutive weeks starting from the SPMK
               date.
             </div>
+            {spmkDate && (
+              <div className="mt-2 text-xs text-blue-700">
+                <strong>Week Preview:</strong>
+                {(() => {
+                  const preview = buildWeekBasedMapping(spmkDate, 8) // Show first 8 weeks
+                  return preview.slice(0, 6).map((p, i) => (
+                    <div key={i} className="ml-2">
+                      Column {i + 1} → Week {p.week} of {getMonthName(p.month)} {p.year}
+                    </div>
+                  ))
+                })()}
+                {buildWeekBasedMapping(spmkDate, 8).length > 6 && (
+                  <div className="ml-2 text-gray-500">... and more</div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* File Upload Section */}

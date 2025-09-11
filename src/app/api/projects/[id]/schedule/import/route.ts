@@ -7,7 +7,7 @@ const ScheduleDataSchema = z.object({
   period: z.string(),
   month: z.number().min(1).max(12),
   year: z.number(),
-  week: z.number().min(1).max(5), // Allow up to week 5 for spanning weeks like MEI 26-01
+  week: z.number().min(1), // Allow up to week 5 for spanning weeks like MEI 26-01
   planPercentage: z.number().default(0),
   actualPercentage: z.number().default(0),
 })

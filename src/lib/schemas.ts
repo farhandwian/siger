@@ -331,7 +331,7 @@ export const ActivityScheduleSchema = z.object({
   subActivityId: z.any().optional(), // Temporary: allow any type
   month: z.number().min(1).max(12),
   year: z.number(),
-  week: z.number().min(1).max(5), // Allow up to 5 weeks since some months have 5 weeks
+  week: z.number().min(1).max(6), // Allow up to 6 weeks since some months can have 6 weeks
   planPercentage: z.number().min(0).max(100).nullable(),
   actualPercentage: z.number().min(0).max(100).nullable(),
   createdAt: z.any(), // Temporary: allow any type for createdAt
