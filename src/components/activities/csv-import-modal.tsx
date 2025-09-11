@@ -58,44 +58,160 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     })
   }
 
-  const mapPeriodToDate = (periodIndex: number): { month: number; year: number; week: number } => {
-    // Based on the CSV structure, periods start from column 7 (index 7)
-    // MEI (23-25), MEI (26-01), JUNI (02-08), JUNI (09-15), etc.
-    const periods = [
-      { month: 5, year: 2025, week: 4 }, // MEI 23-25
-      { month: 5, year: 2025, week: 4 }, // MEI 26-01 (spanning)
-      { month: 6, year: 2025, week: 1 }, // JUNI 02-08
-      { month: 6, year: 2025, week: 2 }, // JUNI 09-15
-      { month: 6, year: 2025, week: 3 }, // JUNI 16-22
-      { month: 6, year: 2025, week: 4 }, // JUNI 23-29
-      { month: 7, year: 2025, week: 1 }, // JULY 30-06
-      { month: 7, year: 2025, week: 2 }, // JULY 07-13
-      { month: 7, year: 2025, week: 3 }, // JULY 14-20
-      { month: 7, year: 2025, week: 4 }, // JULY 21-27
-      { month: 8, year: 2025, week: 1 }, // AGUSTUS 28-03
-      { month: 8, year: 2025, week: 2 }, // AGUSTUS 04-10
-      { month: 8, year: 2025, week: 3 }, // AGUSTUS 11-17
-      { month: 8, year: 2025, week: 4 }, // AGUSTUS 18-24
-      { month: 8, year: 2025, week: 4 }, // AGUSTUS 25-31
-      { month: 9, year: 2025, week: 1 }, // SEPTEMBER 01-07
-      { month: 9, year: 2025, week: 2 }, // SEPTEMBER 08-14
-      { month: 9, year: 2025, week: 3 }, // SEPTEMBER 15-19
-    ]
-
-    return periods[periodIndex] || { month: 1, year: 2025, week: 1 }
+  const parseMonthName = (monthName: string): number => {
+    const monthMap: { [key: string]: number } = {
+      JANUARI: 1,
+      JAN: 1,
+      FEBRUARI: 2,
+      FEB: 2,
+      MARET: 3,
+      MAR: 3,
+      APRIL: 4,
+      APR: 4,
+      MEI: 5,
+      MAY: 5,
+      JUNI: 6,
+      JUN: 6,
+      JULY: 7,
+      JUL: 7,
+      JULI: 7,
+      AGUSTUS: 8,
+      AGU: 8,
+      AUG: 8,
+      SEPTEMBER: 9,
+      SEP: 9,
+      SEPT: 9,
+      OKTOBER: 10,
+      OKT: 10,
+      OCT: 10,
+      NOVEMBER: 11,
+      NOV: 11,
+      DESEMBER: 12,
+      DES: 12,
+      DEC: 12,
+    }
+    return monthMap[monthName.toUpperCase()] || 1
   }
 
-  const parseScheduleData = (rows: string[][], startRowIndex: number): ParsedActivity[] => {
-    const activities: ParsedActivity[] = []
-    let currentActivity: string | null = null
-    let i = startRowIndex
+  const parseDateRange = (dateRange: string): { startDay: number; endDay: number } => {
+    const match = dateRange.match(/(\d{1,2})\s*-\s*(\d{1,2})/)
+    if (match) {
+      return {
+        startDay: parseInt(match[1]),
+        endDay: parseInt(match[2]),
+      }
+    }
+    return { startDay: 1, endDay: 7 }
+  }
 
-    // Track processed activities and sub-activities to prevent duplicates
+  const buildPeriodMapping = (
+    rows: string[][]
+  ): Array<{ month: number; year: number; week: number }> => {
+    if (rows.length < 5) {
+      console.log('⚠️ CSV headers incomplete, using fallback dates')
+      // Fallback to default if headers are missing
+      return [
+        { month: 5, year: 2025, week: 4 }, // MEI 23-25
+        { month: 5, year: 2025, week: 4 }, // MEI 26-01 (spanning)
+        { month: 6, year: 2025, week: 1 }, // JUNI 02-08
+      ]
+    }
+
+    const yearRow = rows[1] // "TAHUN ANGGARAN 2025"
+    const monthRow = rows[3] // "MEI;;JUNI;;;;JULY;;;;;AGUSTUS;;;;SEPTEMBER;;;"
+    const dateRow = rows[4] // "23 - 25;26 - 01;02 - 08;09 - 15;..."
+
+    console.log('📅 Building dynamic period mapping from CSV headers:')
+    console.log('Year row:', yearRow.join(' | '))
+    console.log('Month row:', monthRow.join(' | '))
+    console.log('Date row:', dateRow.join(' | '))
+
+    // Extract year from header
+    let year = 2025 // default
+    const yearMatch = yearRow.join(' ').match(/(\d{4})/)
+    if (yearMatch) {
+      year = parseInt(yearMatch[1])
+    }
+    console.log('📅 Extracted year:', year)
+
+    const periods: Array<{ month: number; year: number; week: number }> = []
+    let currentMonth = 1
+    let weekInMonth = 1
+
+    // Start from column 7 (where schedule data begins)
+    for (let colIndex = 7; colIndex < Math.min(monthRow.length, dateRow.length); colIndex++) {
+      const monthCell = monthRow[colIndex]?.trim()
+      const dateCell = dateRow[colIndex]?.trim()
+
+      // Check if this column has a month name
+      if (monthCell && monthCell !== '') {
+        currentMonth = parseMonthName(monthCell)
+        weekInMonth = 1
+        console.log(`📅 Found month at column ${colIndex}: ${monthCell} -> ${currentMonth}`)
+      }
+
+      // If we have a date range, calculate the week
+      if (dateCell && dateCell !== '') {
+        const { startDay } = parseDateRange(dateCell)
+
+        // Estimate week based on start day
+        if (startDay <= 7) weekInMonth = 1
+        else if (startDay <= 14) weekInMonth = 2
+        else if (startDay <= 21) weekInMonth = 3
+        else weekInMonth = 4
+
+        const periodInfo = {
+          month: currentMonth,
+          year: year,
+          week: weekInMonth,
+        }
+
+        periods.push(periodInfo)
+        console.log(`📅 Column ${colIndex}: ${dateCell} -> ${currentMonth}/${year}/W${weekInMonth}`)
+
+        // Move to next week for next column in same month
+        weekInMonth++
+        if (weekInMonth > 4) weekInMonth = 4
+      } else if (periods.length > 0) {
+        // Continue with current month if no specific date
+        const periodInfo = {
+          month: currentMonth,
+          year: year,
+          week: weekInMonth,
+        }
+        periods.push(periodInfo)
+        weekInMonth++
+        if (weekInMonth > 4) weekInMonth = 4
+      }
+    }
+
+    console.log(`📅 Built ${periods.length} periods:`, periods)
+    return periods
+  }
+
+  const mapPeriodToDate = (
+    periodIndex: number,
+    periodMapping: Array<{ month: number; year: number; week: number }>
+  ): { month: number; year: number; week: number } => {
+    return periodMapping[periodIndex] || { month: 1, year: 2025, week: 1 }
+  }
+
+  const parseScheduleData = (rows: string[][], headerSkip: number): ParsedActivity[] => {
+    // Skip header rows
+    const dataRows = rows.slice(headerSkip)
+
+    // Build dynamic period mapping from CSV headers
+    const periodMapping = buildPeriodMapping(rows)
+
+    const activities: ParsedActivity[] = []
     const processedActivities = new Set<string>()
     const processedSubActivities = new Set<string>()
 
-    while (i < rows.length) {
-      const row = rows[i]
+    let i = 0
+    let currentActivity = ''
+
+    while (i < dataRows.length) {
+      const row = dataRows[i]
       if (!row || row.length < 2) {
         i++
         continue
@@ -136,7 +252,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           const planScheduleData = []
           for (let colIndex = 7; colIndex < row.length; colIndex++) {
             const value = parseFloat(row[colIndex]?.replace(',', '.') || '0')
-            const dateInfo = mapPeriodToDate(colIndex - 7)
+            const dateInfo = mapPeriodToDate(colIndex - 7, periodMapping)
 
             if (value > 0 || colIndex < 25) {
               // Include even 0 values for valid periods
@@ -153,8 +269,8 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
           // Check next row for actual values
           let actualScheduleData = planScheduleData.map(item => ({ ...item, actualPercentage: 0 }))
-          if (i + 1 < rows.length) {
-            const nextRow = rows[i + 1]
+          if (i + 1 < dataRows.length) {
+            const nextRow = dataRows[i + 1]
             if (nextRow && !nextRow[0]?.trim() && !nextRow[1]?.trim()) {
               // This is the actual values row
               for (
@@ -172,28 +288,26 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           }
 
           // Deduplicate schedule data within the same sub-activity
-          const uniqueScheduleData = []
-          const scheduleKeys = new Set()
+          const uniqueScheduleData = actualScheduleData.filter(
+            (item, index, self) =>
+              index ===
+              self.findIndex(
+                t => t.period === item.period && t.month === item.month && t.week === item.week
+              )
+          )
 
-          for (const schedule of actualScheduleData) {
-            const key = `${schedule.month}-${schedule.year}-${schedule.week}`
-            if (!scheduleKeys.has(key)) {
-              scheduleKeys.add(key)
-              uniqueScheduleData.push(schedule)
-            }
-          }
-
-          activities.push({
+          const subActivity: ParsedActivity = {
             name: secondCol,
             type: 'subActivity',
             parentActivity: currentActivity,
             satuan,
-            volumeKontrak: volumeKontrak || undefined,
-            bobotMC0: bobotMC0 || undefined,
-            volumeMC0: volumeMC0 || undefined,
+            volumeKontrak,
+            bobotMC0,
+            volumeMC0,
             scheduleData: uniqueScheduleData,
-          })
+          }
 
+          activities.push(subActivity)
           processedSubActivities.add(subActivityKey)
         }
       }
@@ -240,13 +354,22 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           console.log(`   Bobot MC0: ${item.bobotMC0}%`)
           console.log(`   Volume MC0: ${item.volumeMC0}`)
           console.log(`   Schedule Data (${item.scheduleData.length} periods):`)
-          item.scheduleData.forEach(schedule => {
-            if (schedule.planPercentage > 0 || schedule.actualPercentage > 0) {
-              console.log(
-                `     ${schedule.period}: Plan=${schedule.planPercentage}%, Actual=${schedule.actualPercentage}%`
-              )
+          item.scheduleData.forEach(
+            (schedule: {
+              period: string
+              month: number
+              year: number
+              week: number
+              planPercentage: number
+              actualPercentage: number
+            }) => {
+              if (schedule.planPercentage > 0 || schedule.actualPercentage > 0) {
+                console.log(
+                  `     ${schedule.period}: Plan=${schedule.planPercentage}%, Actual=${schedule.actualPercentage}%`
+                )
+              }
             }
-          })
+          )
         }
       })
     } catch (err) {
@@ -437,23 +560,23 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                 <p className="font-medium text-green-800">✅ {importResult.message}</p>
                 <div className="mt-2 space-y-1 text-green-700">
                   <div>
-                    <p className="font-semibold">📁 Activities:</p>
+                    <p className="font-semibold">📁 Pekerjaan:</p>
                     <p className="ml-4 text-sm">
-                      Created: {importResult.data?.imported?.activities || 0} | Updated:{' '}
+                      Ditambahkan: {importResult.data?.imported?.activities || 0} | Diubah:{' '}
                       {importResult.data?.updated?.activities || 0}
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold">📋 Sub-Activities:</p>
+                    <p className="font-semibold">📋 Kegiatan:</p>
                     <p className="ml-4 text-sm">
-                      Created: {importResult.data?.imported?.subActivities || 0} | Updated:{' '}
+                      Ditambahkan: {importResult.data?.imported?.subActivities || 0} | Diubah:{' '}
                       {importResult.data?.updated?.subActivities || 0}
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold">📅 Schedules:</p>
+                    <p className="font-semibold">📅 Rencana dan Realisasi:</p>
                     <p className="ml-4 text-sm">
-                      Created: {importResult.data?.imported?.schedules || 0} | Updated:{' '}
+                      Ditambahkan: {importResult.data?.imported?.schedules || 0} | Diubah:{' '}
                       {importResult.data?.updated?.schedules || 0}
                     </p>
                   </div>

@@ -6,9 +6,20 @@ import { Header } from '@/components/layout/header'
 import { SummaryCards } from '@/components/monitoring/summary-cards'
 import { ProjectList } from '@/components/monitoring/project-list'
 import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+// Import the AddProjectModal component
+import AddProjectModal from '@/components/monitoring/add-project-modal'
 
 export default function MonitoringEvaluasiPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isAddProjectModalOpen, setIsAddProjectModalOpen] = useState(false)
+  const queryClient = useQueryClient()
+
+  const handleProjectCreated = () => {
+    // Invalidate project queries to trigger a refetch
+    queryClient.invalidateQueries({ queryKey: ['projects'] })
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -77,15 +88,31 @@ export default function MonitoringEvaluasiPage() {
 
               {/* Project List Section */}
               <div>
-                <h2 className="mb-2 text-[10px] font-medium text-gray-900 lg:mb-3 lg:text-xs xl:text-sm">
-                  Daftar Pekerjaan
-                </h2>
+                <div className="mb-2 flex items-center justify-between lg:mb-3">
+                  <h2 className="text-[10px] font-medium text-gray-900 lg:text-xs xl:text-sm">
+                    Daftar Pekerjaan
+                  </h2>
+                  <Button
+                    onClick={() => setIsAddProjectModalOpen(true)}
+                    className="flex items-center gap-2 rounded-lg bg-[#ffc928] px-4 py-2.5 text-sm font-medium text-[#364878] hover:bg-[#ffc928]/90 focus:bg-[#ffc928]/90"
+                  >
+                    <Plus className="h-5 w-5" />
+                    Tambah Proyek
+                  </Button>
+                </div>
                 <ProjectList />
               </div>
             </div>
           </div>
         </main>
       </div>
+
+      {/* Add Project Modal */}
+      <AddProjectModal
+        isOpen={isAddProjectModalOpen}
+        onClose={() => setIsAddProjectModalOpen(false)}
+        onSuccess={handleProjectCreated}
+      />
     </div>
   )
 }
