@@ -53,9 +53,9 @@ interface ActionPlanMetricsProps {
   onNavigateToMap?: () => void
 }
 
-export const ActionPlanMetrics: React.FC<ActionPlanMetricsProps> = ({ 
-  projectId, 
-  onNavigateToMap 
+export const ActionPlanMetrics: React.FC<ActionPlanMetricsProps> = ({
+  projectId,
+  onNavigateToMap,
 }) => {
   const router = useRouter()
 
