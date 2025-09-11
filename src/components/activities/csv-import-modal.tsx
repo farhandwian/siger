@@ -58,7 +58,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     })
   }
 
-  const mapPeriodToDate = (periodIndex: number): { month: number, year: number, week: number } => {
+  const mapPeriodToDate = (periodIndex: number): { month: number; year: number; week: number } => {
     // Based on the CSV structure, periods start from column 7 (index 7)
     // MEI (23-25), MEI (26-01), JUNI (02-08), JUNI (09-15), etc.
     const periods = [
@@ -81,7 +81,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       { month: 9, year: 2025, week: 2 }, // SEPTEMBER 08-14
       { month: 9, year: 2025, week: 3 }, // SEPTEMBER 15-19
     ]
-    
+
     return periods[periodIndex] || { month: 1, year: 2025, week: 1 }
   }
 
@@ -107,13 +107,13 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       // Check if this is a main activity (has Roman numeral)
       if (firstCol && /^[IVX]+$/.test(firstCol)) {
         currentActivity = secondCol
-        
+
         // Only add if not already processed
         if (!processedActivities.has(secondCol)) {
           activities.push({
             name: secondCol,
             type: 'activity',
-            scheduleData: []
+            scheduleData: [],
           })
           processedActivities.add(secondCol)
         }
@@ -124,7 +124,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       // Check if this is a sub-activity (no Roman numeral but has content in second column)
       if (!firstCol && secondCol && currentActivity) {
         const subActivityKey = `${currentActivity}::${secondCol}`
-        
+
         // Only process if not already processed
         if (!processedSubActivities.has(subActivityKey)) {
           const satuan = row[2]?.trim()
@@ -137,15 +137,16 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           for (let colIndex = 7; colIndex < row.length; colIndex++) {
             const value = parseFloat(row[colIndex]?.replace(',', '.') || '0')
             const dateInfo = mapPeriodToDate(colIndex - 7)
-            
-            if (value > 0 || colIndex < 25) { // Include even 0 values for valid periods
+
+            if (value > 0 || colIndex < 25) {
+              // Include even 0 values for valid periods
               planScheduleData.push({
                 period: `${dateInfo.year}-${dateInfo.month.toString().padStart(2, '0')}-W${dateInfo.week}`,
                 month: dateInfo.month,
                 year: dateInfo.year,
                 week: dateInfo.week,
                 planPercentage: value,
-                actualPercentage: 0
+                actualPercentage: 0,
               })
             }
           }
@@ -156,7 +157,11 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
             const nextRow = rows[i + 1]
             if (nextRow && !nextRow[0]?.trim() && !nextRow[1]?.trim()) {
               // This is the actual values row
-              for (let colIndex = 7; colIndex < nextRow.length && colIndex - 7 < actualScheduleData.length; colIndex++) {
+              for (
+                let colIndex = 7;
+                colIndex < nextRow.length && colIndex - 7 < actualScheduleData.length;
+                colIndex++
+              ) {
                 const actualValue = parseFloat(nextRow[colIndex]?.replace(',', '.') || '0')
                 if (actualScheduleData[colIndex - 7]) {
                   actualScheduleData[colIndex - 7].actualPercentage = actualValue
@@ -169,7 +174,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           // Deduplicate schedule data within the same sub-activity
           const uniqueScheduleData = []
           const scheduleKeys = new Set()
-          
+
           for (const schedule of actualScheduleData) {
             const key = `${schedule.month}-${schedule.year}-${schedule.week}`
             if (!scheduleKeys.has(key)) {
@@ -186,9 +191,9 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
             volumeKontrak: volumeKontrak || undefined,
             bobotMC0: bobotMC0 || undefined,
             volumeMC0: volumeMC0 || undefined,
-            scheduleData: uniqueScheduleData
+            scheduleData: uniqueScheduleData,
           })
-          
+
           processedSubActivities.add(subActivityKey)
         }
       }
@@ -221,8 +226,11 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       console.log('=== CSV IMPORT RESULTS ===')
       console.log('Project ID:', projectId)
       console.log('Total Activities:', parsedData.filter(item => item.type === 'activity').length)
-      console.log('Total Sub-Activities:', parsedData.filter(item => item.type === 'subActivity').length)
-      
+      console.log(
+        'Total Sub-Activities:',
+        parsedData.filter(item => item.type === 'subActivity').length
+      )
+
       parsedData.forEach((item, index) => {
         console.log(`\n${index + 1}. ${item.type.toUpperCase()}: ${item.name}`)
         if (item.type === 'subActivity') {
@@ -234,12 +242,13 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           console.log(`   Schedule Data (${item.scheduleData.length} periods):`)
           item.scheduleData.forEach(schedule => {
             if (schedule.planPercentage > 0 || schedule.actualPercentage > 0) {
-              console.log(`     ${schedule.period}: Plan=${schedule.planPercentage}%, Actual=${schedule.actualPercentage}%`)
+              console.log(
+                `     ${schedule.period}: Plan=${schedule.planPercentage}%, Actual=${schedule.actualPercentage}%`
+              )
             }
           })
         }
       })
-
     } catch (err) {
       console.error('CSV parsing error:', err)
       setError(err instanceof Error ? err.message : 'Failed to parse CSV file')
@@ -290,7 +299,6 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       if (onSuccess) {
         onSuccess()
       }
-
     } catch (err) {
       console.error('Import to database error:', err)
       setError(err instanceof Error ? err.message : 'Failed to import to database')
@@ -303,7 +311,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      <Card className="max-h-[90vh] w-full max-w-2xl overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">Import Jadwal from CSV</CardTitle>
           <Button
@@ -317,11 +325,11 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
-        
+
         <CardContent className="space-y-4 overflow-y-auto">
           {/* File Upload Section */}
           <div className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -330,36 +338,28 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                 className="hidden"
                 aria-label="Select CSV file for schedule import"
               />
-              
+
               {!file ? (
                 <div className="space-y-2">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto" />
+                  <FileText className="mx-auto h-12 w-12 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">
-                      Select a CSV file with schedule data
-                    </p>
+                    <p className="text-sm text-gray-600">Select a CSV file with schedule data</p>
                     <Button
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
                       className="mt-2"
                     >
-                      <Upload className="h-4 w-4 mr-2" />
+                      <Upload className="mr-2 h-4 w-4" />
                       Choose File
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <CheckCircle className="h-8 w-8 text-green-500 mx-auto" />
+                  <CheckCircle className="mx-auto h-8 w-8 text-green-500" />
                   <p className="text-sm font-medium">{file.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    size="sm"
-                  >
+                  <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} size="sm">
                     Change File
                   </Button>
                 </div>
@@ -368,7 +368,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
             {/* Error Display */}
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
                 <AlertCircle className="h-4 w-4 text-red-500" />
                 <p className="text-sm text-red-700">{error}</p>
               </div>
@@ -376,14 +376,10 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
             {/* Process Button */}
             <div className="flex gap-2">
-              <Button
-                onClick={processCSV}
-                disabled={!file || isProcessing}
-                className="flex-1"
-              >
+              <Button onClick={processCSV} disabled={!file || isProcessing} className="flex-1">
                 {isProcessing ? 'Processing...' : 'Parse & Preview'}
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={() => {
@@ -399,16 +395,19 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           {/* Results Preview */}
           {parseResult && !importResult && (
             <div className="space-y-4 border-t pt-4">
-              <h3 className="font-medium text-sm">Import Preview</h3>
-              <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+              <h3 className="text-sm font-medium">Import Preview</h3>
+              <div className="rounded bg-gray-50 p-3 text-sm text-gray-600">
                 <p>✅ Successfully parsed {parseResult.length} items</p>
                 <p>📁 Activities: {parseResult.filter(item => item.type === 'activity').length}</p>
-                <p>📋 Sub-Activities: {parseResult.filter(item => item.type === 'subActivity').length}</p>
+                <p>
+                  📋 Sub-Activities:{' '}
+                  {parseResult.filter(item => item.type === 'subActivity').length}
+                </p>
                 <p className="mt-2 text-xs">
                   Ready to import to database. Click the button below to proceed.
                 </p>
               </div>
-              
+
               {/* Import to Database Button */}
               <div className="flex gap-2">
                 <Button
@@ -418,7 +417,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                 >
                   {isImporting ? 'Importing...' : 'Import to Database'}
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   onClick={() => setParseResult(null)}
@@ -433,25 +432,34 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           {/* Import Success */}
           {importResult && (
             <div className="space-y-4 border-t pt-4">
-              <h3 className="font-medium text-sm text-green-700">Import Successful!</h3>
-              <div className="text-sm bg-green-50 border border-green-200 p-3 rounded">
+              <h3 className="text-sm font-medium text-green-700">Import Successful!</h3>
+              <div className="rounded border border-green-200 bg-green-50 p-3 text-sm">
                 <p className="font-medium text-green-800">✅ {importResult.message}</p>
                 <div className="mt-2 space-y-1 text-green-700">
                   <div>
                     <p className="font-semibold">📁 Activities:</p>
-                    <p className="ml-4 text-sm">Created: {importResult.data?.imported?.activities || 0} | Updated: {importResult.data?.updated?.activities || 0}</p>
+                    <p className="ml-4 text-sm">
+                      Created: {importResult.data?.imported?.activities || 0} | Updated:{' '}
+                      {importResult.data?.updated?.activities || 0}
+                    </p>
                   </div>
                   <div>
                     <p className="font-semibold">📋 Sub-Activities:</p>
-                    <p className="ml-4 text-sm">Created: {importResult.data?.imported?.subActivities || 0} | Updated: {importResult.data?.updated?.subActivities || 0}</p>
+                    <p className="ml-4 text-sm">
+                      Created: {importResult.data?.imported?.subActivities || 0} | Updated:{' '}
+                      {importResult.data?.updated?.subActivities || 0}
+                    </p>
                   </div>
                   <div>
                     <p className="font-semibold">📅 Schedules:</p>
-                    <p className="ml-4 text-sm">Created: {importResult.data?.imported?.schedules || 0} | Updated: {importResult.data?.updated?.schedules || 0}</p>
+                    <p className="ml-4 text-sm">
+                      Created: {importResult.data?.imported?.schedules || 0} | Updated:{' '}
+                      {importResult.data?.updated?.schedules || 0}
+                    </p>
                   </div>
                 </div>
               </div>
-              
+
               <Button
                 onClick={() => {
                   resetModal()

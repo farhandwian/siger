@@ -654,7 +654,7 @@ export default function ProjectDetailPage() {
 
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <div className="xl:col-span-2 flex flex-col gap-6">
+                    <div className="flex flex-col gap-6 xl:col-span-2">
                       <MonitoringMetrics projectId={projectId} />
                       <SCurveChart projectId={projectId} />
                     </div>
@@ -665,7 +665,7 @@ export default function ProjectDetailPage() {
 
                   {/* Activity Schedule Table */}
                   <div>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4 flex items-center justify-between">
                       <h2 className="text-sm font-medium text-gray-900">Activity Schedule</h2>
                       <Button
                         onClick={() => setCsvImportModalOpen(true)}
@@ -738,7 +738,7 @@ export default function ProjectDetailPage() {
 
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <div className="xl:col-span-2 flex flex-col">
+                    <div className="flex flex-col xl:col-span-2">
                       <SCurveChart projectId={projectId} />
                     </div>
                     <div className="flex flex-col">
@@ -748,7 +748,7 @@ export default function ProjectDetailPage() {
 
                   {/* Activity Schedule Table */}
                   <div>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4 flex items-center justify-between">
                       <h2 className="text-sm font-medium text-gray-900">Activity Schedule</h2>
                       <Button
                         onClick={() => setCsvImportModalOpen(true)}
