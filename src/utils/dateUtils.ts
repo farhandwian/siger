@@ -15,6 +15,170 @@ export interface MonthData {
 }
 
 /**
+ * Extract actual week periods from schedule data (not just date range)
+ * This accounts for partial months and varying week counts per month
+ */
+export function getActualPeriodsFromScheduleData(activities: any[]): MonthData[] | null {
+  if (!activities || activities.length === 0) {
+    console.log('No activities provided to getActualPeriodsFromScheduleData')
+    return null
+  }
+
+  const periodMap = new Map<string, { month: number; year: number; week: number; count: number }>()
+
+  // Collect all unique periods from schedule data
+  activities.forEach((activity, activityIndex) => {
+    // Check main activity schedules
+    if (activity.schedules) {
+      activity.schedules.forEach((schedule: any, scheduleIndex: number) => {
+        if (schedule.month && schedule.year && schedule.week) {
+          const key = `${schedule.year}-${schedule.month.toString().padStart(2, '0')}-W${schedule.week}`
+          const existing = periodMap.get(key)
+          periodMap.set(key, {
+            month: schedule.month,
+            year: schedule.year,
+            week: schedule.week,
+            count: (existing?.count || 0) + 1,
+          })
+        }
+      })
+    }
+
+    // Check sub-activity schedules
+    if (activity.subActivities) {
+      activity.subActivities.forEach((subActivity: any, subIndex: number) => {
+        if (subActivity.schedules) {
+          subActivity.schedules.forEach((schedule: any, scheduleIndex: number) => {
+            if (schedule.month && schedule.year && schedule.week) {
+              const key = `${schedule.year}-${schedule.month.toString().padStart(2, '0')}-W${schedule.week}`
+              const existing = periodMap.get(key)
+              periodMap.set(key, {
+                month: schedule.month,
+                year: schedule.year,
+                week: schedule.week,
+                count: (existing?.count || 0) + 1,
+              })
+            }
+          })
+        }
+      })
+    }
+  })
+
+  if (periodMap.size === 0) return null
+
+  // Group periods by month
+  const monthGroups = new Map<number, { month: number; year: number; weeks: Set<number> }>()
+
+  periodMap.forEach(period => {
+    const existing = monthGroups.get(period.month)
+    if (existing) {
+      existing.weeks.add(period.week)
+    } else {
+      monthGroups.set(period.month, {
+        month: period.month,
+        year: period.year,
+        weeks: new Set([period.week]),
+      })
+    }
+  })
+
+  // Convert to MonthData format with actual weeks only
+  const months: MonthData[] = []
+
+  // Sort months by month number
+  const sortedMonths = Array.from(monthGroups.values()).sort((a, b) => a.month - b.month)
+
+  sortedMonths.forEach(monthGroup => {
+    const sortedWeeks = Array.from(monthGroup.weeks).sort((a, b) => a - b)
+
+    const weeks: WeekRange[] = sortedWeeks.map(weekNum => {
+      // Generate appropriate date range for the week
+      // This is approximate since we don't have exact dates from schedule data
+      const weekStartDay = (weekNum - 1) * 7 + 1
+      const weekEndDay = Math.min(
+        weekStartDay + 6,
+        getDaysInMonth(monthGroup.month, monthGroup.year)
+      )
+
+      return {
+        week: weekNum,
+        range: `${weekStartDay.toString().padStart(2, '0')}–${weekEndDay.toString().padStart(2, '0')}`,
+        startDate: new Date(monthGroup.year, monthGroup.month - 1, weekStartDay),
+        endDate: new Date(monthGroup.year, monthGroup.month - 1, weekEndDay),
+      }
+    })
+
+    months.push({
+      month: monthGroup.month,
+      name: getMonthName(monthGroup.month),
+      weeks: weeks,
+    })
+  })
+
+  return months
+}
+
+/**
+ * Get number of days in a month
+ */
+function getDaysInMonth(month: number, year: number): number {
+  return new Date(year, month, 0).getDate()
+}
+
+/**
+ * Generate months with weeks based on actual schedule data
+ * This respects partial months and varying week counts from imported data
+ */
+export function generateMonthsFromScheduleData(activities?: any[]): MonthData[] {
+  // First try to get actual periods from schedule data
+  if (activities) {
+    const actualPeriods = getActualPeriodsFromScheduleData(activities)
+    if (actualPeriods && actualPeriods.length > 0) {
+      return actualPeriods
+    }
+  }
+
+  // Fallback: if no schedule data, generate default range
+
+  return generateMonthsFromRange(5, 2025, 9, 2025) // May to September 2025
+}
+
+/**
+ * Generate months from a specific date range
+ */
+export function generateMonthsFromRange(
+  startMonth: number,
+  startYear: number,
+  endMonth: number,
+  endYear: number
+): MonthData[] {
+  const months: MonthData[] = []
+
+  let currentMonth = startMonth
+  let currentYear = startYear
+
+  while (currentYear < endYear || (currentYear === endYear && currentMonth <= endMonth)) {
+    const monthName = getMonthName(currentMonth)
+    const weeks = generateWeeksForMonth(currentMonth, currentYear)
+
+    months.push({
+      month: currentMonth,
+      name: monthName,
+      weeks: weeks,
+    })
+
+    currentMonth++
+    if (currentMonth > 12) {
+      currentMonth = 1
+      currentYear++
+    }
+  }
+
+  return months
+}
+
+/**
  * Convert date string to HTML date input format (YYYY-MM-DD)
  */
 export function formatDateForInput(dateStr: string | null): string {
@@ -39,13 +203,23 @@ export function formatDateForDisplay(dateStr: string | null): string {
 }
 
 /**
- * Generate month and week data based on contract dates
+ * Generate month and week data based on contract dates or schedule data
  * Uses Monday-Sunday week rules with Thursday ownership for cross-month weeks
  */
 export function generateMonthsFromContract(
   tanggalKontrak: string | null,
-  akhirKontrak: string | null
+  akhirKontrak: string | null,
+  activities?: any[] // Optional activities parameter to check for schedule data
 ): MonthData[] {
+  // First, try to generate from actual schedule data
+  if (activities && activities.length > 0) {
+    const scheduleMonths = generateMonthsFromScheduleData(activities)
+    if (scheduleMonths && scheduleMonths.length > 0) {
+      return scheduleMonths
+    }
+  }
+
+  // Fall back to contract dates
   if (!tanggalKontrak || !akhirKontrak) {
     return getDefaultMonths()
   }
@@ -123,7 +297,6 @@ export function generateMonthsFromContract(
 
     return getDefaultMonths()
   } catch (error) {
-    console.error('Error parsing contract dates:', error)
     return getDefaultMonths()
   }
 }

@@ -112,7 +112,10 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
           const scrollbarWidth = scrollbarRect.width
           const maxScrollLeft = scrollWidth - clientWidth
           const deltaScrollLeft = (deltaX / scrollbarWidth) * maxScrollLeft
-          const newScrollLeft = Math.min(Math.max(dragStartScrollLeft + deltaScrollLeft, 0), maxScrollLeft)
+          const newScrollLeft = Math.min(
+            Math.max(dragStartScrollLeft + deltaScrollLeft, 0),
+            maxScrollLeft
+          )
 
           scrollContainerRef.current.scrollLeft = newScrollLeft
         }
@@ -146,7 +149,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
   const showCustomScrollbar = scrollWidth > clientWidth
 
   console.log('Contract dates for schedule:', {
-    tanggalKontrak: project?.tanggalKontrak,
+    tanggalKontrak: project?.tanggalSpmk,
     akhirKontrak: project?.akhirKontrak,
   })
 
@@ -294,14 +297,14 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
       <div className="relative">
         {/* Custom Top Scrollbar */}
         {showCustomScrollbar && (
-          <div className="absolute top-0 left-0 right-0 h-5 bg-gray-100 rounded-lg border border-gray-200 shadow-sm z-10">
+          <div className="absolute left-0 right-0 top-0 z-10 h-5 rounded-lg border border-gray-200 bg-gray-100 shadow-sm">
             <div
               ref={topScrollbarRef}
               className="relative h-full cursor-pointer"
               onClick={handleTopScrollbarClick}
             >
               <div
-                className="absolute top-1 bottom-1 bg-gray-500 hover:bg-gray-600 rounded-md transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-sm"
+                className="absolute bottom-1 top-1 cursor-grab rounded-md bg-gray-500 shadow-sm transition-colors duration-150 hover:bg-gray-600 active:cursor-grabbing"
                 style={{
                   left: `${thumbPosition}%`,
                   width: `${thumbWidth}%`,
@@ -314,10 +317,10 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
         <div
           ref={scrollContainerRef}
-          className="overflow-x-auto scrollbar-hide"
+          className="scrollbar-hide overflow-x-auto"
           style={{
             paddingBottom: '20px',
-            paddingTop: showCustomScrollbar ? '24px' : '0px'
+            paddingTop: showCustomScrollbar ? '24px' : '0px',
           }}
         >
           <table className="w-full text-[8px] lg:text-[9px] xl:text-[10px]">
@@ -327,13 +330,13 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
               <tr>
                 <th
                   rowSpan={2}
-                  className="activity-table-sticky-left border-b border-gray-200 bg-gray-50 p-1.5 table-text-sm font-bold text-gray-900"
+                  className="activity-table-sticky-left table-text-sm border-b border-gray-200 bg-gray-50 p-1.5 font-bold text-gray-900"
                 >
                   URAIAN PEKERJAAN
                 </th>
                 <th
                   rowSpan={2}
-                  className="border-b border-gray-200 bg-gray-50 p-1.5 table-text-sm font-bold text-gray-900"
+                  className="table-text-sm border-b border-gray-200 bg-gray-50 p-1.5 font-bold text-gray-900"
                 >
                   <div>Bobot</div>
                   <div>(%)</div>
@@ -342,8 +345,9 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   <th
                     key={month.month}
                     colSpan={month.weeks.length}
-                    className={`activity-table-header-primary ${monthIndex < months.length - 1 ? 'month-separator' : ''
-                      }`}
+                    className={`activity-table-header-primary ${
+                      monthIndex < months.length - 1 ? 'month-separator' : ''
+                    }`}
                   >
                     {month.name}
                   </th>
@@ -356,10 +360,11 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   month.weeks.map((weekObj, weekIndex) => (
                     <th
                       key={`${month.month}-${weekObj.week}`}
-                      className={`activity-table-header-secondary ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'month-separator'
-                        : ''
-                        }`}
+                      className={`activity-table-header-secondary ${
+                        weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                          ? 'month-separator'
+                          : ''
+                      }`}
                     >
                       {weekObj.range}
                     </th>
@@ -377,15 +382,9 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                       className="activity-main-cell"
                       onClick={() => handleActivityClick(activity)}
                     >
-                      <div className="activity-main-title">
-                        {activity.name}
-                      </div>
+                      <div className="activity-main-title">{activity.name}</div>
                     </td>
-                    <td
-                      className="bg-gray-100"
-                    >
-                      {/* No weight for main activity */}
-                    </td>
+                    <td className="bg-gray-100">{/* No weight for main activity */}</td>
                     {months.map((month, monthIndex) =>
                       month.weeks.map((weekObj, weekIndex) => (
                         <td
@@ -403,18 +402,10 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                     <React.Fragment key={subActivity.id}>
                       {/* First Row - Blue background (#BFDBFE) */}
                       <tr className="border-b border-gray-200">
-                        <td
-                          rowSpan={2}
-                          className="sub-activity-name-cell"
-                        >
-                          <div className="sub-activity-name">
-                            {subActivity.name}
-                          </div>
+                        <td rowSpan={2} className="sub-activity-name-cell">
+                          <div className="sub-activity-name">{subActivity.name}</div>
                         </td>
-                        <td
-                          rowSpan={2}
-                          className="sub-activity-weight-cell"
-                        >
+                        <td rowSpan={2} className="sub-activity-weight-cell">
                           {subActivity.weight}
                         </td>
                         {months.map((month, monthIndex) =>
@@ -432,11 +423,12 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                             return (
                               <td
                                 key={cellId}
-                                className={`progress-cell-plan ${value && value > 0 ? 'has-value' : ''} ${weekIndex === month.weeks.length - 1 &&
+                                className={`progress-cell-plan ${value && value > 0 ? 'has-value' : ''} ${
+                                  weekIndex === month.weeks.length - 1 &&
                                   monthIndex < months.length - 1
-                                  ? 'month-separator'
-                                  : ''
-                                  }`}
+                                    ? 'month-separator'
+                                    : ''
+                                }`}
                               >
                                 {isEditing ? (
                                   <Input
@@ -505,11 +497,12 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                             return (
                               <td
                                 key={cellId}
-                                className={`progress-cell-actual ${value && value > 0 ? 'has-value' : ''} ${weekIndex === month.weeks.length - 1 &&
+                                className={`progress-cell-actual ${value && value > 0 ? 'has-value' : ''} ${
+                                  weekIndex === month.weeks.length - 1 &&
                                   monthIndex < months.length - 1
-                                  ? 'month-separator'
-                                  : ''
-                                  }`}
+                                    ? 'month-separator'
+                                    : ''
+                                }`}
                               >
                                 {isEditing ? (
                                   <Input
@@ -577,15 +570,19 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 <td className="cumulative-header-cell" style={{ width: '200px' }}>
                   TOTAL
                 </td>
-                <td className="sticky z-10 border-b border-gray-200 bg-white" style={{ left: '200px', width: '60px' }}></td>
+                <td
+                  className="sticky z-10 border-b border-gray-200 bg-white"
+                  style={{ left: '200px', width: '60px' }}
+                ></td>
                 {months.map((month, monthIndex) =>
                   month.weeks.map((weekObj, weekIndex) => (
                     <td
                       key={`total-header-${month.month}-${weekObj.week}`}
-                      className={`border-b border-gray-200 ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'border-r-2 border-white'
-                        : ''
-                        }`}
+                      className={`border-b border-gray-200 ${
+                        weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                          ? 'border-r-2 border-white'
+                          : ''
+                      }`}
                     ></td>
                   ))
                 )}
@@ -600,21 +597,30 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 {months.map((month, monthIndex) =>
                   month.weeks.map((weekObj, weekIndex) => {
                     // Calculate total for this week (plan)
-                    const weekTotal = activities?.reduce((total, activity) => {
-                      const subActivityTotal = activity.subActivities?.reduce((subTotal, subActivity) => {
-                        const value = getScheduleValue(activity.id, subActivity.id, month.month, weekObj.week, 'plan')
-                        return subTotal + (value || 0)
+                    const weekTotal =
+                      activities?.reduce((total, activity) => {
+                        const subActivityTotal =
+                          activity.subActivities?.reduce((subTotal, subActivity) => {
+                            const value = getScheduleValue(
+                              activity.id,
+                              subActivity.id,
+                              month.month,
+                              weekObj.week,
+                              'plan'
+                            )
+                            return subTotal + (value || 0)
+                          }, 0) || 0
+                        return total + subActivityTotal
                       }, 0) || 0
-                      return total + subActivityTotal
-                    }, 0) || 0
 
                     return (
                       <td
                         key={`total-plan-${month.month}-${weekObj.week}`}
-                        className={`progress-cell-plan ${weekTotal > 0 ? 'has-value' : ''} ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                          ? 'month-separator'
-                          : ''
-                          }`}
+                        className={`progress-cell-plan ${weekTotal > 0 ? 'has-value' : ''} ${
+                          weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                            ? 'month-separator'
+                            : ''
+                        }`}
                       >
                         {weekTotal > 0 ? weekTotal.toFixed(3) : '-'}
                       </td>
@@ -632,21 +638,30 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 {months.map((month, monthIndex) =>
                   month.weeks.map((weekObj, weekIndex) => {
                     // Calculate total for this week (actual)
-                    const weekTotal = activities?.reduce((total, activity) => {
-                      const subActivityTotal = activity.subActivities?.reduce((subTotal, subActivity) => {
-                        const value = getScheduleValue(activity.id, subActivity.id, month.month, weekObj.week, 'actual')
-                        return subTotal + (value || 0)
+                    const weekTotal =
+                      activities?.reduce((total, activity) => {
+                        const subActivityTotal =
+                          activity.subActivities?.reduce((subTotal, subActivity) => {
+                            const value = getScheduleValue(
+                              activity.id,
+                              subActivity.id,
+                              month.month,
+                              weekObj.week,
+                              'actual'
+                            )
+                            return subTotal + (value || 0)
+                          }, 0) || 0
+                        return total + subActivityTotal
                       }, 0) || 0
-                      return total + subActivityTotal
-                    }, 0) || 0
 
                     return (
                       <td
                         key={`total-actual-${month.month}-${weekObj.week}`}
-                        className={`progress-cell-actual ${weekTotal > 0 ? 'has-value' : ''} ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                          ? 'month-separator'
-                          : ''
-                          }`}
+                        className={`progress-cell-actual ${weekTotal > 0 ? 'has-value' : ''} ${
+                          weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                            ? 'month-separator'
+                            : ''
+                        }`}
                       >
                         {weekTotal > 0 ? weekTotal.toFixed(3) : '-'}
                       </td>
@@ -668,15 +683,19 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                 <td className="cumulative-header-cell" style={{ width: '200px' }}>
                   KUMULATIF
                 </td>
-                <td className="sticky z-10 border-b border-gray-200 bg-white" style={{ left: '200px', width: '60px' }}></td>
+                <td
+                  className="sticky z-10 border-b border-gray-200 bg-white"
+                  style={{ left: '200px', width: '60px' }}
+                ></td>
                 {months.map((month, monthIndex) =>
                   month.weeks.map((weekObj, weekIndex) => (
                     <td
                       key={`kumulatif-header-${month.month}-${weekObj.week}`}
-                      className={`border-b border-gray-200 ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'border-r-2 border-white'
-                        : ''
-                        }`}
+                      className={`border-b border-gray-200 ${
+                        weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                          ? 'border-r-2 border-white'
+                          : ''
+                      }`}
                     ></td>
                   ))
                 )}
@@ -692,10 +711,11 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   month.weeks.map((weekObj, weekIndex) => (
                     <td
                       key={`rencana-${month.month}-${weekObj.week}`}
-                      className={`progress-cell-cumulative-plan ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'month-separator'
-                        : ''
-                        }`}
+                      className={`progress-cell-cumulative-plan ${
+                        weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                          ? 'month-separator'
+                          : ''
+                      }`}
                     >
                       {getCumulativeValueForWeek(month.month, weekObj.week, 'plan').toFixed(3)}
                     </td>
@@ -713,10 +733,11 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   month.weeks.map((weekObj, weekIndex) => (
                     <td
                       key={`realisasi-${month.month}-${weekObj.week}`}
-                      className={`progress-cell-cumulative-actual ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'month-separator'
-                        : ''
-                        }`}
+                      className={`progress-cell-cumulative-actual ${
+                        weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                          ? 'month-separator'
+                          : ''
+                      }`}
                     >
                       {getCumulativeValueForWeek(month.month, weekObj.week, 'actual').toFixed(3)}
                     </td>
@@ -734,10 +755,11 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   month.weeks.map((weekObj, weekIndex) => (
                     <td
                       key={`deviasi-${month.month}-${weekObj.week}`}
-                      className={`progress-cell-cumulative-deviation ${weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
-                        ? 'month-separator'
-                        : ''
-                        }`}
+                      className={`progress-cell-cumulative-deviation ${
+                        weekIndex === month.weeks.length - 1 && monthIndex < months.length - 1
+                          ? 'month-separator'
+                          : ''
+                      }`}
                     >
                       {getCumulativeValueForWeek(month.month, weekObj.week, 'deviation').toFixed(3)}
                     </td>
@@ -750,14 +772,14 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
         {/* Custom Always-Visible Scrollbar */}
         {showCustomScrollbar && (
-          <div className="absolute bottom-0 left-0 right-0 h-5 bg-gray-100 rounded-lg border border-gray-200 shadow-sm">
+          <div className="absolute bottom-0 left-0 right-0 h-5 rounded-lg border border-gray-200 bg-gray-100 shadow-sm">
             <div
               ref={customScrollbarRef}
               className="relative h-full cursor-pointer"
               onClick={handleCustomScrollbarClick}
             >
               <div
-                className="absolute top-1 bottom-1 bg-gray-500 hover:bg-gray-600 rounded-md transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-sm"
+                className="absolute bottom-1 top-1 cursor-grab rounded-md bg-gray-500 shadow-sm transition-colors duration-150 hover:bg-gray-600 active:cursor-grabbing"
                 style={{
                   left: `${thumbPosition}%`,
                   width: `${thumbWidth}%`,

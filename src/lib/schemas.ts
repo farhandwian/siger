@@ -134,6 +134,10 @@ export const ProjectSchema = z.object({
     )
     .nullable(),
 
+  tanggalSpmk: z.string().max(50, 'Tanggal SPMK maksimal 50 karakter').nullable(),
+  lokasiProyek: z.string().max(500, 'Lokasi proyek maksimal 500 karakter').nullable(),
+  petaPekerjaan: z.object({}).nullable(), // GeoJSON object
+
   // Metadata
   createdAt: z.any(), // Temporary: allow any type for createdAt
   updatedAt: z.any(), // Temporary: allow any type for updatedAt
