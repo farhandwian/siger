@@ -489,3 +489,7 @@ When using Express microservices:
 POSTGRES_URL=postgres://postgres:yoontae93@127.0.0.1:5432/siger
 NEXT_PUBLIC_MAPBOX_TOKEN=YOUR_TOKEN
 ```
+
+
+## 19) Additional
+please create clear comment on the code so i can understand what each part does
