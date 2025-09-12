@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Upload, X, FileText, AlertCircle, CheckCircle } from 'lucide-react'
+import { Upload, X, FileText, AlertCircle, CheckCircle, Calendar } from 'lucide-react'
+import { useProject } from '@/hooks/useActivityQueries'
 
 interface CSVImportModalProps {
   isOpen: boolean
@@ -37,7 +38,19 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
   const [parseResult, setParseResult] = useState<ParsedActivity[] | null>(null)
   const [importResult, setImportResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [importMode, setImportMode] = useState<'replace' | 'upsert'>('upsert')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Use the project hook to get SPMK date
+  const { data: project } = useProject(projectId)
+  console.log('📦 Project data from hook:', project)
+  const spmkDate = project?.tanggalSpmk || null
+
+  useEffect(() => {
+    if (project?.tanggalSpmk) {
+      console.log('📅 SPMK date from hook:', project.tanggalSpmk)
+    }
+  }, [project?.tanggalSpmk])
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -104,89 +117,184 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     return { startDay: 1, endDay: 7 }
   }
 
-  const buildPeriodMapping = (
-    rows: string[][]
+  // Build week-based period mapping from SPMK date
+  const buildWeekBasedMapping = (
+    spmkDate: string | null,
+    totalWeeks: number = 20
   ): Array<{ month: number; year: number; week: number }> => {
-    if (rows.length < 5) {
-      console.log('⚠️ CSV headers incomplete, using fallback dates')
-      // Fallback to default if headers are missing
-      return [
-        { month: 5, year: 2025, week: 4 }, // MEI 23-25
-        { month: 5, year: 2025, week: 4 }, // MEI 26-01 (spanning)
-        { month: 6, year: 2025, week: 1 }, // JUNI 02-08
-      ]
+    if (!spmkDate) {
+      console.log('⚠️ No SPMK date available, using fallback mapping')
+      // Fallback mapping starting from last week of May 2025 (May 26, 2025)
+      const fallbackStart = new Date('2025-05-26')
+      return generateWeekMapping(fallbackStart, totalWeeks)
     }
 
-    const yearRow = rows[1] // "TAHUN ANGGARAN 2025"
-    const monthRow = rows[3] // "MEI;;JUNI;;;;JULY;;;;;AGUSTUS;;;;SEPTEMBER;;;"
-    const dateRow = rows[4] // "23 - 25;26 - 01;02 - 08;09 - 15;..."
+    try {
+      let startDate: Date
 
-    console.log('📅 Building dynamic period mapping from CSV headers:')
-    console.log('Year row:', yearRow.join(' | '))
-    console.log('Month row:', monthRow.join(' | '))
-    console.log('Date row:', dateRow.join(' | '))
+      // Handle Indonesian date format like "22 Mei 2025"
+      const indonesianMonths: { [key: string]: string } = {
+        januari: '01',
+        februari: '02',
+        maret: '03',
+        april: '04',
+        mei: '05',
+        juni: '06',
+        juli: '07',
+        agustus: '08',
+        september: '09',
+        oktober: '10',
+        november: '11',
+        desember: '12',
+      }
 
-    // Extract year from header
-    let year = 2025 // default
-    const yearMatch = yearRow.join(' ').match(/(\d{4})/)
-    if (yearMatch) {
-      year = parseInt(yearMatch[1])
+      // Check if it's Indonesian format (contains month names)
+      const indonesianPattern = /(\d{1,2})\s+(\w+)\s+(\d{4})/i
+      const indonesianMatch = spmkDate.match(indonesianPattern)
+
+      if (indonesianMatch) {
+        const [, day, monthName, year] = indonesianMatch
+        const monthNum = indonesianMonths[monthName.toLowerCase()]
+        if (monthNum) {
+          const formattedDate = `${year}-${monthNum}-${day.padStart(2, '0')}`
+          startDate = new Date(formattedDate)
+          console.log('📅 Parsed Indonesian SPMK date:', spmkDate, '->', formattedDate)
+        } else {
+          throw new Error('Unknown Indonesian month name')
+        }
+      }
+      // Handle standard formats
+      else if (spmkDate.includes('-')) {
+        // Check if it's YYYY-MM-DD or DD-MM-YYYY
+        const parts = spmkDate.split('-')
+        if (parts[0].length === 4) {
+          // YYYY-MM-DD format
+          startDate = new Date(spmkDate)
+        } else {
+          // DD-MM-YYYY format
+          startDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
+        }
+      } else if (spmkDate.includes('/')) {
+        // DD/MM/YYYY format
+        const parts = spmkDate.split('/')
+        startDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
+      } else {
+        throw new Error('Unsupported date format')
+      }
+
+      if (isNaN(startDate.getTime())) {
+        throw new Error('Invalid date')
+      }
+
+      console.log('📅 Using SPMK date as start:', startDate.toISOString())
+      return generateWeekMapping(startDate, totalWeeks)
+    } catch (error) {
+      console.error('❌ Error parsing SPMK date:', spmkDate, error)
+      // Fallback to May 26, 2025 - should align with CSV Period 1 in last week of May
+      const fallbackStart = new Date('2025-05-26')
+      return generateWeekMapping(fallbackStart, totalWeeks)
     }
-    console.log('📅 Extracted year:', year)
+  }
 
+  // Generate week mapping from start date
+  const generateWeekMapping = (
+    startDate: Date,
+    totalWeeks: number
+  ): Array<{ month: number; year: number; week: number }> => {
     const periods: Array<{ month: number; year: number; week: number }> = []
-    let currentMonth = 1
-    let weekInMonth = 1
 
-    // Start from column 7 (where schedule data begins)
-    for (let colIndex = 7; colIndex < Math.min(monthRow.length, dateRow.length); colIndex++) {
-      const monthCell = monthRow[colIndex]?.trim()
-      const dateCell = dateRow[colIndex]?.trim()
+    console.log('📅 Generating week mapping starting from:', startDate.toISOString())
 
-      // Check if this column has a month name
-      if (monthCell && monthCell !== '') {
-        currentMonth = parseMonthName(monthCell)
-        weekInMonth = 1
-        console.log(`📅 Found month at column ${colIndex}: ${monthCell} -> ${currentMonth}`)
-      }
+    for (let weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
+      // Calculate the actual date for this week (7 days per week)
+      const weekDate = new Date(startDate)
+      weekDate.setDate(startDate.getDate() + weekIndex * 7)
 
-      // If we have a date range, calculate the week
-      if (dateCell && dateCell !== '') {
-        const { startDay } = parseDateRange(dateCell)
+      // Find the Monday and Thursday of the week containing this date
+      const monday = getMonday(weekDate)
+      const thursday = new Date(monday)
+      thursday.setDate(monday.getDate() + 3)
 
-        // Estimate week based on start day
-        if (startDay <= 7) weekInMonth = 1
-        else if (startDay <= 14) weekInMonth = 2
-        else if (startDay <= 21) weekInMonth = 3
-        else weekInMonth = 4
+      // Use Thursday's month and year (Thursday ownership rule)
+      const month = thursday.getMonth() + 1
+      const year = thursday.getFullYear()
 
-        const periodInfo = {
-          month: currentMonth,
-          year: year,
-          week: weekInMonth,
+      // Calculate week number within that month
+      // Find all Mondays in the month that have Thursday in the same month
+      let week = 1
+      const firstDayOfMonth = new Date(year, month - 1, 1)
+      let currentMonday = getMonday(firstDayOfMonth)
+
+      while (currentMonday <= thursday) {
+        const currentThursday = new Date(currentMonday)
+        currentThursday.setDate(currentMonday.getDate() + 3)
+
+        // If this Thursday belongs to our target month
+        if (currentThursday.getMonth() === month - 1 && currentThursday.getFullYear() === year) {
+          if (currentMonday.getTime() === monday.getTime()) {
+            break // Found our week number
+          }
+          week++
         }
 
-        periods.push(periodInfo)
-        console.log(`📅 Column ${colIndex}: ${dateCell} -> ${currentMonth}/${year}/W${weekInMonth}`)
-
-        // Move to next week for next column in same month
-        weekInMonth++
-        if (weekInMonth > 4) weekInMonth = 4
-      } else if (periods.length > 0) {
-        // Continue with current month if no specific date
-        const periodInfo = {
-          month: currentMonth,
-          year: year,
-          week: weekInMonth,
-        }
-        periods.push(periodInfo)
-        weekInMonth++
-        if (weekInMonth > 4) weekInMonth = 4
+        currentMonday.setDate(currentMonday.getDate() + 7)
       }
+
+      periods.push({ month, year, week })
+
+      console.log(
+        `📅 Week ${weekIndex + 1}: ${weekDate.toISOString().slice(0, 10)} -> ${year}-${month.toString().padStart(2, '0')}-W${week} (Monday: ${monday.toISOString().slice(0, 10)}, Thursday: ${thursday.toISOString().slice(0, 10)})`
+      )
     }
 
-    console.log(`📅 Built ${periods.length} periods:`, periods)
     return periods
+  }
+
+  // Helper function to get the Monday of the week containing the given date
+  const getMonday = (date: Date): Date => {
+    const day = date.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysFromMonday = day === 0 ? 6 : day - 1 // Convert Sunday (0) to 6
+    const monday = new Date(date)
+    monday.setDate(date.getDate() - daysFromMonday)
+    return monday
+  }
+
+  // Helper function to get month name
+  const getMonthName = (month: number): string => {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ]
+    return months[month - 1] || 'Unknown'
+  }
+
+  const buildPeriodMapping = (
+    rows: string[][],
+    spmkDate: string | null
+  ): Array<{ month: number; year: number; week: number }> => {
+    console.log('📅 Building week-based period mapping from SPMK date:', spmkDate)
+
+    // Count total data columns to determine how many weeks we need
+    const maxColumns = Math.max(...rows.map(row => row.length))
+    const dataColumnStart = 7 // Schedule data starts from column 7
+    const totalWeeks = Math.max(maxColumns - dataColumnStart, 20) // At least 20 weeks
+
+    console.log(
+      `📅 Detected ${maxColumns} total columns, building ${totalWeeks} weeks from column ${dataColumnStart}`
+    )
+
+    // Use SPMK date-based week mapping
+    return buildWeekBasedMapping(spmkDate, totalWeeks)
   }
 
   const mapPeriodToDate = (
@@ -200,8 +308,8 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     // Skip header rows
     const dataRows = rows.slice(headerSkip)
 
-    // Build dynamic period mapping from CSV headers
-    const periodMapping = buildPeriodMapping(rows)
+    // Build dynamic period mapping from SPMK date
+    const periodMapping = buildPeriodMapping(rows, spmkDate)
 
     const activities: ParsedActivity[] = []
     const processedActivities = new Set<string>()
@@ -321,6 +429,12 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
   const processCSV = async () => {
     if (!file) return
 
+    // Check if SPMK date is available
+    if (!spmkDate) {
+      setError('SPMK date not found. Please ensure the project has a valid SPMK date.')
+      return
+    }
+
     setIsProcessing(true)
     setError(null)
 
@@ -405,6 +519,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
         body: JSON.stringify({
           projectId,
           activities: parseResult,
+          importMode, // Add import mode to the request
         }),
       })
 
@@ -434,7 +549,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <Card className="max-h-[90vh] w-full max-w-2xl overflow-hidden">
+      <Card className="overflow  w-full max-w-2xl">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">Import Jadwal from CSV</CardTitle>
           <Button
@@ -450,6 +565,40 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
         </CardHeader>
 
         <CardContent className="space-y-4 overflow-y-auto">
+          {/* SPMK Date Info */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <div className="flex items-center gap-2 text-sm">
+              <div className="font-medium text-blue-800">Week calculation starts from:</div>
+              <div className="text-blue-700">
+                {spmkDate ? (
+                  <span className="font-mono">{spmkDate}</span>
+                ) : (
+                  <span className="text-red-600">SPMK date not found</span>
+                )}
+              </div>
+            </div>
+            <div className="mt-1 text-xs text-blue-600">
+              CSV columns (1, 2, 3, 4...) will be mapped as consecutive weeks starting from the SPMK
+              date.
+            </div>
+            {spmkDate && (
+              <div className="mt-2 text-xs text-blue-700">
+                <strong>Week Preview:</strong>
+                {(() => {
+                  const preview = buildWeekBasedMapping(spmkDate, 8) // Show first 8 weeks
+                  return preview.slice(0, 6).map((p, i) => (
+                    <div key={i} className="ml-2">
+                      Column {i + 1} → Week {p.week} of {getMonthName(p.month)} {p.year}
+                    </div>
+                  ))
+                })()}
+                {buildWeekBasedMapping(spmkDate, 8).length > 6 && (
+                  <div className="ml-2 text-gray-500">... and more</div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* File Upload Section */}
           <div className="space-y-4">
             <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
@@ -529,6 +678,45 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                 <p className="mt-2 text-xs">
                   Ready to import to database. Click the button below to proceed.
                 </p>
+              </div>
+
+              {/* Import Mode Selection */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">Import Mode</h4>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      value="upsert"
+                      checked={importMode === 'upsert'}
+                      onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                      className="text-blue-600"
+                    />
+                    <div>
+                      <div className="text-sm font-medium">Upsert (Merge)</div>
+                      <div className="text-xs text-gray-500">
+                        Update existing records and create new ones. Preserves existing data.
+                      </div>
+                    </div>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      value="replace"
+                      checked={importMode === 'replace'}
+                      onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                      className="text-blue-600"
+                    />
+                    <div>
+                      <div className="text-sm font-medium">Replace All</div>
+                      <div className="text-xs text-gray-500">
+                        Delete all existing data and replace with CSV data. ⚠️ Irreversible!
+                      </div>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               {/* Import to Database Button */}

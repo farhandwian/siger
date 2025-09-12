@@ -7,7 +7,7 @@ const ScheduleDataSchema = z.object({
   period: z.string(),
   month: z.number().min(1).max(12),
   year: z.number(),
-  week: z.number().min(1).max(4),
+  week: z.number().min(1), // Allow up to week 5 for spanning weeks like MEI 26-01
   planPercentage: z.number().default(0),
   actualPercentage: z.number().default(0),
 })
@@ -26,14 +26,53 @@ const ActivityImportSchema = z.object({
 const ImportRequestSchema = z.object({
   projectId: z.string(),
   activities: z.array(ActivityImportSchema),
+  importMode: z.enum(['upsert', 'replace']).default('upsert'),
 })
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { projectId, activities } = ImportRequestSchema.parse(body)
 
-    console.log(`Starting CSV import for project ${projectId} with ${activities.length} items`)
+    // Enhanced validation with detailed error logging
+    let validationResult
+    try {
+      validationResult = ImportRequestSchema.parse(body)
+    } catch (validationError: any) {
+      console.error('❌ Validation failed:', validationError.message)
+      if (validationError.errors) {
+        console.error('❌ Validation errors:', JSON.stringify(validationError.errors, null, 2))
+      }
+      console.error('❌ Received data structure:', {
+        hasProjectId: !!body.projectId,
+        hasActivities: !!body.activities,
+        activitiesLength: body.activities?.length || 0,
+        hasImportMode: !!body.importMode,
+        importMode: body.importMode,
+        firstActivitySample: body.activities?.[0]
+          ? {
+              name: body.activities[0].name,
+              type: body.activities[0].type,
+              hasScheduleData: !!body.activities[0].scheduleData,
+              scheduleDataLength: body.activities[0].scheduleData?.length || 0,
+              firstScheduleSample: body.activities[0].scheduleData?.[0],
+            }
+          : null,
+      })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Validation error: ' + validationError.message,
+          details: validationError.errors,
+        },
+        { status: 400 }
+      )
+    }
+
+    const { projectId, activities, importMode } = validationResult
+
+    console.log(
+      `Starting CSV import for project ${projectId} with ${activities.length} items using ${importMode} mode`
+    )
 
     // Verify project exists
     const project = await prisma.project.findUnique({
@@ -44,7 +83,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 })
     }
 
-    // Use transaction to ensure data consistency with increased timeout
+    // Use transaction with increased timeout and optimized batch processing
     const result = await prisma.$transaction(
       async tx => {
         let activityCount = 0
@@ -53,21 +92,58 @@ export async function POST(request: NextRequest) {
         let updatedActivities = 0
         let updatedSubActivities = 0
         let updatedSchedules = 0
+        let deletedItems = 0
+
+        // Handle replace mode: delete all existing data first
+        if (importMode === 'replace') {
+          console.log('🗑️ Replace mode: Deleting all existing project data...')
+
+          // Delete in correct order (foreign key constraints)
+          const deletedSchedules = await tx.activitySchedule.deleteMany({
+            where: {
+              subActivity: {
+                activity: {
+                  projectId: projectId,
+                },
+              },
+            },
+          })
+
+          const deletedSubActivities = await tx.subActivity.deleteMany({
+            where: {
+              activity: {
+                projectId: projectId,
+              },
+            },
+          })
+
+          const deletedActivities = await tx.activity.deleteMany({
+            where: { projectId: projectId },
+          })
+
+          deletedItems =
+            deletedSchedules.count + deletedSubActivities.count + deletedActivities.count
+          console.log(
+            `🗑️ Deleted: ${deletedSchedules.count} schedules, ${deletedSubActivities.count} sub-activities, ${deletedActivities.count} activities`
+          )
+        }
 
         // Track created activities to link sub-activities
         const activityMap = new Map<string, string>()
 
-        // Get all existing activities for this project upfront
-        const existingActivities = await tx.activity.findMany({
-          where: { projectId },
-          select: { id: true, name: true },
-        })
-        const existingActivityMap = new Map(existingActivities.map(a => [a.name, a.id]))
+        // Get existing activities only for upsert mode
+        let existingActivityMap = new Map<string, string>()
+        if (importMode === 'upsert') {
+          const existingActivities = await tx.activity.findMany({
+            where: { projectId },
+            select: { id: true, name: true },
+          })
+          existingActivityMap = new Map(existingActivities.map(a => [a.name, a.id]))
+        }
 
-        // First pass: Create main activities
-        const newActivities = activities.filter(
-          a => a.type === 'activity' && !existingActivityMap.has(a.name)
-        )
+        // First pass: Create/update main activities
+        const activitiesData = activities.filter(a => a.type === 'activity')
+        const newActivities = activitiesData.filter(a => !existingActivityMap.has(a.name))
 
         for (const activityData of newActivities) {
           const activity = await tx.activity.create({
@@ -92,11 +168,13 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Count updated activities (those that already existed)
-        const importedActivityNames = activities.filter(a => a.type === 'activity').map(a => a.name)
-        updatedActivities = importedActivityNames.filter(name =>
-          existingActivities.some(existing => existing.name === name)
-        ).length
+        // Count updated activities (those that already existed in upsert mode)
+        const importedActivityNames = activitiesData.map(a => a.name)
+        if (importMode === 'upsert') {
+          updatedActivities = importedActivityNames.filter(name =>
+            existingActivityMap.has(name)
+          ).length
+        }
 
         // Second pass: Create sub-activities and schedules
         const subActivitiesData = activities.filter(a => a.type === 'subActivity')
@@ -147,89 +225,39 @@ export async function POST(request: NextRequest) {
             updatedSubActivities++
           }
 
-          // Get existing schedules for this sub-activity to minimize queries
-          const existingSchedules = await tx.activitySchedule.findMany({
-            where: { subActivityId: subActivity.id },
-            select: { id: true, month: true, year: true, week: true },
-          })
-
-          const existingScheduleMap = new Map(
-            existingSchedules.map(s => [`${s.month}-${s.year}-${s.week}`, s.id])
-          )
-
-          // Process schedules in batches
-          const scheduleUpdates = []
-          const scheduleCreates = []
-
+          // Process schedules using simpler upsert approach to avoid conflicts
           for (const scheduleData of activityData.scheduleData) {
             // Skip if both plan and actual are 0
             if (scheduleData.planPercentage === 0 && scheduleData.actualPercentage === 0) {
               continue
             }
 
-            const scheduleKey = `${scheduleData.month}-${scheduleData.year}-${scheduleData.week}`
-            const existingId = existingScheduleMap.get(scheduleKey)
-
-            if (existingId) {
-              // Prepare update operation
-              scheduleUpdates.push({
-                where: { id: existingId },
-                data: {
+            try {
+              await tx.activitySchedule.upsert({
+                where: {
+                  subActivityId_month_year_week: {
+                    subActivityId: subActivity.id,
+                    month: scheduleData.month,
+                    year: scheduleData.year,
+                    week: scheduleData.week,
+                  },
+                },
+                update: {
+                  planPercentage: scheduleData.planPercentage,
+                  actualPercentage: scheduleData.actualPercentage,
+                },
+                create: {
+                  subActivityId: subActivity.id,
+                  month: scheduleData.month,
+                  year: scheduleData.year,
+                  week: scheduleData.week,
                   planPercentage: scheduleData.planPercentage,
                   actualPercentage: scheduleData.actualPercentage,
                 },
               })
-            } else {
-              // Prepare create operation and mark as processed to avoid duplicates
-              scheduleCreates.push({
-                subActivityId: subActivity.id,
-                month: scheduleData.month,
-                year: scheduleData.year,
-                week: scheduleData.week,
-                planPercentage: scheduleData.planPercentage,
-                actualPercentage: scheduleData.actualPercentage,
-              })
-              // Add to map to prevent duplicates within same import
-              existingScheduleMap.set(scheduleKey, 'pending')
-            }
-          }
-
-          // Execute updates first (these won't have conflicts)
-          for (const updateData of scheduleUpdates) {
-            await tx.activitySchedule.update(updateData)
-            updatedSchedules++
-          }
-
-          // Execute creates one by one to handle any remaining conflicts gracefully
-          for (const createData of scheduleCreates) {
-            try {
-              await tx.activitySchedule.create({ data: createData })
               scheduleCount++
             } catch (error: any) {
-              // If still a unique constraint error, try to update instead
-              if (error.code === 'P2002') {
-                const existing = await tx.activitySchedule.findFirst({
-                  where: {
-                    subActivityId: createData.subActivityId,
-                    month: createData.month,
-                    year: createData.year,
-                    week: createData.week,
-                  },
-                })
-
-                if (existing) {
-                  await tx.activitySchedule.update({
-                    where: { id: existing.id },
-                    data: {
-                      planPercentage: createData.planPercentage,
-                      actualPercentage: createData.actualPercentage,
-                    },
-                  })
-                  updatedSchedules++
-                }
-              } else {
-                throw error // Re-throw if it's a different error
-              }
+              console.error('Failed to upsert schedule:', error)
             }
           }
         }
@@ -241,16 +269,19 @@ export async function POST(request: NextRequest) {
           updatedActivities,
           updatedSubActivities,
           updatedSchedules,
+          deletedItems,
+          importMode,
         }
       },
       {
-        maxWait: 20000, // 20 seconds
-        timeout: 30000, // 30 seconds
+        maxWait: 120000, // 120 seconds - much longer for large imports
+        timeout: 180000, // 180 seconds - 3 minutes timeout
       }
     )
 
     console.log(`CSV import completed successfully:`, {
       projectId,
+      importMode: result.importMode,
       created: {
         activities: result.activityCount,
         subActivities: result.subActivityCount,
@@ -261,13 +292,15 @@ export async function POST(request: NextRequest) {
         subActivities: result.updatedSubActivities,
         schedules: result.updatedSchedules,
       },
+      deleted: result.deletedItems,
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Schedule data imported successfully',
+      message: `Schedule data ${result.importMode === 'replace' ? 'replaced' : 'imported'} successfully`,
       data: {
         projectId,
+        importMode: result.importMode,
         imported: {
           activities: result.activityCount,
           subActivities: result.subActivityCount,
@@ -278,6 +311,7 @@ export async function POST(request: NextRequest) {
           subActivities: result.updatedSubActivities,
           schedules: result.updatedSchedules,
         },
+        ...(result.importMode === 'replace' && { deleted: result.deletedItems }),
       },
     })
   } catch (error) {

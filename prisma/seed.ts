@@ -35,6 +35,7 @@ async function main() {
         spmk: '01/SPMK/Aw9.2/V/2025, Tanggal 23 Mei 2025',
         masaKontrak: '120 Hari Kalender',
         tanggalKontrak: '22 Mei 2025',
+        tanggalSpmk: '23 Mei 2025',
         akhirKontrak: '19 September 2025',
         pembayaranTerakhir: '-',
 
@@ -100,6 +101,7 @@ async function main() {
         spmk: '02/SPMK/Aw9.2/V/2025, Tanggal 25 Mei 2025',
         masaKontrak: '150 Hari Kalender',
         tanggalKontrak: '24 Mei 2025',
+        tanggalSpmk: '25 Mei 2025',
         akhirKontrak: '21 Oktober 2025',
         pembayaranTerakhir: 'Rp8.400.000.000',
 

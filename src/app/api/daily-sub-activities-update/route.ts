@@ -25,7 +25,7 @@ function getWeekInfo(dateString: string) {
   return {
     year,
     month,
-    week: Math.max(1, Math.min(5, week)), // Ensure week is between 1-5
+    week: Math.max(1, Math.min(6, week)), // Ensure week is between 1-6
   }
 }
 
