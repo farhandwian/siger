@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
+          lokasiProyek: true,
           pekerjaan: true,
           penyediaJasa: true,
           nilaiKontrak: true,
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
       const transformed = {
         id: project.id,
         title: project.pekerjaan || '',
-        location: 'Sumatra', // You can add location field to schema later
+        location: project.lokasiProyek || '',
         budget: project.nilaiKontrak || '',
         status: getProjectStatus(project.fisikProgress || 0, project.fisikDeviasi || 0),
         progress: project.fisikProgress || 0,

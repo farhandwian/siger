@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-  const { id } = params
+    const { id } = params
     const project = await prisma.project.findUnique({
       where: { id: id },
       select: { petaPekerjaan: true },

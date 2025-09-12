@@ -26,10 +26,10 @@ declare namespace google.maps.drawing {
 
   export class DrawingManager extends google.maps.MVCObject {
     constructor(options?: DrawingManagerOptions)
-    
+
     getDrawingMode(): OverlayType | null
     getMap(): google.maps.Map | null
-    
+
     setDrawingMode(drawingMode: OverlayType | null): void
     setMap(map: google.maps.Map | null): void
     setOptions(options: DrawingManagerOptions): void

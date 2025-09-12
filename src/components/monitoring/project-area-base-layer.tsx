@@ -14,30 +14,37 @@ interface ProjectAreaBaseLayerProps {
   projectId?: string
 }
 
-export const ProjectAreaBaseLayer = ({ 
+export const ProjectAreaBaseLayer = ({
   className,
   onPolygonSave,
   initialCoordinates,
   editable = true,
-  projectId
+  projectId,
 }: ProjectAreaBaseLayerProps) => {
   const map = useMap()
-  
+
+  // Debug: Log projectId changes
+  useEffect(() => {
+    console.log('ProjectAreaBaseLayer: projectId changed to:', projectId)
+  }, [projectId])
+
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingInitialData, setLoadingInitialData] = useState(false)
-  
+
   // Drawing state
   const [dataLayer, setDataLayer] = useState<google.maps.Data | null>(null)
-  const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager | null>(null)
+  const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager | null>(
+    null
+  )
   const [currentPolygon, setCurrentPolygon] = useState<google.maps.Data.Feature | null>(null)
 
   // Default coordinates if none provided
   const defaultCoordinates = initialCoordinates || [
     [105.285, -5.385],
-    [105.315, -5.385], 
+    [105.315, -5.385],
     [105.315, -5.41],
     [105.285, -5.41],
     [105.285, -5.385],
@@ -45,43 +52,66 @@ export const ProjectAreaBaseLayer = ({
 
   // Load existing polygon data from API
   const loadPolygonData = useCallback(async () => {
-    if (!projectId) return
+    if (!projectId) {
+      console.log('loadPolygonData: No projectId provided')
+      return null
+    }
 
     try {
       setLoadingInitialData(true)
+      console.log('loadPolygonData: Fetching data for projectId:', projectId)
       const response = await fetch(`/api/projects/${projectId}/area`)
-      
+
+      console.log('loadPolygonData: Response status:', response.status)
+
       if (response.ok) {
         const result = await response.json()
+        console.log('loadPolygonData: API result:', result)
+
         if (result.success && result.data?.coordinates) {
+          console.log('loadPolygonData: Found coordinates:', result.data.coordinates)
           return result.data.coordinates
+        } else {
+          console.log('loadPolygonData: No coordinates found in result')
         }
+      } else {
+        console.log('loadPolygonData: Response not ok:', response.status)
       }
     } catch (error) {
-      console.error('Error loading polygon data:', error)
+      console.error('loadPolygonData: Error loading polygon data:', error)
     } finally {
       setLoadingInitialData(false)
     }
-    
+
     return null
   }, [projectId])
 
-  // Initialize map layers and load polygon data
+  // Initialize map layers and load polygon data (only run once when map and projectId are available)
   useEffect(() => {
-    if (!map) return
+    console.log(
+      'ProjectAreaBaseLayer: useEffect triggered with map:',
+      !!map,
+      'projectId:',
+      projectId
+    )
+    if (!map || !projectId) {
+      console.log('ProjectAreaBaseLayer: Skipping initialization - no map or no projectId')
+      return
+    }
 
     const initializeMapData = async () => {
+      console.log('initializeMapData: Starting initialization...')
       // Create data layer for displaying the polygon
       const layer = new google.maps.Data({
         map,
-        style: (feature) => ({
-          fillOpacity: isEditMode ? 0.2 : 0,
-          fillColor: isEditMode ? '#3B82F6' : '#EF4444',
-          strokeColor: isEditMode ? '#3B82F6' : '#EF4444',
-          strokeWeight: isEditMode ? 3 : 2,
+        style: feature => ({
+          fillOpacity: 0.1,
+          fillColor: '#EF4444',
+          strokeColor: '#EF4444',
+          strokeWeight: 2,
           strokeOpacity: 0.8,
-          editable: isEditMode,
-          draggable: isEditMode,
+          editable: false,
+          draggable: false,
         }),
       })
 
@@ -89,19 +119,29 @@ export const ProjectAreaBaseLayer = ({
 
       // Load polygon data from API or use default
       let coordinates = defaultCoordinates
-      
-      if (projectId) {
-        const apiCoordinates = await loadPolygonData()
-        if (apiCoordinates && Array.isArray(apiCoordinates)) {
-          // Convert from lat/lng objects to coordinate arrays
-          coordinates = apiCoordinates.map(coord => [coord.lng, coord.lat])
-          // Close the polygon if not already closed
-          if (coordinates.length > 0 && 
-              (coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
-               coordinates[0][1] !== coordinates[coordinates.length - 1][1])) {
-            coordinates.push(coordinates[0])
-          }
+      console.log('initializeMapData: Using default coordinates:', defaultCoordinates)
+
+      console.log('initializeMapData: Loading polygon data for projectId:', projectId)
+      const apiCoordinates = await loadPolygonData()
+      console.log('initializeMapData: API coordinates received:', apiCoordinates)
+
+      if (apiCoordinates && Array.isArray(apiCoordinates)) {
+        console.log('initializeMapData: Converting API coordinates to map format')
+        // Convert from lat/lng objects to coordinate arrays
+        coordinates = apiCoordinates.map(coord => [coord.lng, coord.lat])
+        console.log('initializeMapData: Converted coordinates:', coordinates)
+
+        // Close the polygon if not already closed
+        if (
+          coordinates.length > 0 &&
+          (coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
+            coordinates[0][1] !== coordinates[coordinates.length - 1][1])
+        ) {
+          coordinates.push(coordinates[0])
+          console.log('initializeMapData: Closed polygon coordinates:', coordinates)
         }
+      } else {
+        console.log('initializeMapData: No valid API coordinates, using default')
       }
 
       // Load polygon into data layer
@@ -122,9 +162,9 @@ export const ProjectAreaBaseLayer = ({
       }
 
       layer.addGeoJson(projectAreaGeoJSON)
-      
+
       // Store reference to the polygon feature
-      layer.forEach((feature) => {
+      layer.forEach(feature => {
         setCurrentPolygon(feature)
       })
     }
@@ -136,7 +176,28 @@ export const ProjectAreaBaseLayer = ({
         dataLayer.setMap(null)
       }
     }
-  }, [map, isEditMode, projectId, loadPolygonData])
+  }, [map, projectId]) // Only run when map or projectId changes
+
+  // Update data layer styling when edit mode changes
+  useEffect(() => {
+    if (!dataLayer) return
+
+    dataLayer.setStyle(feature => ({
+      fillOpacity: isEditMode ? 0.2 : 0.1,
+      fillColor: isEditMode ? '#3B82F6' : '#EF4444',
+      strokeColor: isEditMode ? '#3B82F6' : '#EF4444',
+      strokeWeight: isEditMode ? 3 : 2,
+      strokeOpacity: 0.8,
+      editable: isEditMode,
+      draggable: isEditMode,
+      visible: true, // Ensure visibility is controlled
+    }))
+
+    // Clean up any drawing polygons when exiting edit mode
+    if (!isEditMode && drawingManager) {
+      drawingManager.setDrawingMode(null)
+    }
+  }, [dataLayer, isEditMode, drawingManager])
 
   // Initialize drawing manager for edit mode
   useEffect(() => {
@@ -173,20 +234,29 @@ export const ProjectAreaBaseLayer = ({
       manager,
       'polygoncomplete',
       (polygon: google.maps.Polygon) => {
-        // Clear existing polygon from data layer
-        if (dataLayer && currentPolygon) {
-          dataLayer.remove(currentPolygon)
+        console.log('POLYGON COMPLETE: New polygon drawn')
+
+        // Clear ALL existing polygons from data layer - robust approach
+        if (dataLayer) {
+          const featuresToRemove: google.maps.Data.Feature[] = []
+          dataLayer.forEach(feature => {
+            featuresToRemove.push(feature)
+          })
+          console.log(`POLYGON COMPLETE: Removing ${featuresToRemove.length} existing features`)
+          featuresToRemove.forEach(feature => {
+            dataLayer.remove(feature)
+          })
         }
 
-        // Convert polygon to GeoJSON and add to data layer
+        // Convert polygon to coordinates
         const path = polygon.getPath()
         const coordinates: number[][] = []
-        
+
         for (let i = 0; i < path.getLength(); i++) {
           const point = path.getAt(i)
           coordinates.push([point.lng(), point.lat()])
         }
-        
+
         // Close the polygon
         if (coordinates.length > 0) {
           coordinates.push(coordinates[0])
@@ -194,23 +264,26 @@ export const ProjectAreaBaseLayer = ({
 
         // Create new feature
         const newFeature = new google.maps.Data.Feature({
-          geometry: new google.maps.Data.Polygon([coordinates.map(coord => 
-            new google.maps.LatLng(coord[1], coord[0])
-          )]),
-          properties: { name: 'Project Work Area' }
+          geometry: new google.maps.Data.Polygon([
+            coordinates.map(coord => new google.maps.LatLng(coord[1], coord[0])),
+          ]),
+          properties: { name: 'Project Work Area' },
         })
 
         if (dataLayer) {
           dataLayer.add(newFeature)
           setCurrentPolygon(newFeature)
+          console.log('POLYGON COMPLETE: New feature added to data layer')
         }
 
         // Remove the drawing polygon
         polygon.setMap(null)
-        
+        console.log('POLYGON COMPLETE: Drawing polygon removed')
+
         // Stop drawing mode
         manager.setDrawingMode(null)
-        
+        console.log('POLYGON COMPLETE: Drawing mode stopped')
+
         setHasUnsavedChanges(true)
       }
     )
@@ -229,7 +302,7 @@ export const ProjectAreaBaseLayer = ({
       const geometry = currentPolygon.getGeometry()
       if (geometry && geometry.getType() === 'Polygon') {
         const polygon = geometry as google.maps.Data.Polygon
-        
+
         // Add listeners for geometry changes
         const listeners = [
           dataLayer.addListener('setgeometry', () => {
@@ -237,7 +310,7 @@ export const ProjectAreaBaseLayer = ({
           }),
           dataLayer.addListener('removefeature', () => {
             setHasUnsavedChanges(true)
-          })
+          }),
         ]
 
         return () => {
@@ -253,12 +326,10 @@ export const ProjectAreaBaseLayer = ({
   const toggleEditMode = useCallback(() => {
     if (isEditMode && hasUnsavedChanges) {
       // Show confirmation dialog
-      const confirmed = window.confirm(
-        'You have unsaved changes. Do you want to discard them?'
-      )
+      const confirmed = window.confirm('You have unsaved changes. Do you want to discard them?')
       if (!confirmed) return
     }
-    
+
     setIsEditMode(!isEditMode)
     setHasUnsavedChanges(false)
   }, [isEditMode, hasUnsavedChanges])
@@ -268,15 +339,15 @@ export const ProjectAreaBaseLayer = ({
     if (!currentPolygon || !dataLayer) return
 
     setIsLoading(true)
-    
+
     try {
       const geometry = currentPolygon.getGeometry()
       if (geometry && geometry.getType() === 'Polygon') {
         const polygon = geometry as google.maps.Data.Polygon
         const coordinates: number[][] = []
-        
-        polygon.getArray().forEach((linearRing) => {
-          linearRing.getArray().forEach((latLng) => {
+
+        polygon.getArray().forEach(linearRing => {
+          linearRing.getArray().forEach(latLng => {
             coordinates.push([latLng.lng(), latLng.lat()])
           })
         })
@@ -288,11 +359,11 @@ export const ProjectAreaBaseLayer = ({
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               coordinates: coordinates.map(coord => ({
-                lat: coord[1], 
-                lng: coord[0]
-              }))
+                lat: coord[1],
+                lng: coord[0],
+              })),
             }),
           })
 
@@ -310,9 +381,15 @@ export const ProjectAreaBaseLayer = ({
         if (onPolygonSave) {
           await onPolygonSave(coordinates)
         }
-        
+
+        // After saving successfully, simply exit edit mode
+        // The data layer styling will automatically change from blue to red
+        console.log('Save: Polygon saved successfully, switching to view mode')
+
         setHasUnsavedChanges(false)
-        setIsEditMode(false)
+        setIsEditMode(false) // This triggers the styling change from blue to red
+
+        console.log('Save: Edit mode disabled, polygon should now be red and non-editable')
       }
     } catch (error) {
       console.error('Error saving polygon:', error)
@@ -321,54 +398,66 @@ export const ProjectAreaBaseLayer = ({
     } finally {
       setIsLoading(false)
     }
-  }, [currentPolygon, dataLayer, onPolygonSave, projectId])
+  }, [currentPolygon, dataLayer, onPolygonSave, projectId, map, drawingManager])
 
   // Cancel changes
-  const handleCancel = useCallback(() => {
+  const handleCancel = useCallback(async () => {
     if (hasUnsavedChanges) {
-      const confirmed = window.confirm(
-        'Are you sure you want to cancel? All changes will be lost.'
-      )
+      const confirmed = window.confirm('Are you sure you want to cancel? All changes will be lost.')
       if (!confirmed) return
     }
 
-    // Reload original polygon
+    // Reload original polygon from database or use default
     if (dataLayer) {
-      dataLayer.forEach((feature) => {
+      // Clear all existing features completely
+      const featuresToRemove: google.maps.Data.Feature[] = []
+      dataLayer.forEach(feature => {
+        featuresToRemove.push(feature)
+      })
+      featuresToRemove.forEach(feature => {
         dataLayer.remove(feature)
       })
 
-      const projectAreaGeoJSON = {
-        type: 'FeatureCollection' as const,
-        features: [
-          {
-            type: 'Feature' as const,
-            properties: { name: 'Project Work Area' },
-            geometry: {
-              type: 'Polygon' as const,
-              coordinates: [defaultCoordinates],
-            },
-          },
-        ],
+      // Try to load saved polygon from database
+      let coordinates = defaultCoordinates
+
+      if (projectId) {
+        const apiCoordinates = await loadPolygonData()
+        if (apiCoordinates && Array.isArray(apiCoordinates)) {
+          coordinates = apiCoordinates.map(coord => [coord.lng, coord.lat])
+          // Close the polygon if not already closed
+          if (
+            coordinates.length > 0 &&
+            (coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
+              coordinates[0][1] !== coordinates[coordinates.length - 1][1])
+          ) {
+            coordinates.push(coordinates[0])
+          }
+        }
       }
 
-      dataLayer.addGeoJson(projectAreaGeoJSON)
-      dataLayer.forEach((feature) => {
-        setCurrentPolygon(feature)
+      // Create and add the restored polygon
+      const restoredFeature = new google.maps.Data.Feature({
+        geometry: new google.maps.Data.Polygon([
+          coordinates.map(coord => new google.maps.LatLng(coord[1], coord[0])),
+        ]),
+        properties: { name: 'Project Work Area' },
       })
-    }
 
+      dataLayer.add(restoredFeature)
+      setCurrentPolygon(restoredFeature)
+    }
     setIsEditMode(false)
     setHasUnsavedChanges(false)
-  }, [dataLayer, defaultCoordinates, hasUnsavedChanges])
+  }, [dataLayer, defaultCoordinates, hasUnsavedChanges, projectId, loadPolygonData])
 
   if (!editable) return null
 
   return (
-    <div className={cn("absolute top-4 left-4 z-10 flex flex-col gap-2", className)}>
+    <div className={cn('absolute left-4 top-4 z-10 flex flex-col gap-2', className)}>
       {/* Loading Initial Data */}
       {loadingInitialData && (
-        <div className="bg-white/90 border border-gray-200 rounded-lg p-3 text-sm shadow-md backdrop-blur-sm">
+        <div className="rounded-lg border border-gray-200 bg-white/90 p-3 text-sm shadow-md backdrop-blur-sm">
           <div className="flex items-center gap-2 text-gray-600">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span>Loading polygon data...</span>
@@ -382,10 +471,10 @@ export const ProjectAreaBaseLayer = ({
           onClick={toggleEditMode}
           variant="secondary"
           size="sm"
-          className="bg-white/90 hover:bg-white shadow-md backdrop-blur-sm"
+          className="bg-white/90 shadow-md backdrop-blur-sm hover:bg-white"
           disabled={loadingInitialData}
         >
-          <Edit3 className="h-4 w-4 mr-2" />
+          <Edit3 className="mr-2 h-4 w-4" />
           Edit Area
         </Button>
       ) : (
@@ -396,34 +485,33 @@ export const ProjectAreaBaseLayer = ({
               onClick={handleSave}
               disabled={!hasUnsavedChanges || isLoading}
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white shadow-md"
+              className="bg-green-600 text-white shadow-md hover:bg-green-700"
             >
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="mr-2 h-4 w-4" />
               {isLoading ? 'Saving...' : 'Save'}
             </Button>
             <Button
               onClick={handleCancel}
               variant="outline"
               size="sm"
-              className="bg-white/90 hover:bg-white shadow-md backdrop-blur-sm"
+              className="bg-white/90 shadow-md backdrop-blur-sm hover:bg-white"
             >
-              <X className="h-4 w-4 mr-2" />
+              <X className="mr-2 h-4 w-4" />
               Cancel
             </Button>
           </div>
 
           {/* Edit Mode Info */}
-          <div className="bg-blue-50/90 border border-blue-200 rounded-lg p-3 text-sm shadow-md backdrop-blur-sm max-w-xs">
+          <div className="max-w-xs rounded-lg border border-blue-200 bg-blue-50/90 p-3 text-sm shadow-md backdrop-blur-sm">
             <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
               <div className="text-blue-800">
-                <p className="font-medium mb-1">Edit Mode Active</p>
+                <p className="mb-1 font-medium">Edit Mode Active</p>
                 <p className="text-xs">
                   • Use drawing tools to create new polygon
                   <br />
                   • Drag points to modify existing area
-                  <br />
-                  • Double-click polygon to edit vertices
+                  <br />• Double-click polygon to edit vertices
                 </p>
               </div>
             </div>
@@ -431,9 +519,9 @@ export const ProjectAreaBaseLayer = ({
 
           {/* Unsaved Changes Indicator */}
           {hasUnsavedChanges && (
-            <div className="bg-amber-50/90 border border-amber-200 rounded-lg p-2 text-sm shadow-md backdrop-blur-sm">
+            <div className="rounded-lg border border-amber-200 bg-amber-50/90 p-2 text-sm shadow-md backdrop-blur-sm">
               <div className="flex items-center gap-2 text-amber-800">
-                <div className="h-2 w-2 bg-amber-500 rounded-full animate-pulse"></div>
+                <div className="h-2 w-2 animate-pulse rounded-full bg-amber-500"></div>
                 <span className="text-xs font-medium">Unsaved changes</span>
               </div>
             </div>

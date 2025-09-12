@@ -241,10 +241,7 @@ export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
   }
 
   return (
-    <APIProvider 
-      apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
-      libraries={['drawing']}
-    >
+    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={['drawing']}>
       <div className="relative h-[600px] w-full overflow-hidden rounded-2xl">
         <Map
           className="h-full w-full"
@@ -257,9 +254,9 @@ export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
           mapTypeId="satellite"
         >
           {/* Project Area Base Layer */}
-          <ProjectAreaBaseLayer 
+          <ProjectAreaBaseLayer
             projectId={projectId}
-            onPolygonSave={async (coordinates) => {
+            onPolygonSave={async coordinates => {
               console.log('Polygon saved successfully:', coordinates)
             }}
           />

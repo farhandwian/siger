@@ -241,10 +241,6 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       }
 
       periods.push({ month, year, week })
-
-      console.log(
-        `📅 Week ${weekIndex + 1}: ${weekDate.toISOString().slice(0, 10)} -> ${year}-${month.toString().padStart(2, '0')}-W${week} (Monday: ${monday.toISOString().slice(0, 10)}, Thursday: ${thursday.toISOString().slice(0, 10)})`
-      )
     }
 
     return periods
@@ -648,19 +644,40 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
             {/* Process Button */}
             <div className="flex gap-2">
-              <Button onClick={processCSV} disabled={!file || isProcessing} className="flex-1">
-                {isProcessing ? 'Processing...' : 'Parse & Preview'}
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  resetModal()
-                  onClose()
-                }}
-              >
-                Cancel
-              </Button>
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="importMode"
+                    value="upsert"
+                    checked={importMode === 'upsert'}
+                    onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                    className="text-blue-600"
+                  />
+                  <div>
+                    <div className="text-sm font-medium">Upsert (Merge)</div>
+                    <div className="text-xs text-gray-500">
+                      Update existing records and create new ones. Preserves existing data.
+                    </div>
+                  </div>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="importMode"
+                    value="replace"
+                    checked={importMode === 'replace'}
+                    onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                    className="text-blue-600"
+                  />
+                  <div>
+                    <div className="text-sm font-medium">Replace All</div>
+                    <div className="text-xs text-gray-500">
+                      Delete all existing data and replace with CSV data. ⚠️ Irreversible!
+                    </div>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -683,40 +700,6 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
               {/* Import Mode Selection */}
               <div className="space-y-3">
                 <h4 className="text-sm font-medium">Import Mode</h4>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="importMode"
-                      value="upsert"
-                      checked={importMode === 'upsert'}
-                      onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
-                      className="text-blue-600"
-                    />
-                    <div>
-                      <div className="text-sm font-medium">Upsert (Merge)</div>
-                      <div className="text-xs text-gray-500">
-                        Update existing records and create new ones. Preserves existing data.
-                      </div>
-                    </div>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="importMode"
-                      value="replace"
-                      checked={importMode === 'replace'}
-                      onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
-                      className="text-blue-600"
-                    />
-                    <div>
-                      <div className="text-sm font-medium">Replace All</div>
-                      <div className="text-xs text-gray-500">
-                        Delete all existing data and replace with CSV data. ⚠️ Irreversible!
-                      </div>
-                    </div>
-                  </label>
-                </div>
               </div>
 
               {/* Import to Database Button */}

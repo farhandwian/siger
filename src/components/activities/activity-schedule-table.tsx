@@ -163,13 +163,20 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
   if (!sequentialWeeks || sequentialWeeks.length === 0) {
     return (
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white p-4">
-        <h3 className="text-lg font-semibold text-red-600 mb-4">Table Configuration Error</h3>
-        <div className="text-sm text-gray-600 space-y-2">
-          <p><strong>SPMK Date:</strong> {project?.tanggalSpmk || 'Not set'}</p>
-          <p><strong>Sequential Weeks Generated:</strong> {sequentialWeeks?.length || 0}</p>
-          <p><strong>Issue:</strong> Unable to generate week structure. Please check SPMK date format.</p>
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-yellow-800 text-sm">
+        <h3 className="mb-4 text-lg font-semibold text-red-600">Table Configuration Error</h3>
+        <div className="space-y-2 text-sm text-gray-600">
+          <p>
+            <strong>SPMK Date:</strong> {project?.tanggalSpmk || 'Not set'}
+          </p>
+          <p>
+            <strong>Sequential Weeks Generated:</strong> {sequentialWeeks?.length || 0}
+          </p>
+          <p>
+            <strong>Issue:</strong> Unable to generate week structure. Please check SPMK date
+            format.
+          </p>
+          <div className="mt-4 rounded border border-yellow-200 bg-yellow-50 p-3">
+            <p className="text-sm text-yellow-800">
               Expected SPMK date format: "23 Mei 2025" or "2025-05-23"
             </p>
           </div>
@@ -192,7 +199,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
     const activity = activities.find(a => a.id === activityId)
     if (!activity) return null
-    
+
     // Get the month and week from the sequential week
     const sequentialWeek = sequentialWeeks[weekNumber - 1]
     const month = sequentialWeek.month
@@ -360,22 +367,15 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
             <thead>
               {/* Single header row - Week ranges */}
               <tr>
-                <th
-                  className="activity-table-sticky-left table-text-sm border-b border-gray-200 bg-gray-50 p-1.5 font-bold text-gray-900"
-                >
+                <th className="activity-table-sticky-left table-text-sm border-b border-gray-200 bg-gray-50 p-1.5 font-bold text-gray-900">
                   URAIAN PEKERJAAN
                 </th>
-                <th
-                  className="table-text-sm border-b border-gray-200 bg-gray-50 p-1.5 font-bold text-gray-900"
-                >
+                <th className="table-text-sm border-b border-gray-200 bg-gray-50 p-1.5 font-bold text-gray-900">
                   <div>Bobot</div>
                   <div>(%)</div>
                 </th>
                 {sequentialWeeks.map((week, weekIndex) => (
-                  <th
-                    key={`W${week.weekNumber}`}
-                    className="activity-table-header-primary"
-                  >
+                  <th key={`W${week.weekNumber}`} className="activity-table-header-primary">
                     <div className="text-xs font-semibold">W{week.weekNumber}</div>
                     <div className="text-[10px] font-normal">{week.range}</div>
                   </th>
@@ -395,11 +395,8 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                       <div className="activity-main-title">{activity.name}</div>
                     </td>
                     <td className="bg-gray-100">{/* No weight for main activity */}</td>
-                    {sequentialWeeks.map((week) => (
-                      <td
-                        key={`${activity.id}-main-W${week.weekNumber}`}
-                        className="bg-gray-100"
-                      >
+                    {sequentialWeeks.map(week => (
+                      <td key={`${activity.id}-main-W${week.weekNumber}`} className="bg-gray-100">
                         {/* Main activity cells are blocked/empty */}
                       </td>
                     ))}
@@ -431,50 +428,50 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                               key={cellId}
                               className={`progress-cell-plan ${value && value > 0 ? 'has-value' : ''}`}
                             >
-                                {isEditing ? (
-                                  <Input
-                                    value={editValue}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                      setEditValue(e.target.value)
-                                    }
-                                    onBlur={() =>
+                              {isEditing ? (
+                                <Input
+                                  value={editValue}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                    setEditValue(e.target.value)
+                                  }
+                                  onBlur={() =>
+                                    handleCellSave(
+                                      activity.id,
+                                      subActivity.id,
+                                      week.weekNumber,
+                                      'plan'
+                                    )
+                                  }
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
                                       handleCellSave(
                                         activity.id,
                                         subActivity.id,
                                         week.weekNumber,
                                         'plan'
                                       )
+                                    } else if (e.key === 'Escape') {
+                                      handleCellCancel()
                                     }
-                                    onKeyDown={e => {
-                                      if (e.key === 'Enter') {
-                                        handleCellSave(
-                                          activity.id,
-                                          subActivity.id,
-                                          week.weekNumber,
-                                          'plan'
-                                        )
-                                      } else if (e.key === 'Escape') {
-                                        handleCellCancel()
-                                      }
-                                    }}
-                                    className="progress-value-input"
-                                    autoFocus
-                                  />
-                                ) : (
-                                  <div
-                                    className="progress-value-display"
-                                    onClick={() => handleCellEdit(cellId, value)}
-                                  >
-                                    {value !== null && value !== undefined
-                                      ? value === 0
-                                        ? '-'
-                                        : value.toFixed(3)
-                                      : '-'}
-                                  </div>
-                                )}
-                              </td>
-                            )
-                          })}
+                                  }}
+                                  className="progress-value-input"
+                                  autoFocus
+                                />
+                              ) : (
+                                <div
+                                  className="progress-value-display"
+                                  onClick={() => handleCellEdit(cellId, value)}
+                                >
+                                  {value !== null && value !== undefined
+                                    ? value === 0
+                                      ? '-'
+                                      : value.toFixed(3)
+                                    : '-'}
+                                </div>
+                              )}
+                            </td>
+                          )
+                        })}
                       </tr>
 
                       {/* Second Row - Yellow background (#FFC928) */}
@@ -547,10 +544,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
               {/* Total Section */}
               <tr className="h-[27px] border-b border-gray-200">
-                <td
-                  colSpan={2 + sequentialWeeks.length}
-                  className="border-gray-200"
-                ></td>
+                <td colSpan={2 + sequentialWeeks.length} className="border-gray-200"></td>
               </tr>
 
               {/* Total Header */}
@@ -562,7 +556,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   className="sticky z-10 border-b border-gray-200 bg-white"
                   style={{ left: '200px', width: '60px' }}
                 ></td>
-                {sequentialWeeks.map((week) => (
+                {sequentialWeeks.map(week => (
                   <td
                     key={`total-header-W${week.weekNumber}`}
                     className="border-b border-gray-200"
@@ -576,7 +570,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   Rencana
                 </td>
                 <td className="sticky border-b border-gray-200"></td>
-                {sequentialWeeks.map((week) => {
+                {sequentialWeeks.map(week => {
                   // Calculate total for this week (plan)
                   const weekTotal =
                     activities?.reduce((total, activity) => {
@@ -610,7 +604,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   Realisasi
                 </td>
                 <td className="sticky border-b border-gray-200"></td>
-                {sequentialWeeks.map((week) => {
+                {sequentialWeeks.map(week => {
                   // Calculate total for this week (actual)
                   const weekTotal =
                     activities?.reduce((total, activity) => {
@@ -640,10 +634,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
 
               {/* Kumulatif Section */}
               <tr className="h-[27px] border-b border-gray-200">
-                <td
-                  colSpan={2 + sequentialWeeks.length}
-                  className="border-gray-200"
-                ></td>
+                <td colSpan={2 + sequentialWeeks.length} className="border-gray-200"></td>
               </tr>
 
               {/* Kumulatif Header */}
@@ -655,7 +646,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   className="sticky z-10 border-b border-gray-200 bg-white"
                   style={{ left: '200px', width: '60px' }}
                 ></td>
-                {sequentialWeeks.map((week) => (
+                {sequentialWeeks.map(week => (
                   <td
                     key={`kumulatif-header-W${week.weekNumber}`}
                     className="border-b border-gray-200"
@@ -669,11 +660,8 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   Rencana
                 </td>
                 <td className="sticky border-b border-gray-200"></td>
-                {sequentialWeeks.map((week) => (
-                  <td
-                    key={`rencana-W${week.weekNumber}`}
-                    className="progress-cell-cumulative-plan"
-                  >
+                {sequentialWeeks.map(week => (
+                  <td key={`rencana-W${week.weekNumber}`} className="progress-cell-cumulative-plan">
                     {getCumulativeValueForWeek(week.month, week.weekInMonth, 'plan').toFixed(3)}
                   </td>
                 ))}
@@ -685,7 +673,7 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   Realisasi
                 </td>
                 <td className="sticky border-b border-gray-200"></td>
-                {sequentialWeeks.map((week) => (
+                {sequentialWeeks.map(week => (
                   <td
                     key={`realisasi-W${week.weekNumber}`}
                     className="progress-cell-cumulative-actual"
@@ -701,12 +689,14 @@ export function ActivityScheduleTable({ projectId }: ActivityScheduleTableProps)
                   Deviasi
                 </td>
                 <td className="sticky border-b border-gray-200"></td>
-                {sequentialWeeks.map((week) => (
+                {sequentialWeeks.map(week => (
                   <td
                     key={`deviasi-W${week.weekNumber}`}
                     className="progress-cell-cumulative-deviation"
                   >
-                    {getCumulativeValueForWeek(week.month, week.weekInMonth, 'deviation').toFixed(3)}
+                    {getCumulativeValueForWeek(week.month, week.weekInMonth, 'deviation').toFixed(
+                      3
+                    )}
                   </td>
                 ))}
               </tr>
