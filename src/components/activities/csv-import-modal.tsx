@@ -65,10 +65,72 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
   const parseCSV = (csvText: string): string[][] => {
     const lines = csvText.split('\n')
-    return lines.map(line => {
-      // Split by semicolon and clean up quotes
-      return line.split(';').map(cell => cell.trim().replace(/"/g, ''))
-    })
+
+    // Auto-detect delimiter by checking the first few lines
+    const detectDelimiter = (text: string): string => {
+      const testLines = text.split('\n').slice(0, 3) // Check first 3 lines
+      let semicolonCount = 0
+      let commaCount = 0
+
+      testLines.forEach(line => {
+        // Count delimiters outside of quoted strings
+        let inQuotes = false
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i]
+          if (char === '"') {
+            inQuotes = !inQuotes
+          } else if (!inQuotes) {
+            if (char === ';') semicolonCount++
+            if (char === ',') commaCount++
+          }
+        }
+      })
+
+      // Return the delimiter that appears more frequently
+      return semicolonCount > commaCount ? ';' : ','
+    }
+
+    const delimiter = detectDelimiter(csvText)
+    console.log(`📄 CSV delimiter detected: "${delimiter}"`)
+
+    // Proper CSV parsing that respects quoted fields
+    const parseCSVLine = (line: string, delimiter: string): string[] => {
+      const result: string[] = []
+      let current = ''
+      let inQuotes = false
+      let i = 0
+
+      while (i < line.length) {
+        const char = line[i]
+        const nextChar = line[i + 1]
+
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            // Handle escaped quotes ("") within quoted field
+            current += '"'
+            i += 2 // Skip both quotes
+            continue
+          } else {
+            // Toggle quote state
+            inQuotes = !inQuotes
+          }
+        } else if (char === delimiter && !inQuotes) {
+          // Found delimiter outside quotes - end current field
+          result.push(current.trim())
+          current = ''
+        } else {
+          // Regular character - add to current field
+          current += char
+        }
+        i++
+      }
+
+      // Add the last field
+      result.push(current.trim())
+      return result
+    }
+
+    return lines.map(line => parseCSVLine(line, delimiter))
   }
 
   const parseMonthName = (monthName: string): number => {
@@ -241,6 +303,10 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       }
 
       periods.push({ month, year, week })
+
+      console.log(
+        `📅 Week ${weekIndex + 1}: ${weekDate.toISOString().slice(0, 10)} -> ${year}-${month.toString().padStart(2, '0')}-W${week} (Monday: ${monday.toISOString().slice(0, 10)}, Thursday: ${thursday.toISOString().slice(0, 10)})`
+      )
     }
 
     return periods
@@ -547,7 +613,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <Card className="overflow  w-full max-w-2xl">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg font-semibold">Import Jadwal from CSV</CardTitle>
+          <CardTitle className="text-lg font-semibold">Impor Jadwal dari CSV</CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -564,35 +630,28 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           {/* SPMK Date Info */}
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
             <div className="flex items-center gap-2 text-sm">
-              <div className="font-medium text-blue-800">Week calculation starts from:</div>
-              <div className="text-blue-700">
-                {spmkDate ? (
-                  <span className="font-mono">{spmkDate}</span>
-                ) : (
-                  <span className="text-red-600">SPMK date not found</span>
-                )}
+              <div className="font-medium text-blue-800">Template:</div>
+              <div className="text-sm text-blue-700">
+                <a
+                  href="https://s3.keenos.id/public/jadwal_csv_fix.csv"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                  aria-label="Pratinjau template CSV"
+                >
+                  Pratinjau
+                </a>
+                <span className="mx-2 text-gray-400">|</span>
+                <a
+                  href="https://s3.keenos.id/public/jadwal_csv_fix.csv"
+                  download
+                  className="underline"
+                  aria-label="Unduh template CSV"
+                >
+                  Unduh CSV
+                </a>
               </div>
             </div>
-            <div className="mt-1 text-xs text-blue-600">
-              CSV columns (1, 2, 3, 4...) will be mapped as consecutive weeks starting from the SPMK
-              date.
-            </div>
-            {spmkDate && (
-              <div className="mt-2 text-xs text-blue-700">
-                <strong>Week Preview:</strong>
-                {(() => {
-                  const preview = buildWeekBasedMapping(spmkDate, 8) // Show first 8 weeks
-                  return preview.slice(0, 6).map((p, i) => (
-                    <div key={i} className="ml-2">
-                      Column {i + 1} → Week {p.week} of {getMonthName(p.month)} {p.year}
-                    </div>
-                  ))
-                })()}
-                {buildWeekBasedMapping(spmkDate, 8).length > 6 && (
-                  <div className="ml-2 text-gray-500">... and more</div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* File Upload Section */}
@@ -611,14 +670,14 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                 <div className="space-y-2">
                   <FileText className="mx-auto h-12 w-12 text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Select a CSV file with schedule data</p>
+                    <p className="text-sm text-gray-600">Pilih file CSV yang berisi data jadwal</p>
                     <Button
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
                       className="mt-2"
                     >
                       <Upload className="mr-2 h-4 w-4" />
-                      Choose File
+                      Pilih File
                     </Button>
                   </div>
                 </div>
@@ -628,7 +687,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                   <p className="text-sm font-medium">{file.name}</p>
                   <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()} size="sm">
-                    Change File
+                    Ganti File
                   </Button>
                 </div>
               )}
@@ -644,62 +703,73 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
             {/* Process Button */}
             <div className="flex gap-2">
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="importMode"
-                    value="upsert"
-                    checked={importMode === 'upsert'}
-                    onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
-                    className="text-blue-600"
-                  />
-                  <div>
-                    <div className="text-sm font-medium">Upsert (Merge)</div>
-                    <div className="text-xs text-gray-500">
-                      Update existing records and create new ones. Preserves existing data.
-                    </div>
-                  </div>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="importMode"
-                    value="replace"
-                    checked={importMode === 'replace'}
-                    onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
-                    className="text-blue-600"
-                  />
-                  <div>
-                    <div className="text-sm font-medium">Replace All</div>
-                    <div className="text-xs text-gray-500">
-                      Delete all existing data and replace with CSV data. ⚠️ Irreversible!
-                    </div>
-                  </div>
-                </label>
-              </div>
+              <Button onClick={processCSV} disabled={!file || isProcessing} className="flex-1">
+                {isProcessing ? 'Memproses...' : 'Parse & Pratinjau'}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  resetModal()
+                  onClose()
+                }}
+              >
+                Batal
+              </Button>
             </div>
           </div>
 
           {/* Results Preview */}
           {parseResult && !importResult && (
             <div className="space-y-4 border-t pt-4">
-              <h3 className="text-sm font-medium">Import Preview</h3>
+              <h3 className="text-sm font-medium">Pratinjau Impor</h3>
               <div className="rounded bg-gray-50 p-3 text-sm text-gray-600">
-                <p>✅ Successfully parsed {parseResult.length} items</p>
-                <p>📁 Activities: {parseResult.filter(item => item.type === 'activity').length}</p>
-                <p>
-                  📋 Sub-Activities:{' '}
-                  {parseResult.filter(item => item.type === 'subActivity').length}
-                </p>
+                <p>✅ Berhasil mem-parse {parseResult.length} item</p>
+                <p>📁 Pekerjaan: {parseResult.filter(item => item.type === 'activity').length}</p>
+                <p>📋 Kegiatan: {parseResult.filter(item => item.type === 'subActivity').length}</p>
                 <p className="mt-2 text-xs">
-                  Ready to import to database. Click the button below to proceed.
+                  Siap untuk diimpor ke database. Klik tombol di bawah untuk melanjutkan.
                 </p>
               </div>
 
               {/* Import Mode Selection */}
               <div className="space-y-3">
-                <h4 className="text-sm font-medium">Import Mode</h4>
+                <h4 className="text-sm font-medium">Mode Impor</h4>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      value="upsert"
+                      checked={importMode === 'upsert'}
+                      onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                      className="text-blue-600"
+                    />
+                    <div>
+                      <div className="text-sm font-medium">Upsert (Gabungkan)</div>
+                      <div className="text-xs text-gray-500">
+                        Perbarui data yang ada dan buat yang baru. Menjaga data yang sudah ada.
+                      </div>
+                    </div>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      value="replace"
+                      checked={importMode === 'replace'}
+                      onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                      className="text-blue-600"
+                    />
+                    <div>
+                      <div className="text-sm font-medium">Ganti Semua</div>
+                      <div className="text-xs text-gray-500">
+                        Hapus semua data yang ada dan ganti dengan data dari CSV. ⚠️ Tidak dapat
+                        dikembalikan!
+                      </div>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               {/* Import to Database Button */}
@@ -709,7 +779,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                   disabled={isImporting}
                   className="flex-1 bg-green-600 hover:bg-green-700"
                 >
-                  {isImporting ? 'Importing...' : 'Import to Database'}
+                  {isImporting ? 'Mengimpor...' : 'Impor ke Database'}
                 </Button>
 
                 <Button
@@ -726,7 +796,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           {/* Import Success */}
           {importResult && (
             <div className="space-y-4 border-t pt-4">
-              <h3 className="text-sm font-medium text-green-700">Import Successful!</h3>
+              <h3 className="text-sm font-medium text-green-700">Impor Berhasil!</h3>
               <div className="rounded border border-green-200 bg-green-50 p-3 text-sm">
                 <p className="font-medium text-green-800">✅ {importResult.message}</p>
                 <div className="mt-2 space-y-1 text-green-700">
@@ -761,7 +831,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                 }}
                 className="w-full"
               >
-                Close
+                Tutup
               </Button>
             </div>
           )}
