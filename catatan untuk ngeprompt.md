@@ -197,3 +197,4 @@ cumulative rencana juni(30–06):25
 ---------------------------------
 ok i want you to visualize cumulative rencana dan cumulative realisasi from material flow table in material chart, and on the chart dont forget to add filter by month like the table does
 ---------------------------------
+i want you to get the image from db, and then if user click the image it will show all the image preview
