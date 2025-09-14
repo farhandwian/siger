@@ -15,7 +15,7 @@ export interface CumulativeWeekData extends WeekData {
 }
 
 /**
- * Calculate cumulative values for all weeks based on activity scheduleplans
+ * Calculate cumulative values for all weeks based on activity schedules
  * This replaces the database-stored cumulative data with client-side calculations
  */
 export function calculateCumulativeData(
@@ -94,12 +94,12 @@ function calculateWeekTotal(
   for (const activity of activities) {
     if (activity.subActivities && activity.subActivities.length > 0) {
       for (const subActivity of activity.subActivities) {
-        const scheduleplan = subActivity.scheduleplans?.find(
+        const schedule = subActivity.schedules?.find(
           s => s.month === month && s.week === week && s.year === year
         )
 
-        if (scheduleplan) {
-          const value = type === 'plan' ? scheduleplan.planPercentage : scheduleplan.actualPercentage
+        if (schedule) {
+          const value = type === 'plan' ? schedule.planPercentage : schedule.actualPercentage
           if (value !== null && value !== undefined) {
             total += value
           }

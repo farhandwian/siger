@@ -14,8 +14,6 @@ const protectedApiRoutes = [
   '/api/projects',
   '/api/activities', 
   '/api/monitoring',
-  '/api/materials',
-  '/api/proposals',
   '/api/daily-activities',
   '/api/satkers',
   '/api/balai',

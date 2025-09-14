@@ -3,15 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { SchedulePlanTableNew } from '@/components/activities/SchedulePlanTableNew'
+import { ScheduleTableNew } from '@/components/activities/ActivityScheduleTableNew'
 import { CSVImportModal } from '@/components/activities/csv-import-modal'
-import { ActionPlanTableNew } from '@/components/action-plan/ActionPlanTableNew'
 import { ActionPlanCSVImportModal } from '@/components/action-plan/ActionPlanCSVImportModal'
+import { ActionPlanTableNew } from '@/components/action-plan/ActionPlanScheduleTableNew'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
-import { AddMaterialModal } from '@/components/materials/add-material-modal'
-import { MaterialFlowTable } from '@/components/materials/material-flow-table'
-import { MaterialChart } from '@/components/materials/material-chart'
 import { AIInsights } from '@/components/monitoring/ai-insights'
 import { MonitoringMetrics } from '@/components/monitoring/monitoring-metrics'
 import { SCurveChart } from '@/components/monitoring/SCurveChartNew'
@@ -21,11 +18,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { useMonitoringData } from '@/hooks/use-monitoring-data'
-import { useMaterials } from '@/hooks/useMaterialQueries'
-import { useProjectDetail, useUpdateProjectField } from '@/hooks/useProjectQueries'
+import { useProjectDetail } from '@/hooks/useProjectQueries'
 import { cn } from '@/lib/utils'
 import { formatDateForInput } from '@/utils/dateUtils'
-import { ChevronDown, Plus, RefreshCw, Wifi, WifiOff, Upload } from 'lucide-react'
+import { RefreshCw, Wifi, WifiOff, Upload } from 'lucide-react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ActionPlanMetrics } from '@/components/monitoring/action-plan-metrics'
 import { ArrowLeft } from 'lucide-react'
@@ -191,23 +187,12 @@ export default function ProjectDetailPage() {
   const tabFromUrl = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(tabFromUrl || 'Data Teknis')
 
-  const [addMaterialModalOpen, setAddMaterialModalOpen] = useState(false)
   const [csvImportModalOpen, setCsvImportModalOpen] = useState(false)
   const [actionPlanCsvImportModalOpen, setActionPlanCsvImportModalOpen] = useState(false)
-  const [selectedMaterial, setSelectedMaterial] = useState<string>('')
 
   const projectId = (params?.id as string) || '1'
   const { data: project, isLoading, error } = useProjectDetail(projectId)
-  const { data: materials } = useMaterials(projectId)
-  const updateProjectMutation = useUpdateProjectField()
   const { refreshAll, isLoading: monitoringLoading, isError: monitoringError } = useMonitoringData()
-
-  // Initialize selectedMaterial when materials are loaded
-  useEffect(() => {
-    if (materials && materials.length > 0 && !selectedMaterial) {
-      setSelectedMaterial(materials[0].jenisMaterial)
-    }
-  }, [materials, selectedMaterial])
 
   // Update activeTab when URL search params change
   useEffect(() => {
@@ -230,6 +215,7 @@ export default function ProjectDetailPage() {
     masaKontrak: '',
     tanggalKontrak: '',
     akhirKontrak: '',
+    tanggalSpmk: '',
     pembayaranTerakhir: '',
   })
 
@@ -248,6 +234,7 @@ export default function ProjectDetailPage() {
         masaKontrak: project.masaKontrak || '',
         tanggalKontrak: formatDateForInput(project.tanggalKontrak),
         akhirKontrak: formatDateForInput(project.akhirKontrak),
+        tanggalSpmk: formatDateForInput(project.tanggalSpmk),
         pembayaranTerakhir: project.pembayaranTerakhir || '',
       })
     }
@@ -262,8 +249,8 @@ export default function ProjectDetailPage() {
 
   const refreshActivities = () => {
     queryClient.invalidateQueries({ queryKey: ['activities', 'list', projectId] })
-    queryClient.invalidateQueries({ queryKey: ['action-plan-scheduleplans'] })
-    queryClient.invalidateQueries({ queryKey: ['scheduleplans'] })
+    queryClient.invalidateQueries({ queryKey: ['action-plan-schedules'] })
+    queryClient.invalidateQueries({ queryKey: ['schedules'] })
   }
 
   const tabs = [
@@ -272,7 +259,6 @@ export default function ProjectDetailPage() {
     'Data Teknis',
     'Jadwal',
     'Action Plan',
-    'Material Flow',
     'Analisa Kebutuhan',
   ]
 
@@ -530,11 +516,12 @@ export default function ProjectDetailPage() {
                           fieldName="spmk"
                         />
                         <AutoSaveField
-                          label="Masa Kontrak"
-                          value={projectData.masaKontrak}
-                          onChange={(value: string) => updateField('masaKontrak', value)}
+                          label="Tanggal SPMK"
+                          value={projectData.tanggalSpmk}
+                          onChange={(value: string) => updateField('tanggalSpmk', value)}
                           projectId={projectId}
-                          fieldName="masaKontrak"
+                          fieldName="tanggalSpmk  "
+                          type="date"
                         />
                       </div>
                       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
@@ -555,12 +542,19 @@ export default function ProjectDetailPage() {
                           type="date"
                         />
                         <AutoSaveField
+                          label="Masa Kontrak"
+                          value={projectData.masaKontrak}
+                          onChange={(value: string) => updateField('masaKontrak', value)}
+                          projectId={projectId}
+                          fieldName="masaKontrak"
+                        />
+                        {/* <AutoSaveField
                           label="Pembayaran Terakhir"
                           value={projectData.pembayaranTerakhir}
                           onChange={(value: string) => updateField('pembayaranTerakhir', value)}
                           projectId={projectId}
                           fieldName="pembayaranTerakhir"
-                        />
+                        /> */}
                       </div>
                     </div>
                   </section>
@@ -691,10 +685,10 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
 
-                  {/* Activity SchedulePlan Table */}
+                  {/* Activity Schedule Table */}
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-gray-900">Activity SchedulePlan</h2>
+                      <h2 className="text-sm font-medium text-gray-900">Activity Schedule</h2>
                       <Button
                         onClick={() => setCsvImportModalOpen(true)}
                         variant="outline"
@@ -705,7 +699,7 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <SchedulePlanTableNew projectId={projectId} />
+                    <ScheduleTableNew projectId={projectId} />
                   </div>
                 </div>
               )}
@@ -774,10 +768,10 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
 
-                  {/* Action Plan SchedulePlan Table */}
+                  {/* Action Plan Schedule Table */}
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-gray-900">Action Plan SchedulePlan</h2>
+                      <h2 className="text-sm font-medium text-gray-900">Action Plan Schedule</h2>
                       <Button
                         onClick={() => setActionPlanCsvImportModalOpen(true)}
                         variant="outline"
@@ -802,72 +796,6 @@ export default function ProjectDetailPage() {
                 </div>
               )}
 
-              {/* Material Flow Tab Content */}
-              {activeTab === 'Material Flow' && (
-                <div className="space-y-6">
-                  {/* Header Section */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                      <h2 className="text-lg font-medium text-gray-900">Daftar Material</h2>
-
-                      {/* Material Dropdown */}
-                      <div className="relative">
-                        <select
-                          value={selectedMaterial}
-                          onChange={e => setSelectedMaterial(e.target.value)}
-                          aria-label="Pilih jenis material"
-                          className="appearance-none rounded-lg border border-gray-200 bg-gray-100 px-4 py-1.5 pr-8 text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          {materials && materials.length > 0 ? (
-                            materials.map(material => (
-                              <option key={material.id} value={material.jenisMaterial}>
-                                {material.jenisMaterial}
-                              </option>
-                            ))
-                          ) : (
-                            <option value="">Belum ada material</option>
-                          )}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                      </div>
-                    </div>
-
-                    {/* Add Material Button */}
-                    <Button
-                      onClick={() => setAddMaterialModalOpen(true)}
-                      className="flex items-center gap-2 bg-[#ffc928] text-[#364878] hover:bg-[#ffc928]/90"
-                    >
-                      <Plus className="h-5 w-5" />
-                      Tambah Material
-                    </Button>
-                  </div>
-
-                  {/* Material Flow Table */}
-                  {materials && materials.length > 0 ? (
-                    <MaterialFlowTable
-                      materials={materials}
-                      selectedMaterial={selectedMaterial}
-                      onMaterialChange={setSelectedMaterial}
-                    />
-                  ) : (
-                    <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-                      <p className="text-gray-500">
-                        Belum ada data material. Silakan tambah material terlebih dahulu.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Material Chart */}
-                  {materials && materials.length > 0 && (
-                    <MaterialChart
-                      materials={materials}
-                      selectedMaterial={selectedMaterial}
-                      onMaterialChange={setSelectedMaterial}
-                    />
-                  )}
-                </div>
-              )}
-
               {activeTab === 'Analisa Kebutuhan' && (
                 <div className="space-y-6">
                   {/* <AnalisaKebutuhanNew projectId={projectId} /> */}
@@ -878,7 +806,6 @@ export default function ProjectDetailPage() {
               {activeTab !== 'Data Teknis' &&
                 activeTab !== 'Jadwal' &&
                 activeTab !== 'Action Plan' &&
-                activeTab !== 'Material Flow' &&
                 activeTab !== 'Peta Pekerjaan' && (
                   <div className="py-12 text-center">
                     <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
@@ -903,13 +830,6 @@ export default function ProjectDetailPage() {
           onClose={() => setActionPlanCsvImportModalOpen(false)}
           projectId={String(params.id)}
           onSuccess={refreshActivities}
-        />
-
-        {/* Add Material Modal */}
-        <AddMaterialModal
-          isOpen={addMaterialModalOpen}
-          onClose={() => setAddMaterialModalOpen(false)}
-          projectId={String(params.id)}
         />
       </div>
     </div>

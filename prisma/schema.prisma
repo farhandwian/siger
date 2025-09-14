@@ -76,13 +76,44 @@ model Project {
   activities         Activity[]
   assignments        ProjectAssignment[]
   addendums          Addendums[]
+  auditLogs          ProjectAuditLog[]
   satker             Satker?         @relation(fields: [satkerId], references: [id])
 
   @@map("projects")
 }
 
+model ProjectAuditLog {
+  id        String   @id @default(cuid())
+  changedAt DateTime @default(now()) @map("changed_at")
+  fieldName String   @map("field_name")
+  newValue  String?  @map("new_value")
+  oldValue  String?  @map("old_value")
+  projectId String   @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_audit_logs")
+}
+
 model Addendums {
-  //TODO
+  id                 String    @id @default(cuid())
+  projectId          String    @map("project_id")
+  addendumNumber     String    @map("addendum_number")
+  title              String    @map("title")
+  description        String?   @map("description")
+  oldValue           String?   @map("old_value")
+  newValue           String?   @map("new_value")
+  changeType         String    @map("change_type") // TIME_EXTENSION, VALUE_CHANGE, SCOPE_CHANGE, etc.
+  effectiveDate      DateTime? @map("effective_date")
+  documentPath       String?   @map("document_path")
+  approvedBy         String?   @map("approved_by")
+  approvedAt         DateTime? @map("approved_at")
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("addendums")
 }
 
 model Activity {
@@ -113,10 +144,79 @@ model SubActivity {
   actionPlans         ActionPlan[]
   realization         Realization[]
   realizationDaily    RealizationDaily[]
+  dailyReports        DailyReport[]
 
   activity            Activity             @relation(fields: [activityId], references: [id], onDelete: Cascade)
 
   @@map("sub_activities")
+}
+
+model SchedulePlan {
+  id                 String      @id @default(cuid())
+  subActivityId      String      @map("sub_activity_id")
+  month              Int         @map("month")
+  year               Int         @map("year")
+  week               Int         @map("week")
+  percentage         Float?      @default(0) @map("percentage")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+
+  @@unique([subActivityId, month, year, week])
+  @@map("schedule_plans")
+}
+
+model ActionPlan {
+  id                 String      @id @default(cuid())
+  subActivityId      String      @map("sub_activity_id")
+  month              Int         @map("month")
+  year               Int         @map("year")
+  week               Int         @map("week")
+  percentage         Float?      @default(0) @map("percentage")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+
+  @@unique([subActivityId, month, year, week])
+  @@map("action_plans")
+}
+
+model Realization {
+  id                 String      @id @default(cuid())
+  subActivityId      String      @map("sub_activity_id")
+  month              Int         @map("month")
+  year               Int         @map("year")
+  week               Int         @map("week")
+  percentage         Float?      @default(0) @map("percentage")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+
+  @@unique([subActivityId, month, year, week])
+  @@map("realizations")
+}
+
+model RealizationDaily {
+  id                      String      @id @default(cuid())
+  subActivityId           String      @map("sub_activity_id")
+  userId                  String      @map("user_id")
+  date                    DateTime    @map("date")
+  dailyProgress           Float?      @default(0) @map("daily_progress")
+  cumulativeProgress      Float?      @default(0) @map("cumulative_progress")
+  notes                   String?     @map("notes")
+  koordinat               Json?       @map("koordinat")
+  attachments             Json?       @map("attachments")
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+
+  subActivity             SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+  user                    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([subActivityId, userId, date])
+  @@map("realization_daily")
 }
 
 model User {
@@ -137,6 +237,7 @@ model User {
 
   accounts           Account[]
   dailyReport        DailyReport[]
+  realizationDaily   RealizationDaily[]
   projectAssignments ProjectAssignment[]
   sessions           Session[]
   balai              Balai?              @relation(fields: [balaiId], references: [id])

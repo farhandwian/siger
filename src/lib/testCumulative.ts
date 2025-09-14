@@ -16,7 +16,7 @@ const mockActivities: Activity[] = [
         name: 'Sub Activity 1',
         weight: 50,
         order: 1,
-        scheduleplans: [
+        schedules: [
           { month: 6, week: 1, year: 2025, planPercentage: 5, actualPercentage: 5 },
           { month: 6, week: 2, year: 2025, planPercentage: 10, actualPercentage: 8 },
         ],
@@ -26,7 +26,7 @@ const mockActivities: Activity[] = [
         name: 'Sub Activity 2',
         weight: 30,
         order: 2,
-        scheduleplans: [
+        schedules: [
           { month: 6, week: 1, year: 2025, planPercentage: 3, actualPercentage: 3 },
           { month: 6, week: 2, year: 2025, planPercentage: 7, actualPercentage: 7 },
         ],

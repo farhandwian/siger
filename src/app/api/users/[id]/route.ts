@@ -7,7 +7,7 @@ import { UserRole } from '@prisma/client'
 // GET /api/users/[id] - Get user by ID
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -131,7 +131,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     // Check if user has any daily activities (we might want to prevent deletion)
-    const hasActivities = await prisma.dailySubActivity.count({
+    const hasActivities = await prisma.dailyReport.count({
       where: { userId: id },
     })
 

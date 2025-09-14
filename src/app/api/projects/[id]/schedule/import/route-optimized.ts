@@ -28,10 +28,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // Process import in smaller chunks to avoid transaction timeouts
     let totalActivityCount = 0
     let totalSubActivityCount = 0
-    let totalSchedulePlanCount = 0
+    let totalScheduleCount = 0
     let totalUpdatedActivities = 0
     let totalUpdatedSubActivities = 0
-    let totalUpdatedSchedulePlans = 0
+    let totalUpdatedSchedules = 0
 
     // Process activities in chunks of 10
     const CHUNK_SIZE = 10
@@ -52,10 +52,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         async tx => {
           let activityCount = 0
           let subActivityCount = 0
-          let scheduleplanCount = 0
+          let scheduleCount = 0
           let updatedActivities = 0
           let updatedSubActivities = 0
-          let updatedSchedulePlans = 0
+          let updatedSchedules = 0
 
           const activityMap = new Map<string, string>()
 
@@ -153,53 +153,53 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
               subActivityCount++
             }
 
-            // Process scheduleplans using batch operations
-            if (activityData.scheduleplanData && activityData.scheduleplanData.length > 0) {
-              // Get existing scheduleplans for this sub-activity
-              const existingSchedulePlans = await tx.scheduleplan.findMany({
+            // Process schedules using batch operations
+            if (activityData.scheduleData && activityData.scheduleData.length > 0) {
+              // Get existing schedules for this sub-activity
+              const existingSchedules = await tx.schedule.findMany({
                 where: { subActivityId: subActivity.id },
                 select: { id: true, month: true, year: true, week: true },
               })
 
-              const existingSchedulePlanMap = new Map(
-                existingSchedulePlans.map(s => [`${s.month}-${s.year}-${s.week}`, s.id])
+              const existingScheduleMap = new Map(
+                existingSchedules.map(s => [`${s.month}-${s.year}-${s.week}`, s.id])
               )
 
-              const scheduleplanCreates = []
-              const scheduleplanUpdates = []
+              const scheduleCreates = []
+              const scheduleUpdates = []
 
-              for (const scheduleplanData of activityData.scheduleplanData) {
+              for (const scheduleData of activityData.scheduleData) {
                 // Skip zero values
-                if (scheduleplanData.planPercentage === 0 && scheduleplanData.actualPercentage === 0) {
+                if (scheduleData.planPercentage === 0 && scheduleData.actualPercentage === 0) {
                   continue
                 }
 
-                const scheduleplanKey = `${scheduleplanData.month}-${scheduleplanData.year}-${scheduleplanData.week}`
-                const existingId = existingSchedulePlanMap.get(scheduleplanKey)
+                const scheduleKey = `${scheduleData.month}-${scheduleData.year}-${scheduleData.week}`
+                const existingId = existingScheduleMap.get(scheduleKey)
 
                 if (existingId) {
-                  scheduleplanUpdates.push({
+                  scheduleUpdates.push({
                     id: existingId,
-                    planPercentage: scheduleplanData.planPercentage,
-                    actualPercentage: scheduleplanData.actualPercentage,
+                    planPercentage: scheduleData.planPercentage,
+                    actualPercentage: scheduleData.actualPercentage,
                   })
                 } else {
-                  scheduleplanCreates.push({
+                  scheduleCreates.push({
                     subActivityId: subActivity.id,
-                    month: scheduleplanData.month,
-                    year: scheduleplanData.year,
-                    week: scheduleplanData.week,
-                    planPercentage: scheduleplanData.planPercentage,
-                    actualPercentage: scheduleplanData.actualPercentage,
+                    month: scheduleData.month,
+                    year: scheduleData.year,
+                    week: scheduleData.week,
+                    planPercentage: scheduleData.planPercentage,
+                    actualPercentage: scheduleData.actualPercentage,
                   })
                 }
               }
 
-              // Batch update scheduleplans
-              if (scheduleplanUpdates.length > 0) {
+              // Batch update schedules
+              if (scheduleUpdates.length > 0) {
                 await Promise.all(
-                  scheduleplanUpdates.map(update =>
-                    tx.scheduleplan.update({
+                  scheduleUpdates.map(update =>
+                    tx.schedule.update({
                       where: { id: update.id },
                       data: {
                         planPercentage: update.planPercentage,
@@ -208,27 +208,27 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
                     })
                   )
                 )
-                updatedSchedulePlans += scheduleplanUpdates.length
+                updatedSchedules += scheduleUpdates.length
               }
 
-              // Batch create scheduleplans
-              if (scheduleplanCreates.length > 0) {
+              // Batch create schedules
+              if (scheduleCreates.length > 0) {
                 try {
-                  await tx.scheduleplan.createMany({
-                    data: scheduleplanCreates,
+                  await tx.schedule.createMany({
+                    data: scheduleCreates,
                     skipDuplicates: true,
                   })
-                  scheduleplanCount += scheduleplanCreates.length
+                  scheduleCount += scheduleCreates.length
                 } catch (error) {
                   // Handle duplicates individually if batch fails
-                  for (const createData of scheduleplanCreates) {
+                  for (const createData of scheduleCreates) {
                     try {
-                      await tx.scheduleplan.create({ data: createData })
-                      scheduleplanCount++
+                      await tx.schedule.create({ data: createData })
+                      scheduleCount++
                     } catch (individualError: any) {
                       if (individualError.code === 'P2002') {
                         // Update existing instead
-                        const existing = await tx.scheduleplan.findFirst({
+                        const existing = await tx.schedule.findFirst({
                           where: {
                             subActivityId: createData.subActivityId,
                             month: createData.month,
@@ -237,14 +237,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
                           },
                         })
                         if (existing) {
-                          await tx.scheduleplan.update({
+                          await tx.schedule.update({
                             where: { id: existing.id },
                             data: {
                               planPercentage: createData.planPercentage,
                               actualPercentage: createData.actualPercentage,
                             },
                           })
-                          updatedSchedulePlans++
+                          updatedSchedules++
                         }
                       }
                     }
@@ -257,10 +257,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           return {
             activityCount,
             subActivityCount,
-            scheduleplanCount,
+            scheduleCount,
             updatedActivities,
             updatedSubActivities,
-            updatedSchedulePlans,
+            updatedSchedules,
           }
         },
         {
@@ -272,10 +272,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       // Add chunk results to totals
       totalActivityCount += result.activityCount
       totalSubActivityCount += result.subActivityCount
-      totalSchedulePlanCount += result.scheduleplanCount
+      totalScheduleCount += result.scheduleCount
       totalUpdatedActivities += result.updatedActivities
       totalUpdatedSubActivities += result.updatedSubActivities
-      totalUpdatedSchedulePlans += result.updatedSchedulePlans
+      totalUpdatedSchedules += result.updatedSchedules
 
       console.log(`Chunk ${chunkIndex + 1} completed:`, result)
     }
@@ -285,12 +285,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       created: {
         activities: totalActivityCount,
         subActivities: totalSubActivityCount,
-        scheduleplans: totalSchedulePlanCount,
+        schedules: totalScheduleCount,
       },
       updated: {
         activities: totalUpdatedActivities,
         subActivities: totalUpdatedSubActivities,
-        scheduleplans: totalUpdatedSchedulePlans,
+        schedules: totalUpdatedSchedules,
       },
     })
 
@@ -301,12 +301,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         created: {
           activities: totalActivityCount,
           subActivities: totalSubActivityCount,
-          scheduleplans: totalSchedulePlanCount,
+          schedules: totalScheduleCount,
         },
         updated: {
           activities: totalUpdatedActivities,
           subActivities: totalUpdatedSubActivities,
-          scheduleplans: totalUpdatedSchedulePlans,
+          schedules: totalUpdatedSchedules,
         },
         summary: {
           totalProcessed: activities.length,

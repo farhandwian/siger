@@ -27,13 +27,6 @@ export interface UserPermissions {
   canViewMonitoring: boolean
   canEditMonitoring: boolean
   
-  // Proposal permissions
-  canViewProposals: boolean
-  canCreateProposals: boolean
-  canEditProposals: boolean
-  canDeleteProposals: boolean
-  canApproveProposals: boolean
-  
   // User management permissions
   canViewUsers: boolean
   canCreateUsers: boolean
@@ -73,13 +66,6 @@ export function useAuth() {
         canViewMonitoring: false,
         canEditMonitoring: false,
         
-        // Proposal permissions
-        canViewProposals: false,
-        canCreateProposals: false,
-        canEditProposals: false,
-        canDeleteProposals: false,
-        canApproveProposals: false,
-        
         // User management permissions
         canViewUsers: false,
         canCreateUsers: false,
@@ -116,13 +102,6 @@ export function useAuth() {
       // Monitoring permissions
       canViewMonitoring: true, // All authenticated users can view
       canEditMonitoring: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER, UserRole.PPK, UserRole.VENDOR] as UserRole[]).includes(role),
-      
-      // Proposal permissions
-      canViewProposals: true, // All authenticated users can view
-      canCreateProposals: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER, UserRole.PPK] as UserRole[]).includes(role),
-      canEditProposals: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER, UserRole.PPK] as UserRole[]).includes(role),
-      canDeleteProposals: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI] as UserRole[]).includes(role),
-      canApproveProposals: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.DIRJEN_SDA, UserRole.KABALAI] as UserRole[]).includes(role),
       
       // User management permissions
       canViewUsers: role === UserRole.ADMIN_SISTEM,

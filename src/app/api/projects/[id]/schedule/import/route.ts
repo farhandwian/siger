@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 
 // Validation schemas
-const SchedulePlanDataSchema = z.object({
+const ScheduleDataSchema = z.object({
   period: z.string(),
   month: z.number().min(1).max(12),
   year: z.number(),
@@ -20,7 +20,7 @@ const ActivityImportSchema = z.object({
   volumeKontrak: z.number().optional(),
   bobotMC0: z.number().optional(),
   volumeMC0: z.number().optional(),
-  scheduleplanData: z.array(SchedulePlanDataSchema),
+  scheduleData: z.array(ScheduleDataSchema),
 })
 
 const ImportRequestSchema = z.object({
@@ -52,9 +52,9 @@ export async function POST(request: NextRequest) {
           ? {
               name: body.activities[0].name,
               type: body.activities[0].type,
-              hasSchedulePlanData: !!body.activities[0].scheduleplanData,
-              scheduleplanDataLength: body.activities[0].scheduleplanData?.length || 0,
-              firstSchedulePlanSample: body.activities[0].scheduleplanData?.[0],
+              hasScheduleData: !!body.activities[0].scheduleData,
+              scheduleDataLength: body.activities[0].scheduleData?.length || 0,
+              firstScheduleSample: body.activities[0].scheduleData?.[0],
             }
           : null,
       })
@@ -88,10 +88,10 @@ export async function POST(request: NextRequest) {
       async tx => {
         let activityCount = 0
         let subActivityCount = 0
-        let scheduleplanCount = 0
+        let scheduleCount = 0
         let updatedActivities = 0
         let updatedSubActivities = 0
-        let updatedSchedulePlans = 0
+        let updatedSchedules = 0
         let deletedItems = 0
 
         // Handle replace mode: delete all existing data first
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
           console.log('🗑️ Replace mode: Deleting all existing project data...')
 
           // Delete in correct order (foreign key constraints)
-          const deletedSchedulePlans = await tx.scheduleplan.deleteMany({
+          const deletedSchedules = await tx.schedulePlan.deleteMany({
             where: {
               subActivity: {
                 activity: {
@@ -122,9 +122,9 @@ export async function POST(request: NextRequest) {
           })
 
           deletedItems =
-            deletedSchedulePlans.count + deletedSubActivities.count + deletedActivities.count
+            deletedSchedules.count + deletedSubActivities.count + deletedActivities.count
           console.log(
-            `🗑️ Deleted: ${deletedSchedulePlans.count} scheduleplans, ${deletedSubActivities.count} sub-activities, ${deletedActivities.count} activities`
+            `🗑️ Deleted: ${deletedSchedules.count} schedules, ${deletedSubActivities.count} sub-activities, ${deletedActivities.count} activities`
           )
         }
 
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
           ).length
         }
 
-        // Second pass: Create sub-activities and scheduleplans
+        // Second pass: Create sub-activities and schedules
         const subActivitiesData = activities.filter(a => a.type === 'subActivity')
 
         for (const activityData of subActivitiesData) {
@@ -202,9 +202,7 @@ export async function POST(request: NextRequest) {
                 activityId: parentActivityId,
                 name: activityData.name,
                 satuan: activityData.satuan,
-                volumeKontrak: activityData.volumeKontrak,
-                volumeMC0: activityData.volumeMC0,
-                bobotMC0: activityData.bobotMC0,
+                volume: activityData.volumeKontrak,
                 weight: activityData.bobotMC0 || 0, // Use bobotMC0 as weight
                 order: subActivityCount,
               },
@@ -216,48 +214,44 @@ export async function POST(request: NextRequest) {
               where: { id: subActivity.id },
               data: {
                 satuan: activityData.satuan,
-                volumeKontrak: activityData.volumeKontrak,
-                volumeMC0: activityData.volumeMC0,
-                bobotMC0: activityData.bobotMC0,
+                volume: activityData.volumeKontrak,
                 weight: activityData.bobotMC0 || 0,
               },
             })
             updatedSubActivities++
           }
 
-          // Process scheduleplans using simpler upsert approach to avoid conflicts
-          for (const scheduleplanData of activityData.scheduleplanData) {
+          // Process schedules using simpler upsert approach to avoid conflicts
+          for (const scheduleData of activityData.scheduleData) {
             // Skip if both plan and actual are 0
-            if (scheduleplanData.planPercentage === 0 && scheduleplanData.actualPercentage === 0) {
+            if (scheduleData.planPercentage === 0 && scheduleData.actualPercentage === 0) {
               continue
             }
 
             try {
-              await tx.scheduleplan.upsert({
+              await tx.schedulePlan.upsert({
                 where: {
                   subActivityId_month_year_week: {
                     subActivityId: subActivity.id,
-                    month: scheduleplanData.month,
-                    year: scheduleplanData.year,
-                    week: scheduleplanData.week,
+                    month: scheduleData.month,
+                    year: scheduleData.year,
+                    week: scheduleData.week,
                   },
                 },
                 update: {
-                  planPercentage: scheduleplanData.planPercentage,
-                  actualPercentage: scheduleplanData.actualPercentage,
+                  percentage: scheduleData.planPercentage,
                 },
                 create: {
                   subActivityId: subActivity.id,
-                  month: scheduleplanData.month,
-                  year: scheduleplanData.year,
-                  week: scheduleplanData.week,
-                  planPercentage: scheduleplanData.planPercentage,
-                  actualPercentage: scheduleplanData.actualPercentage,
+                  month: scheduleData.month,
+                  year: scheduleData.year,
+                  week: scheduleData.week,
+                  percentage: scheduleData.planPercentage,
                 },
               })
-              scheduleplanCount++
-            } catch (error: any) {
-              console.error('Failed to upsert scheduleplan:', error)
+              scheduleCount++
+            } catch (error: unknown) {
+              console.error('Failed to upsert schedule:', error)
             }
           }
         }
@@ -265,10 +259,10 @@ export async function POST(request: NextRequest) {
         return {
           activityCount,
           subActivityCount,
-          scheduleplanCount,
+          scheduleCount,
           updatedActivities,
           updatedSubActivities,
-          updatedSchedulePlans,
+          updatedSchedules,
           deletedItems,
           importMode,
         }
@@ -285,31 +279,31 @@ export async function POST(request: NextRequest) {
       created: {
         activities: result.activityCount,
         subActivities: result.subActivityCount,
-        scheduleplans: result.scheduleplanCount,
+        schedules: result.scheduleCount,
       },
       updated: {
         activities: result.updatedActivities,
         subActivities: result.updatedSubActivities,
-        scheduleplans: result.updatedSchedulePlans,
+        schedules: result.updatedSchedules,
       },
       deleted: result.deletedItems,
     })
 
     return NextResponse.json({
       success: true,
-      message: `SchedulePlan data ${result.importMode === 'replace' ? 'replaced' : 'imported'} successfully`,
+      message: `Schedule data ${result.importMode === 'replace' ? 'replaced' : 'imported'} successfully`,
       data: {
         projectId,
         importMode: result.importMode,
         imported: {
           activities: result.activityCount,
           subActivities: result.subActivityCount,
-          scheduleplans: result.scheduleplanCount,
+          schedules: result.scheduleCount,
         },
         updated: {
           activities: result.updatedActivities,
           subActivities: result.updatedSubActivities,
-          scheduleplans: result.updatedSchedulePlans,
+          schedules: result.updatedSchedules,
         },
         ...(result.importMode === 'replace' && { deleted: result.deletedItems }),
       },
@@ -353,7 +347,7 @@ export async function GET(request: NextRequest) {
       include: {
         subActivities: {
           include: {
-            scheduleplans: true,
+            schedulePlans: true,
           },
         },
       },
@@ -368,9 +362,9 @@ export async function GET(request: NextRequest) {
         counts: {
           activities: activities.length,
           subActivities: activities.reduce((sum, a) => sum + a.subActivities.length, 0),
-          scheduleplans: activities.reduce(
+          schedules: activities.reduce(
             (sum, a) =>
-              sum + a.subActivities.reduce((subSum, sa) => subSum + sa.scheduleplans.length, 0),
+              sum + a.subActivities.reduce((subSum: number, sa) => subSum + sa.schedulePlans.length, 0),
             0
           ),
         },

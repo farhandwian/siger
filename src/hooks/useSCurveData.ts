@@ -16,7 +16,7 @@ export interface SCurveDataPoint {
 }
 
 /**
- * Hook to provide S-curve data based on real activity scheduleplans
+ * Hook to provide S-curve data based on real activity schedules
  */
 export function useSCurveData(projectId: string) {
   const { data: activities, isLoading: activitiesLoading } = useActivities(projectId)

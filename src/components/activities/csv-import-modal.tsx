@@ -21,7 +21,7 @@ interface ParsedActivity {
   volumeKontrak?: number
   bobotMC0?: number
   volumeMC0?: number
-  scheduleplanData: Array<{
+  scheduleData: Array<{
     period: string
     month: number
     year: number
@@ -348,7 +348,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
     // Count total data columns to determine how many weeks we need
     const maxColumns = Math.max(...rows.map(row => row.length))
-    const dataColumnStart = 7 // SchedulePlan data starts from column 7
+    const dataColumnStart = 7 // Schedule data starts from column 7
     const totalWeeks = Math.max(maxColumns - dataColumnStart, 20) // At least 20 weeks
 
     console.log(
@@ -366,7 +366,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     return periodMapping[periodIndex] || { month: 1, year: 2025, week: 1 }
   }
 
-  const parseSchedulePlanData = (rows: string[][], headerSkip: number): ParsedActivity[] => {
+  const parseScheduleData = (rows: string[][], headerSkip: number): ParsedActivity[] => {
     // Skip header rows
     const dataRows = rows.slice(headerSkip)
 
@@ -399,7 +399,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           activities.push({
             name: secondCol,
             type: 'activity',
-            scheduleplanData: [],
+            scheduleData: [],
           })
           processedActivities.add(secondCol)
         }
@@ -418,15 +418,15 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           const bobotMC0 = parseFloat(row[4]?.replace(',', '.') || '0')
           const volumeMC0 = parseFloat(row[5]?.replace(',', '.') || '0')
 
-          // Extract plan values (current row) - scheduleplan data starts from column 7
-          const planSchedulePlanData = []
+          // Extract plan values (current row) - schedule data starts from column 7
+          const planScheduleData = []
           for (let colIndex = 7; colIndex < row.length; colIndex++) {
             const value = parseFloat(row[colIndex]?.replace(',', '.') || '0')
             const dateInfo = mapPeriodToDate(colIndex - 7, periodMapping)
 
             if (value > 0 || colIndex < 25) {
               // Include even 0 values for valid periods
-              planSchedulePlanData.push({
+              planScheduleData.push({
                 period: `${dateInfo.year}-${dateInfo.month.toString().padStart(2, '0')}-W${dateInfo.week}`,
                 month: dateInfo.month,
                 year: dateInfo.year,
@@ -438,27 +438,27 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           }
 
           // Check next row for actual values
-          let actualSchedulePlanData = planSchedulePlanData.map(item => ({ ...item, actualPercentage: 0 }))
+          let actualScheduleData = planScheduleData.map(item => ({ ...item, actualPercentage: 0 }))
           if (i + 1 < dataRows.length) {
             const nextRow = dataRows[i + 1]
             if (nextRow && !nextRow[0]?.trim() && !nextRow[1]?.trim()) {
               // This is the actual values row
               for (
                 let colIndex = 7;
-                colIndex < nextRow.length && colIndex - 7 < actualSchedulePlanData.length;
+                colIndex < nextRow.length && colIndex - 7 < actualScheduleData.length;
                 colIndex++
               ) {
                 const actualValue = parseFloat(nextRow[colIndex]?.replace(',', '.') || '0')
-                if (actualSchedulePlanData[colIndex - 7]) {
-                  actualSchedulePlanData[colIndex - 7].actualPercentage = actualValue
+                if (actualScheduleData[colIndex - 7]) {
+                  actualScheduleData[colIndex - 7].actualPercentage = actualValue
                 }
               }
               i++ // Skip the actual values row
             }
           }
 
-          // Deduplicate scheduleplan data within the same sub-activity
-          const uniqueSchedulePlanData = actualSchedulePlanData.filter(
+          // Deduplicate schedule data within the same sub-activity
+          const uniqueScheduleData = actualScheduleData.filter(
             (item, index, self) =>
               index ===
               self.findIndex(
@@ -474,7 +474,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
             volumeKontrak,
             bobotMC0,
             volumeMC0,
-            scheduleplanData: uniqueSchedulePlanData,
+            scheduleData: uniqueScheduleData,
           }
 
           activities.push(subActivity)
@@ -509,7 +509,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       }
 
       // Skip first 3 header rows and parse the data
-      const parsedData = parseSchedulePlanData(rows, 3)
+      const parsedData = parseScheduleData(rows, 3)
       setParseResult(parsedData)
 
       // Console log the results for now
@@ -529,9 +529,9 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
           console.log(`   Volume Kontrak: ${item.volumeKontrak}`)
           console.log(`   Bobot MC0: ${item.bobotMC0}%`)
           console.log(`   Volume MC0: ${item.volumeMC0}`)
-          console.log(`   SchedulePlan Data (${item.scheduleplanData.length} periods):`)
-          item.scheduleplanData.forEach(
-            (scheduleplan: {
+          console.log(`   Schedule Data (${item.scheduleData.length} periods):`)
+          item.scheduleData.forEach(
+            (schedule: {
               period: string
               month: number
               year: number
@@ -539,9 +539,9 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
               planPercentage: number
               actualPercentage: number
             }) => {
-              if (scheduleplan.planPercentage > 0 || scheduleplan.actualPercentage > 0) {
+              if (schedule.planPercentage > 0 || schedule.actualPercentage > 0) {
                 console.log(
-                  `     ${scheduleplan.period}: Plan=${scheduleplan.planPercentage}%, Actual=${scheduleplan.actualPercentage}%`
+                  `     ${schedule.period}: Plan=${schedule.planPercentage}%, Actual=${schedule.actualPercentage}%`
                 )
               }
             }
@@ -573,7 +573,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     setError(null)
 
     try {
-      const response = await fetch(`/api/projects/${projectId}/scheduleplan/import`, {
+      const response = await fetch(`/api/projects/${projectId}/schedule/import`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -653,7 +653,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                 accept=".csv"
                 onChange={handleFileSelect}
                 className="hidden"
-                aria-label="Select CSV file for scheduleplan import"
+                aria-label="Select CSV file for schedule import"
               />
 
               {!file ? (
@@ -807,8 +807,8 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                   <div>
                     <p className="font-semibold">📅 Rencana dan Realisasi:</p>
                     <p className="ml-4 text-sm">
-                      Ditambahkan: {importResult.data?.imported?.scheduleplans || 0} | Diubah:{' '}
-                      {importResult.data?.updated?.scheduleplans || 0}
+                      Ditambahkan: {importResult.data?.imported?.schedules || 0} | Diubah:{' '}
+                      {importResult.data?.updated?.schedules || 0}
                     </p>
                   </div>
                 </div>

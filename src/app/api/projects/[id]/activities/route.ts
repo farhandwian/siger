@@ -20,10 +20,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         subActivities: {
           orderBy: { order: 'asc' },
           include: {
-            scheduleplans: true,
+            schedulePlans: true,
+            actionPlans: true,
+            realization: true,
+            realizationDaily: true,
           },
         },
-        scheduleplans: true,
       },
       orderBy: { order: 'asc' },
     })
@@ -88,10 +90,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         subActivities: {
           orderBy: { order: 'asc' },
           include: {
-            scheduleplans: true,
+            schedulePlans: true,
+            actionPlans: true,
+            realization: true,
+            realizationDaily: true,
           },
         },
-        scheduleplans: true,
       },
     })
 

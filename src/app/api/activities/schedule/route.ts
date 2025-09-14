@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { CreateSchedulePlanSchema } from '@/lib/schemas'
+import { CreateScheduleSchema } from '@/lib/schemas'
 import { z } from 'zod'
 
 export async function PUT(request: NextRequest) {
@@ -8,13 +8,13 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
 
     // Validate request body
-    const validatedData = CreateSchedulePlanSchema.parse(body)
+    const validatedData = CreateScheduleSchema.parse(body)
 
     // Extract activityId or subActivityId from request body
     const { activityId, subActivityId } = body
 
-    // Create or update scheduleplan
-    const scheduleplan = await prisma.scheduleplan.upsert({
+    // Create or update schedule
+    const schedule = await prisma.schedule.upsert({
       where: {
         ...(activityId
           ? {
@@ -69,11 +69,11 @@ export async function PUT(request: NextRequest) {
 
     return Response.json({
       success: true,
-      data: scheduleplan,
+      data: schedule,
       message: 'Jadwal berhasil diperbarui',
     })
   } catch (error) {
-    console.error('Error updating scheduleplan:', error)
+    console.error('Error updating schedule:', error)
 
     if (error instanceof z.ZodError) {
       return Response.json(
@@ -89,7 +89,7 @@ export async function PUT(request: NextRequest) {
     return Response.json(
       {
         success: false,
-        error: 'Failed to update scheduleplan',
+        error: 'Failed to update schedule',
       },
       { status: 500 }
     )

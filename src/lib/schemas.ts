@@ -323,44 +323,104 @@ export const ChartDataSchema = z.object({
   datasets: z.array(ChartDatasetSchema),
 })
 
-// Activity schemas
+// Activity schemas - Updated to match Prisma schema
+
+// Base schema for SchedulePlan
 export const SchedulePlanSchema = z.object({
-  id: z.any(), // Temporary: allow any type for id
-  activityId: z.any().optional(), // Temporary: allow any type
-  subActivityId: z.any().optional(), // Temporary: allow any type
+  id: z.string(),
+  subActivityId: z.string(),
   month: z.number().min(1).max(12),
-  year: z.number(),
-  week: z.number().min(1).max(6), // Allow up to 6 weeks since some months can have 6 weeks
-  planPercentage: z.number().min(0).max(100).nullable(),
-  actualPercentage: z.number().min(0).max(100).nullable(),
-  createdAt: z.any(), // Temporary: allow any type for createdAt
-  updatedAt: z.any(), // Temporary: allow any type for updatedAt
+  year: z.number().min(2020),
+  week: z.number().min(1).max(6),
+  percentage: z.number().min(0).max(100).default(0),
+  createdAt: z.date(),
+  updatedAt: z.date(),
 })
 
+// Base schema for ActionPlan
+export const ActionPlanSchema = z.object({
+  id: z.string(),
+  subActivityId: z.string(),
+  month: z.number().min(1).max(12),
+  year: z.number().min(2020),
+  week: z.number().min(1).max(6),
+  percentage: z.number().min(0).max(100).default(0),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+})
+
+// Base schema for Realization
+export const RealizationSchema = z.object({
+  id: z.string(),
+  subActivityId: z.string(),
+  month: z.number().min(1).max(12),
+  year: z.number().min(2020),
+  week: z.number().min(1).max(6),
+  percentage: z.number().min(0).max(100).default(0),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+})
+
+// Base schema for RealizationDaily
+export const RealizationDailySchema = z.object({
+  id: z.string(),
+  subActivityId: z.string(),
+  userId: z.string(),
+  date: z.date(),
+  dailyProgress: z.number().min(0).max(100).default(0).nullable(),
+  cumulativeProgress: z.number().min(0).max(100).default(0).nullable(),
+  notes: z.string().nullable(),
+  koordinat: z.any().nullable(), // GPS coordinates as JSON
+  attachments: z.any().nullable(), // File attachments as JSON
+  createdAt: z.date(),
+  updatedAt: z.date(),
+})
+
+// Addendums schema
+export const AddendumSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  addendumNumber: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  oldValue: z.string().nullable(),
+  newValue: z.string().nullable(),
+  changeType: z.string(), // TIME_EXTENSION, VALUE_CHANGE, SCOPE_CHANGE, etc.
+  effectiveDate: z.date().nullable(),
+  documentPath: z.string().nullable(),
+  approvedBy: z.string().nullable(),
+  approvedAt: z.date().nullable(),
+  isActive: z.boolean().default(true),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+})
+
+// Updated SubActivity schema to match Prisma
 export const SubActivitySchema = z.object({
-  id: z.any(), // Temporary: allow any type for id
-  activityId: z.any(), // Temporary: allow any type
+  id: z.string(),
+  activityId: z.string(),
   name: z.string().min(1, 'Nama sub kegiatan wajib diisi').max(255),
-  satuan: z.string().nullable().optional(),
-  volumeKontrak: z.number().min(0).nullable().optional(),
-  volumeMC0: z.number().min(0).nullable().optional(),
-  bobotMC0: z.number().min(0).max(100).nullable().optional(),
   weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
   order: z.number().min(0).default(0),
-  createdAt: z.any(), // Temporary: allow any type for createdAt
-  updatedAt: z.any(), // Temporary: allow any type for updatedAt
-  scheduleplans: z.array(SchedulePlanSchema).optional(),
+  satuan: z.string().nullable(),
+  volume: z.number().min(0).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  schedulePlans: z.array(SchedulePlanSchema).optional(),
+  actionPlans: z.array(ActionPlanSchema).optional(),
+  realization: z.array(RealizationSchema).optional(),
+  realizationDaily: z.array(RealizationDailySchema).optional(),
 })
 
+// Updated Activity schema
 export const ActivitySchema = z.object({
-  id: z.any(), // Temporary: allow any type for id
-  projectId: z.any(), // Temporary: allow any type
+  id: z.string(),
+  projectId: z.string(),
   name: z.string().min(1, 'Nama kegiatan wajib diisi').max(255),
   order: z.number().min(0).default(0),
-  createdAt: z.any(), // Temporary: allow any type for createdAt
-  updatedAt: z.any(), // Temporary: allow any type for updatedAt
+  createdAt: z.date(),
+  updatedAt: z.date(),
   subActivities: z.array(SubActivitySchema).optional(),
-  scheduleplans: z.array(SchedulePlanSchema).optional(),
 })
 
 export const CreateActivitySchema = z.object({
@@ -370,9 +430,7 @@ export const CreateActivitySchema = z.object({
 export const CreateSubActivitySchema = z.object({
   name: z.string().min(1, 'Nama sub kegiatan wajib diisi').max(255),
   satuan: z.string().optional(),
-  volumeKontrak: z.number().min(0).optional(),
-  volumeMC0: z.number().min(0).optional(),
-  bobotMC0: z.number().min(0).max(100).optional(),
+  volume: z.number().min(0).optional(),
   weight: z.number().min(0).max(100, 'Bobot maksimal 100%'),
 })
 
@@ -384,9 +442,7 @@ export const UpdateActivitySchema = z.object({
 export const UpdateSubActivitySchema = z.object({
   name: z.string().min(1, 'Nama sub kegiatan wajib diisi').max(255).optional(),
   satuan: z.string().nullable().optional(),
-  volumeKontrak: z.number().min(0).nullable().optional(),
-  volumeMC0: z.number().min(0).nullable().optional(),
-  bobotMC0: z.number().min(0).max(100).nullable().optional(),
+  volume: z.number().min(0).nullable().optional(),
   weight: z.number().min(0).max(100, 'Bobot maksimal 100%').optional(),
   order: z.number().min(0).optional(),
 })
@@ -395,9 +451,54 @@ export const CreateSchedulePlanSchema = SchedulePlanSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).partial({
-  planPercentage: true,
-  actualPercentage: true,
+})
+
+export const UpdateSchedulePlanSchema = SchedulePlanSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial()
+
+export const CreateActionPlanSchema = ActionPlanSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+})
+
+export const UpdateActionPlanSchema = ActionPlanSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial()
+
+export const CreateRealizationSchema = RealizationSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+})
+
+export const UpdateRealizationSchema = RealizationSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial()
+
+export const CreateRealizationDailySchema = RealizationDailySchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+})
+
+export const UpdateRealizationDailySchema = RealizationDailySchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial()
+
+export const CreateAddendumSchema = AddendumSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 })
 
 // Export inferred types
@@ -411,33 +512,37 @@ export type Report = z.infer<typeof CreateReportSchema> & {
 export type Activity = z.infer<typeof ActivitySchema>
 export type SubActivity = z.infer<typeof SubActivitySchema>
 export type SchedulePlan = z.infer<typeof SchedulePlanSchema>
+export type ActionPlan = z.infer<typeof ActionPlanSchema>
+export type Realization = z.infer<typeof RealizationSchema>
+export type RealizationDaily = z.infer<typeof RealizationDailySchema>
+export type Addendum = z.infer<typeof AddendumSchema>
 
-// Daily Sub Activity schemas for mobile API
+// Daily Sub Activity schemas for mobile API (DailyReport model)
 export const DailySubActivitySchema = z.object({
-  id: z.any(),
-  subActivityId: z.any(),
+  id: z.string(),
+  subActivityId: z.string(),
   userId: z.string(),
-  koordinat: z.any().nullable().optional(), // GPS coordinates as JSON
-  catatanKegiatan: z.string().nullable().optional(),
-  file: z.any().nullable().optional(), // Files array as JSON
-  progresRealisasiPerHari: z.number().min(0).max(100).nullable().optional(),
-  tanggalProgres: z.string(), // YYYY-MM-DD format
-  createdAt: z.any(),
-  updatedAt: z.any(),
+  koordinat: z.any().nullable(), // GPS coordinates as JSON
+  catatanKegiatan: z.string().nullable(),
+  file: z.any().nullable(), // Files array as JSON
+  progresRealisasiPerHari: z.number().min(0).max(100).nullable(),
+  tanggalProgres: z.string(), // YYYY-MM-DD format as string in DailyReport
+  createdAt: z.date(),
+  updatedAt: z.date(),
 })
 
 export const CreateDailySubActivitySchema = z.object({
-  sub_activities_id: z.string().min(1, 'Sub activity ID is required'),
-  user_id: z.string().min(1, 'User ID is required'),
+  subActivityId: z.string().min(1, 'Sub activity ID is required'),
+  userId: z.string().min(1, 'User ID is required'),
   koordinat: z
     .object({
       latitude: z.number().optional(),
       longitude: z.number().optional(),
     })
     .optional(),
-  catatan_kegiatan: z.string().optional(),
-  tanggal_progres: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
-  progres_realisasi_per_hari: z.number().min(0).max(100),
+  catatanKegiatan: z.string().optional(),
+  tanggalProgres: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  progresRealisasiPerHari: z.number().min(0).max(100),
   files: z
     .array(
       z.object({
@@ -481,7 +586,7 @@ export type CreateDailySubActivity = z.infer<typeof CreateDailySubActivitySchema
 export type FullProject = z.infer<typeof FullProjectSchema>
 export type DashboardWidget = z.infer<typeof DashboardWidgetSchema>
 export type FilterOptions = z.infer<typeof FilterOptionsSchema>
-export type APIResponse<T = any> = Omit<z.infer<typeof APIResponseSchema>, 'data'> & { data?: T }
+export type APIResponse<T = unknown> = Omit<z.infer<typeof APIResponseSchema>, 'data'> & { data?: T }
 export type ChartData = z.infer<typeof ChartDataSchema>
 export type User = z.infer<typeof UserSchema>
 export type CreateUser = z.infer<typeof CreateUserSchema>

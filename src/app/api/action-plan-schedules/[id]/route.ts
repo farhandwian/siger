@@ -1,8 +1,8 @@
-// API route for individual Action Plan SchedulePlan operations - GET, PUT, DELETE
+// API route for individual Action Plan Schedule operations - GET, PUT, DELETE
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { UpdateActionPlanSchema } from '@/lib/schemas/action-plan-scheduleplan'
+import { UpdateActionPlanSchema } from '@/lib/schemas/action-plan-schedule'
 
 const ParamsSchema = z.object({
   id: z.string(),
@@ -16,18 +16,18 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     const actionPlan = await prisma.actionPlan.findUnique({
       where: { id },
       include: {
-        activity: {
-          select: {
-            id: true,
-            name: true,
-            projectId: true,
-          },
-        },
         subActivity: {
           select: {
             id: true,
             name: true,
             activityId: true,
+            activity: {
+              select: {
+                id: true,
+                name: true,
+                projectId: true,
+              },
+            },
           },
         },
       },
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
     if (!actionPlan) {
       return NextResponse.json(
-        { success: false, error: 'Action plan scheduleplan not found' },
+        { success: false, error: 'Action plan schedule not found' },
         { status: 404 }
       )
     }
@@ -45,11 +45,9 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       data: actionPlan,
     })
   } catch (error) {
-    console.error('Error fetching action plan scheduleplan:', error)
-
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Invalid scheduleplan ID', details: error.errors },
+        { success: false, error: 'Invalid schedule ID', details: error.errors },
         { status: 400 }
       )
     }
@@ -65,71 +63,60 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     const body = await req.json()
     const data = UpdateActionPlanSchema.parse(body)
 
-    // Check if the action plan scheduleplan exists
-    const existingSchedulePlan = await prisma.actionPlan.findUnique({
+    // Check if the action plan schedule exists
+    const existingSchedule = await prisma.actionPlan.findUnique({
       where: { id },
     })
 
-    if (!existingSchedulePlan) {
+    if (!existingSchedule) {
       return NextResponse.json(
-        { success: false, error: 'Action plan scheduleplan not found' },
+        { success: false, error: 'Action plan schedule not found' },
         { status: 404 }
       )
     }
 
-    // Use upsert with composite unique keys to handle conflicts gracefully
-    // This will update existing records with the same activity/subactivity + time combination
-    const updatedSchedulePlan = await prisma.actionPlan.upsert({
-      where: {
-        ...(existingSchedulePlan.activityId
-          ? {
-              activityId_month_year_week: {
-                activityId: existingSchedulePlan.activityId,
-                month: data.month || existingSchedulePlan.month,
-                year: data.year || existingSchedulePlan.year,
-                week: data.week || existingSchedulePlan.week,
-              },
-            }
-          : {
-              subActivityId_month_year_week: {
-                subActivityId: existingSchedulePlan.subActivityId!,
-                month: data.month || existingSchedulePlan.month,
-                year: data.year || existingSchedulePlan.year,
-                week: data.week || existingSchedulePlan.week,
-              },
-            }),
-      },
-      update: {
-        planPercentage: data.planPercentage,
-        actualPercentage: data.actualPercentage,
-        // Only update time fields if they're provided
-        ...(data.month !== undefined && { month: data.month }),
-        ...(data.year !== undefined && { year: data.year }),
-        ...(data.week !== undefined && { week: data.week }),
-      },
-      create: {
-        month: data.month || existingSchedulePlan.month,
-        year: data.year || existingSchedulePlan.year,
-        week: data.week || existingSchedulePlan.week,
-        planPercentage: data.planPercentage || 0,
-        actualPercentage: data.actualPercentage || 0,
-        ...(existingSchedulePlan.activityId
-          ? { activityId: existingSchedulePlan.activityId }
-          : { subActivityId: existingSchedulePlan.subActivityId }),
+    // Check for conflicts if time fields are being updated
+    if (data.month || data.year || data.week || data.subActivityId) {
+      const conflictCheck = await prisma.actionPlan.findFirst({
+        where: {
+          subActivityId: data.subActivityId || existingSchedule.subActivityId,
+          month: data.month || existingSchedule.month,
+          year: data.year || existingSchedule.year,
+          week: data.week || existingSchedule.week,
+          NOT: { id }, // Exclude current record
+        },
+      })
+
+      if (conflictCheck) {
+        return NextResponse.json(
+          { success: false, error: 'Action plan schedule already exists for this time period' },
+          { status: 409 }
+        )
+      }
+    }
+
+    const updatedSchedule = await prisma.actionPlan.update({
+      where: { id },
+      data: {
+        subActivityId: data.subActivityId || existingSchedule.subActivityId,
+        month: data.month || existingSchedule.month,
+        year: data.year || existingSchedule.year,
+        week: data.week || existingSchedule.week,
+        percentage: data.percentage !== undefined ? data.percentage : existingSchedule.percentage,
       },
       include: {
-        activity: {
-          select: {
-            id: true,
-            name: true,
-            projectId: true,
-          },
-        },
         subActivity: {
           select: {
             id: true,
             name: true,
             activityId: true,
+            activity: {
+              select: {
+                id: true,
+                name: true,
+                projectId: true,
+              },
+            },
           },
         },
       },
@@ -137,11 +124,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
     return NextResponse.json({
       success: true,
-      data: updatedSchedulePlan,
+      data: updatedSchedule,
     })
   } catch (error) {
-    console.error('Error updating action plan scheduleplan:', error)
-
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Invalid request data', details: error.errors },
@@ -158,14 +143,14 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
     const params = await context.params
     const { id } = ParamsSchema.parse(params)
 
-    // Check if the action plan scheduleplan exists
-    const existingSchedulePlan = await prisma.actionPlan.findUnique({
+    // Check if the action plan schedule exists
+    const existingSchedule = await prisma.actionPlan.findUnique({
       where: { id },
     })
 
-    if (!existingSchedulePlan) {
+    if (!existingSchedule) {
       return NextResponse.json(
-        { success: false, error: 'Action plan scheduleplan not found' },
+        { success: false, error: 'Action plan schedule not found' },
         { status: 404 }
       )
     }
@@ -176,14 +161,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
     return NextResponse.json({
       success: true,
-      message: 'Action plan scheduleplan deleted successfully',
+      message: 'Action plan schedule deleted successfully',
     })
   } catch (error) {
-    console.error('Error deleting action plan scheduleplan:', error)
-
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Invalid scheduleplan ID', details: error.errors },
+        { success: false, error: 'Invalid schedule ID', details: error.errors },
         { status: 400 }
       )
     }

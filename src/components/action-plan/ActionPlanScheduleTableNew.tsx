@@ -1,16 +1,17 @@
 'use client'
 
 import React from 'react'
-import { UnifiedSchedulePlanTable } from '@/components/shared/UnifiedSchedulePlanTable'
+import { UnifiedScheduleTable } from '@/components/shared/UnifiedScheduleTable'
 import { useActivities, useProject } from '@/hooks/useActivityQueries'
-import { useActionPlans, useUpsertActionPlan } from '@/hooks/useActionPlans'
+import { useSchedulePlans, useCreateSchedulePlan, useUpdateSchedulePlan } from '@/hooks/useSchedulePlans'
+import { useRealizations, useCreateRealization, useUpdateRealization } from '@/hooks/useRealizations'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 
 /**
- * Action Plan SchedulePlan Table Component
+ * Action Plan Schedule Table Component
  *
- * This component wraps the UnifiedSchedulePlanTable to handle Action Plan SchedulePlans specifically.
- * It provides the necessary data fetching and mutation functions for action plan scheduleplans.
+ * This component wraps the UnifiedScheduleTable to handle Action Plan Schedules specifically.
+ * It provides the necessary data fetching and mutation functions for action plan schedules.
  */
 interface ActionPlanTableProps {
   projectId: string
@@ -19,19 +20,24 @@ interface ActionPlanTableProps {
 export function ActionPlanTableNew({ projectId }: ActionPlanTableProps) {
   const { data: activities, isLoading } = useActivities(projectId)
   const { data: project } = useProject(projectId)
-  const { data: actionPlans } = useActionPlans({ projectId })
-  const upsertActionPlanMutation = useUpsertActionPlan()
+  const { data: schedulePlans } = useSchedulePlans({ projectId })
+  const { data: realizations } = useRealizations({ projectId })
+  
+  const createSchedulePlan = useCreateSchedulePlan()
+  const updateSchedulePlan = useUpdateSchedulePlan()
+  const createRealization = useCreateRealization()
+  const updateRealization = useUpdateRealization()
 
   const currentYear = new Date().getFullYear()
 
-  // Function to get action plan scheduleplan value
-  const getSchedulePlanValue = (
+  // Function to get schedule value from separate SchedulePlan and Realization models
+  const getScheduleValue = (
     activityId: string,
     subActivityId: string | null,
     weekNumber: number,
     type: 'plan' | 'actual'
   ): number | null => {
-    if (!actionPlans || !project?.tanggalSpmk) return null
+    if (!project?.tanggalSpmk) return null
 
     // Generate sequential weeks to get the correct mapping
     const sequentialWeeks = generateSequentialWeeks(project.tanggalSpmk, 20)
@@ -42,33 +48,38 @@ export function ActionPlanTableNew({ projectId }: ActionPlanTableProps) {
     const month = sequentialWeek.month
     const week = sequentialWeek.weekInMonth
 
-    // Find the scheduleplan for this activity/subActivity and week
-    const scheduleplan = actionPlans.find(s => {
-      if (subActivityId) {
+    // Find the schedule from appropriate model
+    if (type === 'plan') {
+      if (!schedulePlans) return null
+      
+      const schedulePlan = schedulePlans.find(s => {
         return (
-          s.subActivityId === subActivityId &&
+          s.subActivityId === (subActivityId || '') &&
           s.month === month &&
           s.week === week &&
           s.year === currentYear
         )
-      } else {
+      })
+      
+      return schedulePlan?.percentage ?? null
+    } else {
+      if (!realizations) return null
+      
+      const realization = realizations.find(r => {
         return (
-          s.activityId === activityId &&
-          s.month === month &&
-          s.week === week &&
-          s.year === currentYear
+          r.subActivityId === (subActivityId || '') &&
+          r.month === month &&
+          r.week === week &&
+          r.year === currentYear
         )
-      }
-    })
-
-    if (!scheduleplan) return null
-
-    const value = type === 'plan' ? scheduleplan.planPercentage : scheduleplan.actualPercentage
-    return value !== undefined ? value : null
+      })
+      
+      return realization?.percentage ?? null
+    }
   }
 
-  // Function to save action plan scheduleplan values
-  const saveSchedulePlanValue = async (
+  // Function to save schedule values to separate models
+  const saveScheduleValue = async (
     activityId: string,
     subActivityId: string | null,
     weekNumber: number,
@@ -77,6 +88,10 @@ export function ActionPlanTableNew({ projectId }: ActionPlanTableProps) {
   ): Promise<void> => {
     if (!project?.tanggalSpmk) {
       throw new Error('Project SPMK date is required')
+    }
+
+    if (!subActivityId) {
+      throw new Error('SubActivity ID is required for schedule values')
     }
 
     // Generate sequential weeks to get the correct mapping
@@ -90,23 +105,49 @@ export function ActionPlanTableNew({ projectId }: ActionPlanTableProps) {
     const month = sequentialWeek.month
     const week = sequentialWeek.weekInMonth
 
-    // Upsert approach - let backend handle duplicate detection
-    const upsertData: any = {
-      activityId: subActivityId ? null : activityId,
-      subActivityId: subActivityId || null,
+    const scheduleData = {
+      subActivityId,
       month,
       year: currentYear,
       week,
+      percentage: value || 0,
     }
 
-    // Only include the percentage being updated to preserve existing value
     if (type === 'plan') {
-      upsertData.planPercentage = value || 0
-    } else {
-      upsertData.actualPercentage = value || 0
-    }
+      // Check if schedule plan already exists
+      const existingPlan = schedulePlans?.find(s => 
+        s.subActivityId === subActivityId &&
+        s.month === month &&
+        s.week === week &&
+        s.year === currentYear
+      )
 
-    await upsertActionPlanMutation.mutateAsync(upsertData)
+      if (existingPlan) {
+        await updateSchedulePlan.mutateAsync({
+          id: existingPlan.id,
+          data: { percentage: value || 0 }
+        })
+      } else {
+        await createSchedulePlan.mutateAsync(scheduleData)
+      }
+    } else {
+      // Check if realization already exists
+      const existingRealization = realizations?.find(r => 
+        r.subActivityId === subActivityId &&
+        r.month === month &&
+        r.week === week &&
+        r.year === currentYear
+      )
+
+      if (existingRealization) {
+        await updateRealization.mutateAsync({
+          id: existingRealization.id,
+          data: { percentage: value || 0 }
+        })
+      } else {
+        await createRealization.mutateAsync(scheduleData)
+      }
+    }
   }
 
   // Function to calculate cumulative values for each week
@@ -115,7 +156,7 @@ export function ActionPlanTableNew({ projectId }: ActionPlanTableProps) {
     week: number,
     type: 'plan' | 'actual' | 'deviation'
   ): number => {
-    if (!activities || !actionPlans || !project?.tanggalSpmk) return 0
+    if (!activities || !project?.tanggalSpmk) return 0
 
     // Generate sequential weeks to determine the cutoff point
     const sequentialWeeks = generateSequentialWeeks(project.tanggalSpmk, 20)
@@ -135,7 +176,7 @@ export function ActionPlanTableNew({ projectId }: ActionPlanTableProps) {
       const weekTotal = activities.reduce((total, activity) => {
         const subActivityTotal =
           activity.subActivities?.reduce((subTotal, subActivity) => {
-            const value = getSchedulePlanValue(
+            const value = getScheduleValue(
               activity.id,
               subActivity.id,
               currentWeek.weekNumber,
@@ -159,14 +200,14 @@ export function ActionPlanTableNew({ projectId }: ActionPlanTableProps) {
   }
 
   return (
-    <UnifiedSchedulePlanTable
+    <UnifiedScheduleTable
       projectId={projectId}
-      title="Action Plan SchedulePlan"
+      title="Action Plan Schedule"
       activities={activities}
       project={project}
       isLoading={isLoading}
-      getSchedulePlanValue={getSchedulePlanValue}
-      saveSchedulePlanValue={saveSchedulePlanValue}
+      getScheduleValue={getScheduleValue}
+      saveScheduleValue={saveScheduleValue}
       getCumulativeValueForWeek={getCumulativeValueForWeek}
       showAddButton={true}
       showTitle={false} // Don't show title as it's handled by parent component

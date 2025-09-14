@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect } from 'react'
@@ -14,7 +15,7 @@ export default function ChunkErrorHandler() {
         msg.includes('ChunkLoadError') ||
         name === 'ChunkLoadError'
       ) {
-        // scheduleplan a short delay to allow any logging to complete
+        // schedule a short delay to allow any logging to complete
         setTimeout(async () => {
           try {
             // unregister all service workers (helps when SW serves stale assets)

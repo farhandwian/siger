@@ -665,7 +665,8 @@ function generateSequentialWeeksFromDate(startDate: Date, totalWeeks: number): S
     // Calculate week number within the month
     const weekInMonth = getWeekInMonth(thursday)
 
-    const range = `${weekStart.getDate().toString().padStart(2, '0')}-${weekEnd.getDate().toString().padStart(2, '0')} ${getMonthNameIndonesian(month)}`
+    // const range = `${weekStart.getDate().toString().padStart(2, '0')}-${weekEnd.getDate().toString().padStart(2, '0')} ${getMonthNameIndonesian(month)}`
+    const range = `${weekStart.getDate().toString().padStart(2, '0')}-${weekEnd.getDate().toString().padStart(2, '0')}`
 
     weeks.push({
       weekNumber: i + 1,
