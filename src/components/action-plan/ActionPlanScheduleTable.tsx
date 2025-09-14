@@ -7,8 +7,7 @@ import { EditActivityModal } from '@/components/activities/edit-activity-modal'
 import { useActivities, useProject } from '@/hooks/useActivityQueries'
 import {
   useActionPlanSchedules,
-  useUpdateActionPlanSchedule,
-  useCreateActionPlanSchedule,
+  useUpsertActionPlanSchedule,
 } from '@/hooks/useActionPlanSchedules'
 import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
@@ -39,8 +38,7 @@ export function ActionPlanScheduleTable({ projectId }: ActionPlanScheduleTablePr
   const { data: activities, isLoading } = useActivities(projectId)
   const { data: project } = useProject(projectId)
   const { data: actionPlanSchedules } = useActionPlanSchedules({ projectId })
-  const updateActionPlanMutation = useUpdateActionPlanSchedule()
-  const createActionPlanMutation = useCreateActionPlanSchedule()
+  const upsertActionPlanMutation = useUpsertActionPlanSchedule()
 
   // Generate sequential weeks based on project dates
   const currentYear = new Date().getFullYear()
@@ -219,34 +217,37 @@ export function ActionPlanScheduleTable({ projectId }: ActionPlanScheduleTablePr
     })
 
     try {
-      if (existingSchedule) {
-        // Update existing schedule
-        console.log('Action Plan - Updating existing schedule:', existingSchedule.id)
-        await updateActionPlanMutation.mutateAsync({
-          id: existingSchedule.id,
-          data: {
-            [type === 'plan' ? 'planPercentage' : 'actualPercentage']: value,
-          },
-        })
-      } else {
-        // Create new schedule
-        console.log('Action Plan - Creating new schedule')
-        await createActionPlanMutation.mutateAsync({
-          activityId: subActivityId ? null : activityId,
-          subActivityId: subActivityId || null,
-          month,
-          year: currentYear,
-          week,
-          planPercentage: type === 'plan' ? value || 0 : 0,
-          actualPercentage: type === 'actual' ? value || 0 : 0,
-        })
+      // Use upsert mutation that handles both create and update cases gracefully
+      console.log('Action Plan - Upserting schedule:', { activityId, subActivityId, month, year: currentYear, week, type, value })
+      
+      // Prepare the data for upsert
+      const upsertData = {
+        ...(existingSchedule && { existingId: existingSchedule.id }),
+        activityId: subActivityId ? null : activityId,
+        subActivityId: subActivityId || null,
+        month,
+        year: currentYear,
+        week,
+        planPercentage: type === 'plan' ? (value ?? 0) : (existingSchedule?.planPercentage ?? 0),
+        actualPercentage: type === 'actual' ? (value ?? 0) : (existingSchedule?.actualPercentage ?? 0),
       }
+      
+      await upsertActionPlanMutation.mutateAsync(upsertData)
 
-      console.log('Action Plan - Save completed successfully')
+      console.log('Action Plan - Upsert completed successfully')
       setEditingCell(null)
       setEditValue('')
     } catch (error) {
       console.error('Action Plan - Error saving:', error)
+      // Show user-friendly error message
+      if (error instanceof Error) {
+        if (error.message === 'DUPLICATE_SCHEDULE') {
+          console.log('Duplicate schedule detected, but upsert should have handled it')
+        } else {
+          // Show a user-friendly error message
+          alert(`Failed to save: ${error.message}`)
+        }
+      }
     }
   }
 

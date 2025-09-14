@@ -634,16 +634,6 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
               <div className="text-sm text-blue-700">
                 <a
                   href="https://s3.keenos.id/public/jadwal_csv_fix.csv"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                  aria-label="Pratinjau template CSV"
-                >
-                  Pratinjau
-                </a>
-                <span className="mx-2 text-gray-400">|</span>
-                <a
-                  href="https://s3.keenos.id/public/jadwal_csv_fix.csv"
                   download
                   className="underline"
                   aria-label="Unduh template CSV"

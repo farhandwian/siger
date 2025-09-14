@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Upload, X, FileText, AlertCircle, CheckCircle, Calendar } from 'lucide-react'
 import { useProject } from '@/hooks/useActivityQueries'
-import { useBulkCreateActionPlanSchedules } from '@/hooks/useActionPlanSchedules'
 
 interface ActionPlanCSVImportModalProps {
   isOpen: boolean
@@ -50,7 +49,6 @@ export function ActionPlanCSVImportModal({
   // Use the project hook to get SPMK date
   const { data: project } = useProject(projectId)
   const spmkDate = project?.tanggalSpmk || null
-  const bulkCreateMutation = useBulkCreateActionPlanSchedules()
 
   useEffect(() => {
     if (project?.tanggalSpmk) {
@@ -575,27 +573,35 @@ export function ActionPlanCSVImportModal({
     setError(null)
 
     try {
-      // Convert parsed data to action plan schedules
-      const actionPlanSchedules = parseResult.flatMap(item =>
-        item.scheduleData.map(schedule => ({
-          activityId: item.type === 'activity' ? 'temp-activity-id' : null, // You'll need to map this properly
-          subActivityId: item.type === 'subActivity' ? 'temp-subactivity-id' : null, // You'll need to map this properly
-          month: schedule.month,
-          year: schedule.year,
-          week: schedule.week,
-          planPercentage: schedule.planPercentage,
-          actualPercentage: schedule.actualPercentage,
-        }))
-      )
+      // Use the new import API endpoint
+      const response = await fetch(`/api/projects/${projectId}/action-plan-schedule/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId,
+          activities: parseResult,
+          importMode,
+        }),
+      })
 
-      const result = await bulkCreateMutation.mutateAsync(actionPlanSchedules)
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to import action plan data')
+      }
 
       setImportResult(result)
+      console.log('=== ACTION PLAN IMPORT TO DATABASE SUCCESSFUL ===')
+      console.log('Result:', result)
 
-      if (result.successful.length > 0) {
-        onSuccess?.()
+      // Call onSuccess callback to refresh data
+      if (onSuccess) {
+        onSuccess()
       }
     } catch (error: any) {
+      console.error('Action plan import error:', error)
       setError(error.message || 'Failed to import action plan data')
     } finally {
       setIsImporting(false)
@@ -638,16 +644,6 @@ export function ActionPlanCSVImportModal({
               <div className="flex items-center gap-2 text-sm">
                 <div className="font-medium text-blue-800">Template:</div>
                 <div className="text-sm text-blue-700">
-                  <a
-                    href="https://s3.keenos.id/public/action_plan_template.csv"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                    aria-label="Pratinjau template CSV"
-                  >
-                    Pratinjau
-                  </a>
-                  <span className="mx-2 text-gray-400">|</span>
                   <a
                     href="https://s3.keenos.id/public/action_plan_template.csv"
                     download

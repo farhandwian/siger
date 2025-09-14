@@ -8,9 +8,10 @@ const ParamsSchema = z.object({
   id: z.string(),
 })
 
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = ParamsSchema.parse(context.params)
+    const params = await context.params
+    const { id } = ParamsSchema.parse(params)
 
     const actionPlanSchedule = await prisma.actionPlanSchedule.findUnique({
       where: { id },
@@ -57,9 +58,10 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
   }
 }
 
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = ParamsSchema.parse(context.params)
+    const params = await context.params
+    const { id } = ParamsSchema.parse(params)
     const body = await req.json()
     const data = UpdateActionPlanScheduleSchema.parse(body)
 
@@ -75,40 +77,44 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
       )
     }
 
-    // If updating time-related fields, check for conflicts
-    if (data.month || data.year || data.week) {
-      const conflictWhere: any = {
-        id: { not: id }, // Exclude current record
+    // Use upsert with composite unique keys to handle conflicts gracefully
+    // This will update existing records with the same activity/subactivity + time combination
+    const updatedSchedule = await prisma.actionPlanSchedule.upsert({
+      where: {
+        ...(existingSchedule.activityId
+          ? {
+              activityId_month_year_week: {
+                activityId: existingSchedule.activityId,
+                month: data.month || existingSchedule.month,
+                year: data.year || existingSchedule.year,
+                week: data.week || existingSchedule.week,
+              },
+            }
+          : {
+              subActivityId_month_year_week: {
+                subActivityId: existingSchedule.subActivityId!,
+                month: data.month || existingSchedule.month,
+                year: data.year || existingSchedule.year,
+                week: data.week || existingSchedule.week,
+              },
+            }),
+      },
+      update: {
+        planPercentage: data.planPercentage,
+        actualPercentage: data.actualPercentage,
+        // Only update time fields if they're provided
+        ...(data.month !== undefined && { month: data.month }),
+        ...(data.year !== undefined && { year: data.year }),
+        ...(data.week !== undefined && { week: data.week }),
+      },
+      create: {
         month: data.month || existingSchedule.month,
         year: data.year || existingSchedule.year,
         week: data.week || existingSchedule.week,
-      }
-
-      // Check for conflicts based on existing activity/subactivity
-      if (existingSchedule.activityId) {
-        conflictWhere.activityId = existingSchedule.activityId
-      } else if (existingSchedule.subActivityId) {
-        conflictWhere.subActivityId = existingSchedule.subActivityId
-      }
-
-      const conflictingSchedule = await prisma.actionPlanSchedule.findFirst({
-        where: conflictWhere,
-      })
-
-      if (conflictingSchedule) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Another action plan schedule already exists for this time period',
-          },
-          { status: 409 }
-        )
-      }
-    }
-
-    const updatedSchedule = await prisma.actionPlanSchedule.update({
-      where: { id },
-      data,
+        planPercentage: data.planPercentage || 0,
+        actualPercentage: data.actualPercentage || 0,
+        ...(existingSchedule.activityId ? { activityId: existingSchedule.activityId } : { subActivityId: existingSchedule.subActivityId }),
+      },
       include: {
         activity: {
           select: {
@@ -145,9 +151,10 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
   }
 }
 
-export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = ParamsSchema.parse(context.params)
+    const params = await context.params
+    const { id } = ParamsSchema.parse(params)
 
     // Check if the action plan schedule exists
     const existingSchedule = await prisma.actionPlanSchedule.findUnique({
