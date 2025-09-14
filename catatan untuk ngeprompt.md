@@ -251,7 +251,7 @@ catatan modal tambah:
 tolong buatkan tampilan modal seperti pada figma berikut:
 https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=526-11518&m=dev
 
-ketika tombol buat analisa kebutuhan diklik maka akan memicu modal tersebut. pada bagian sidebar kirinya itu merupakan data actiivity dan subactivitynya. lalu untuk card bagian kanannya nilai Volume nya diambil dari data volumeKontrak pada tabel subactivity, waktu pelaksanaan diambil dari nilai masaKontrak pada tabel projects. tolong buatkan 
+ketika tombol buat analisa kebutuhan diklik maka akan memicu modal tersebut. pada bagian sidebar kirinya itu merupakan data actiivity dan subactivitynya. lalu untuk card bagian kanannya nilai Volume nya diambil dari data volumeKontrak pada tabel subactivity, waktu pelaksanaan diambil dari nilai masaKontrak pada tabel projects, dropdown kebutuhan field diambil datanya dari tabel Kebutuhan. jika kode sebelumnya sudah ada tolon lihat dan perbaiki dulu kode yang sudah ada jika belum benar
 
 
 

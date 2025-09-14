@@ -12,6 +12,7 @@ import { format } from 'date-fns'
 import { useGroupedAnalisaKebutuhan } from '@/hooks/useGroupedAnalisaKebutuhan'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { BuatAnalisaKebutuhanModal } from './BuatAnalisaKebutuhanModal'
 
 // Type definitions for the flexible data structure
 interface CategoryItem {
@@ -141,6 +142,9 @@ export default function AnalisaKebutuhanTable({ projectId }: AnalisaKebutuhanTab
   // State for date filter
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
 
+  // State for modal
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
   // Handler for date selection
   const handleDateSelect = (date: Date | { from?: Date; to?: Date } | undefined) => {
     if (date instanceof Date) {
@@ -156,7 +160,7 @@ export default function AnalisaKebutuhanTable({ projectId }: AnalisaKebutuhanTab
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined
 
   // Fetch grouped data from API
-  const { data, isLoading, isError, error } = useGroupedAnalisaKebutuhan({
+  const { data, isLoading, isError, error, refetch } = useGroupedAnalisaKebutuhan({
     projectId,
     tanggal: formattedDate,
   })
@@ -212,7 +216,10 @@ export default function AnalisaKebutuhanTable({ projectId }: AnalisaKebutuhanTab
         <CardContent className="p-6">
           <div className="flex items-center justify-between gap-4">
             {/* Create Analysis Button */}
-            <Button className="flex items-center gap-2 bg-[#ffc928] font-medium text-[#364878] shadow-sm hover:bg-[#ffc928]/90">
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 bg-[#ffc928] font-medium text-[#364878] shadow-sm hover:bg-[#ffc928]/90"
+            >
               <Settings2 className="h-5 w-5" />
               Buat Analisa Kebutuhan
             </Button>
@@ -385,6 +392,14 @@ export default function AnalisaKebutuhanTable({ projectId }: AnalisaKebutuhanTab
           </CardContent>
         </Card>
       )}
+
+      {/* Modal for Creating Analisa Kebutuhan */}
+      <BuatAnalisaKebutuhanModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        projectId={projectId}
+        onSuccess={() => refetch()}
+      />
     </div>
   )
 }
