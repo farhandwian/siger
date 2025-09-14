@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, UserRole } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -346,9 +346,13 @@ async function seedActivities() {
 async function createSampleDailyActivities() {
   console.log('📱 Creating sample daily sub-activities...')
 
-  // Get some users to assign daily activities
+  // Get some users to assign daily activities (PPK and VENDOR users who do daily updates)
   const users = await prisma.user.findMany({
-    where: { role: 'user' },
+    where: { 
+      role: {
+        in: [UserRole.PPK, UserRole.VENDOR]
+      }
+    },
     take: 3,
   })
 
@@ -434,6 +438,27 @@ function getRandomProgressNote(): string {
   ]
 
   return notes[Math.floor(Math.random() * notes.length)]
+}
+
+async function main() {
+  try {
+    await seedActivities()
+    console.log('🎉 Activities seeding completed successfully!')
+  } catch (error) {
+    console.error('❌ Error during activities seeding:', error)
+    throw error
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+// Only run if this file is executed directly
+if (require.main === module) {
+  main()
+    .catch((e) => {
+      console.error(e)
+      process.exit(1)
+    })
 }
 
 export default seedActivities

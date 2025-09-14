@@ -5,7 +5,7 @@ import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import { ProgressBar } from '../ui/progress-bar'
 import { useRouter } from 'next/navigation'
-import { useProjects, useProjectsLoadingState } from '@/hooks/useProjectQueries'
+import { useProjects } from '@/hooks/useProjectQueries'
 import {
   MapPinIcon,
   CurrencyDollarIcon,

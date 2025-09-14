@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { UpdateUserSchema } from '@/lib/schemas'
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 
 // GET /api/users/[id] - Get user by ID
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -16,7 +17,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         email: true,
         name: true,
         role: true,
-        phoneNumber: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -92,7 +92,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         email: true,
         name: true,
         role: true,
-        phoneNumber: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -147,7 +146,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
           email: true,
           name: true,
           role: true,
-          phoneNumber: true,
           isActive: true,
           createdAt: true,
           updatedAt: true,

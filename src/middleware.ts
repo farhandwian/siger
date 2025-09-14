@@ -4,38 +4,124 @@ import jwt from 'jsonwebtoken'
 import { UserRole } from '@/lib/auth'
 
 /**
- * Authentication Middleware
- * Handles both web session authentication (NextAuth.js) and mobile JWT token authentication
- * Protects API routes and web pages based on user roles and permissions
+ * Enhanced Authentication Middleware
+ * Handles role-based access control for the new organizational structure
+ * Supports both web session authentication (NextAuth.js) and mobile JWT token authentication
  */
 
 // Protected API routes that require authentication
 const protectedApiRoutes = [
   '/api/projects',
-  '/api/activities',
+  '/api/activities', 
   '/api/monitoring',
   '/api/materials',
   '/api/proposals',
   '/api/daily-activities',
+  '/api/departments',
+  '/api/balai',
+  '/api/assignments',
 ]
 
 // Protected web pages that require authentication
 const protectedWebPages = [
   '/monitoring-evaluasi',
-  '/daftar-usulan',
+  '/daftar-usulan', 
   '/tambah-usulan',
   '/dashboard',
   '/profile',
+  '/admin',
+  '/management',
 ]
 
-// Admin-only routes
-const adminOnlyRoutes = ['/api/users', '/admin']
+// Routes accessible only by system administrators
+const systemAdminRoutes = [
+  '/api/users/admin',
+  '/api/balai',
+  '/api/departments',
+  '/admin',
+]
 
-// Manager and Admin routes
-const managerRoutes = ['/api/projects', '/api/activities/management']
+// Routes accessible by balai-level administrators  
+const balaiAdminRoutes = [
+  '/api/users/balai',
+  '/management/balai',
+]
+
+// Routes for department-level management (SATKER)
+const departmentManagementRoutes = [
+  '/api/projects/department',
+  '/management/department',
+]
+
+// Mobile-only routes (PPK and VENDOR access)
+const mobileOnlyRoutes = [
+  '/api/mobile',
+  '/api/daily-activities',
+  '/api/projects/progress',
+]
 
 /**
- * Verify mobile JWT token
+ * Check if user has required permissions for the route based on new role system
+ */
+function hasRequiredPermissions(userRole: UserRole, pathname: string, userContext?: {
+  balaiId?: string
+  departmentId?: string
+  projectIds?: string[]
+}): boolean {
+  // ADMIN_SISTEM has access to everything
+  if (userRole === 'ADMIN_SISTEM') return true
+
+  // Check system admin-only routes
+  if (systemAdminRoutes.some(route => pathname.startsWith(route))) {
+    return userRole === 'ADMIN_SISTEM'
+  }
+
+  // Check balai admin routes
+  if (balaiAdminRoutes.some(route => pathname.startsWith(route))) {
+    return ['ADMIN_SISTEM', 'ADMIN_BALAI'].includes(userRole)
+  }
+
+  // Check department management routes
+  if (departmentManagementRoutes.some(route => pathname.startsWith(route))) {
+    return ['ADMIN_SISTEM', 'ADMIN_BALAI', 'SATKER'].includes(userRole)
+  }
+
+  // Check mobile-only routes (PPK and VENDOR)
+  if (mobileOnlyRoutes.some(route => pathname.startsWith(route))) {
+    return ['PPK', 'VENDOR'].includes(userRole)
+  }
+
+  // Project routes - check based on role and scope
+  if (pathname.startsWith('/api/projects')) {
+    switch (userRole) {
+      case 'ADMIN_SISTEM':
+      case 'DIRJEN_SDA':
+        return true // Can access all projects
+      case 'ADMIN_BALAI':
+      case 'KABALAI':
+        return !!userContext?.balaiId // Can access projects in their balai
+      case 'SATKER':
+        return !!userContext?.departmentId // Can access projects in their department
+      case 'PPK':
+      case 'VENDOR':
+        return !!userContext?.projectIds?.length // Can access assigned projects only
+      default:
+        return false
+    }
+  }
+
+  // General protected routes - authenticated users with proper roles
+  if (protectedWebPages.some(page => pathname.startsWith(page)) ||
+      protectedApiRoutes.some(route => pathname.startsWith(route))) {
+    return ['ADMIN_SISTEM', 'ADMIN_BALAI', 'DIRJEN_SDA', 'KABALAI', 'SATKER', 'PPK', 'VENDOR'].includes(userRole)
+  }
+
+  // Public routes
+  return true
+}
+
+/**
+ * Enhanced mobile token verification with organizational context
  */
 async function verifyMobileToken(token: string) {
   try {
@@ -47,6 +133,9 @@ async function verifyMobileToken(token: string) {
       userId: string
       email: string
       role: UserRole
+      balaiId?: string
+      departmentId?: string
+      projectIds?: string[]
       exp: number
     }
 
@@ -60,27 +149,6 @@ async function verifyMobileToken(token: string) {
     console.error('Token verification failed:', error)
     return null
   }
-}
-
-/**
- * Check if user has required role for the route
- */
-function hasRequiredRole(userRole: UserRole, pathname: string): boolean {
-  // Admin has access to everything
-  if (userRole === 'ADMIN') return true
-
-  // Check admin-only routes
-  if (adminOnlyRoutes.some(route => pathname.startsWith(route))) {
-    return false // Only ADMIN can access admin-only routes
-  }
-
-  // Check manager routes
-  if (managerRoutes.some(route => pathname.startsWith(route))) {
-    return ['MANAGER'].includes(userRole)
-  }
-
-  // All authenticated users have access to basic protected routes
-  return ['USER', 'MANAGER', 'VIEWER'].includes(userRole)
 }
 
 export default auth(req => {
@@ -105,16 +173,27 @@ export default auth(req => {
         const token = authHeader.substring(7)
 
         return verifyMobileToken(token).then(decoded => {
-          if (decoded && hasRequiredRole(decoded.role, pathname)) {
-            // Add user info to headers for API routes
-            const requestHeaders = new Headers(req.headers)
-            requestHeaders.set('x-user-id', decoded.userId)
-            requestHeaders.set('x-user-email', decoded.email)
-            requestHeaders.set('x-user-role', decoded.role)
+          if (decoded) {
+            const userContext = {
+              balaiId: decoded.balaiId,
+              departmentId: decoded.departmentId,
+              projectIds: decoded.projectIds,
+            }
 
-            return NextResponse.next({
-              request: { headers: requestHeaders },
-            })
+            if (hasRequiredPermissions(decoded.role, pathname, userContext)) {
+              // Add user info to headers for API routes
+              const requestHeaders = new Headers(req.headers)
+              requestHeaders.set('x-user-id', decoded.userId)
+              requestHeaders.set('x-user-email', decoded.email)
+              requestHeaders.set('x-user-role', decoded.role)
+              if (decoded.balaiId) requestHeaders.set('x-user-balai-id', decoded.balaiId)
+              if (decoded.departmentId) requestHeaders.set('x-user-department-id', decoded.departmentId)
+              if (decoded.projectIds) requestHeaders.set('x-user-project-ids', JSON.stringify(decoded.projectIds))
+
+              return NextResponse.next({
+                request: { headers: requestHeaders },
+              })
+            }
           }
 
           return NextResponse.json(
@@ -127,8 +206,10 @@ export default auth(req => {
       // Check for web session
       if (req.auth?.user) {
         const userRole = req.auth.user.role as UserRole
-
-        if (hasRequiredRole(userRole, pathname)) {
+        // Note: Would need to fetch user's organizational context from database for web sessions
+        // For now, allowing basic access - should be enhanced to include user context
+        
+        if (hasRequiredPermissions(userRole, pathname)) {
           // Add user info to headers for API routes
           const requestHeaders = new Headers(req.headers)
           requestHeaders.set('x-user-id', req.auth.user.id)
@@ -167,7 +248,7 @@ export default auth(req => {
 
     const userRole = req.auth.user.role as UserRole
 
-    if (!hasRequiredRole(userRole, pathname)) {
+    if (!hasRequiredPermissions(userRole, pathname)) {
       // Redirect to unauthorized page
       return NextResponse.redirect(new URL('/auth/unauthorized', req.url))
     }

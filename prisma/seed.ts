@@ -1,357 +1,47 @@
-import { PrismaClient } from '@prisma/client'
-import seedUsers from './seed-users'
-import seedActivities from './seed-activities'
+/**
+ * Main seeder file that runs all necessary seed scripts
+ * This file replaces the old seed.ts and runs the enhanced auth system
+ */
 
-const prisma = new PrismaClient()
+import { execSync } from 'child_process';
 
 async function main() {
-  console.log('🌱 Seeding database...')
-
-  // Seed users first
-  await seedUsers()
-
-  // Clear existing data
-  await prisma.materialSchedule.deleteMany({})
-  await prisma.material.deleteMany({})
-  await prisma.projectAuditLog.deleteMany({})
-  await prisma.project.deleteMany({})
-
-  // Create dummy projects
-  const projects = await Promise.all([
-    prisma.project.create({
-      data: {
-        id: '1',
-        // Informasi Umum Proyek
-        penyediaJasa: 'PT. Loeh Raya Perkasa',
-        pekerjaan:
-          'Rehabilitasi/Peningkatan Bangunan, Pintu Air dan Jaringan Irigasi DIR Rawa Mesuji Atas di Kabupaten Mesuji',
-        jenisPaket: 'Fisik',
-        jenisPengadaan: 'Kontraktual',
-
-        // Informasi Kontrak & Anggaran
-        paguAnggaran: 'Rp19.257.871.000',
-        nilaiKontrak: 'Rp17.008.513.435',
-        nomorKontrak: '01/HK0201/Aw9.2/V/2025',
-        spmk: '01/SPMK/Aw9.2/V/2025, Tanggal 23 Mei 2025',
-        masaKontrak: '120 Hari Kalender',
-        tanggalKontrak: '22 Mei 2025',
-        tanggalSpmk: '23 Mei 2025',
-        akhirKontrak: '19 September 2025',
-        pembayaranTerakhir: '-',
-
-        // Progress data
-        fisikProgress: 68,
-        fisikDeviasi: 2.06,
-        fisikTarget: 100,
-
-        saluranProgress: 69020,
-        saluranDeviasi: 1452,
-        saluranTarget: 100000,
-
-        bangunanProgress: 29,
-        bangunanDeviasi: 58,
-        bangunanTarget: 100,
-
-        keuanganProgress: 0,
-        keuanganDeviasi: 0,
-        keuanganTarget: 0,
-
-        // Realisasi data
-        outputData: [
-          { label: 'Normalisasi', value: '81.398 m2' },
-          { label: 'Rehab Saluran', value: '-' },
-          { label: 'Rehab Pintu', value: '2' },
-          { label: 'Rehab Bangunan', value: '3' },
-        ],
-        tenagaKerjaData: [
-          { label: 'Mandor', value: '20' },
-          { label: 'Tukang', value: '123' },
-          { label: 'Pekerja', value: '134' },
-        ],
-        alatData: [
-          { label: 'Excavator STD', value: '5' },
-          { label: 'Excavator LA', value: '2' },
-          { label: 'Excavator Mini', value: '4' },
-          { label: 'Excavator Amphibi', value: '3' },
-        ],
-        materialData: [
-          { label: 'Semen', value: '28405' },
-          { label: 'Pasir', value: '78280' },
-          { label: 'Agregat', value: '89775' },
-          { label: 'Pintu', value: '81' },
-          { label: 'U-ditch', value: '-' },
-        ],
-      },
-    }),
-
-    prisma.project.create({
-      data: {
-        id: '2',
-        // Informasi Umum Proyek
-        penyediaJasa: 'PT. Bangun Karya Lampung',
-        pekerjaan:
-          'Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Lampung (Paket I)',
-        jenisPaket: 'Fisik',
-        jenisPengadaan: 'Kontraktual',
-
-        // Informasi Kontrak & Anggaran
-        paguAnggaran: 'Rp19.211.000.000',
-        nilaiKontrak: 'Rp16.800.000.000',
-        nomorKontrak: '02/HK0201/Aw9.2/V/2025',
-        spmk: '02/SPMK/Aw9.2/V/2025, Tanggal 25 Mei 2025',
-        masaKontrak: '150 Hari Kalender',
-        tanggalKontrak: '24 Mei 2025',
-        tanggalSpmk: '25 Mei 2025',
-        akhirKontrak: '21 Oktober 2025',
-        pembayaranTerakhir: 'Rp8.400.000.000',
-
-        // Progress data
-        fisikProgress: 80,
-        fisikDeviasi: 0.08,
-        fisikTarget: 100,
-
-        saluranProgress: 85000,
-        saluranDeviasi: 500,
-        saluranTarget: 120000,
-
-        bangunanProgress: 45,
-        bangunanDeviasi: 12,
-        bangunanTarget: 100,
-
-        keuanganProgress: 50,
-        keuanganDeviasi: 2.5,
-        keuanganTarget: 100,
-
-        // Realisasi data
-        outputData: [
-          { label: 'Normalisasi', value: '95.500 m2' },
-          { label: 'Rehab Saluran', value: '12 km' },
-          { label: 'Rehab Pintu', value: '5' },
-          { label: 'Rehab Bangunan', value: '8' },
-        ],
-        tenagaKerjaData: [
-          { label: 'Mandor', value: '15' },
-          { label: 'Tukang', value: '98' },
-          { label: 'Pekerja', value: '156' },
-        ],
-        alatData: [
-          { label: 'Excavator STD', value: '8' },
-          { label: 'Excavator LA', value: '3' },
-          { label: 'Excavator Mini', value: '6' },
-          { label: 'Excavator Amphibi', value: '2' },
-        ],
-        materialData: [
-          { label: 'Semen', value: '35600' },
-          { label: 'Pasir', value: '89400' },
-          { label: 'Agregat', value: '102350' },
-          { label: 'Pintu', value: '125' },
-          { label: 'U-ditch', value: '450' },
-        ],
-      },
-    }),
-
-    prisma.project.create({
-      data: {
-        id: '3',
-        // Informasi Umum Proyek
-        penyediaJasa: 'PT. Infrastruktur Nusantara',
-        pekerjaan:
-          'Rehabilitasi/Peningkatan Bangunan, Pintu Air dan jaringan Irigasi DIR Rawa Jitu dan Rawa Pitu di Kabupaten',
-        jenisPaket: 'Fisik',
-        jenisPengadaan: 'Kontraktual',
-
-        // Informasi Kontrak & Anggaran
-        paguAnggaran: 'Rp29.900.973.824',
-        nilaiKontrak: 'Rp25.500.000.000',
-        nomorKontrak: '03/HK0201/Aw9.2/V/2025',
-        spmk: '03/SPMK/Aw9.2/V/2025, Tanggal 28 Mei 2025',
-        masaKontrak: '180 Hari Kalender',
-        tanggalKontrak: '27 Mei 2025',
-        akhirKontrak: '23 November 2025',
-        pembayaranTerakhir: 'Rp5.100.000.000',
-
-        // Progress data
-        fisikProgress: 20,
-        fisikDeviasi: 35,
-        fisikTarget: 100,
-
-        saluranProgress: 25000,
-        saluranDeviasi: 8500,
-        saluranTarget: 150000,
-
-        bangunanProgress: 8,
-        bangunanDeviasi: 42,
-        bangunanTarget: 100,
-
-        keuanganProgress: 20,
-        keuanganDeviasi: 15,
-        keuanganTarget: 100,
-
-        // Realisasi data
-        outputData: [
-          { label: 'Normalisasi', value: '32.150 m2' },
-          { label: 'Rehab Saluran', value: '3.2 km' },
-          { label: 'Rehab Pintu', value: '1' },
-          { label: 'Rehab Bangunan', value: '2' },
-        ],
-        tenagaKerjaData: [
-          { label: 'Mandor', value: '8' },
-          { label: 'Tukang', value: '45' },
-          { label: 'Pekerja', value: '67' },
-        ],
-        alatData: [
-          { label: 'Excavator STD', value: '3' },
-          { label: 'Excavator LA', value: '1' },
-          { label: 'Excavator Mini', value: '2' },
-          { label: 'Excavator Amphibi', value: '1' },
-        ],
-        materialData: [
-          { label: 'Semen', value: '12850' },
-          { label: 'Pasir', value: '34200' },
-          { label: 'Agregat', value: '45600' },
-          { label: 'Pintu', value: '25' },
-          { label: 'U-ditch', value: '180' },
-        ],
-      },
-    }),
-
-    prisma.project.create({
-      data: {
-        id: '4',
-        // Informasi Umum Proyek
-        penyediaJasa: 'PT. Pembangunan Jaya',
-        pekerjaan:
-          'Rehabilitasi/Peningkatan Bangunan, Pintu Air dan Jaringan IrigasiDIR Rawa Jitu Di Kabupaten Mesuji',
-        jenisPaket: 'Fisik',
-        jenisPengadaan: 'Kontraktual',
-
-        // Informasi Kontrak & Anggaran
-        paguAnggaran: 'Rp28.902.316.373',
-        nilaiKontrak: 'Rp24.200.000.000',
-        nomorKontrak: '04/HK0201/Aw9.2/V/2025',
-        spmk: '04/SPMK/Aw9.2/V/2025, Tanggal 30 Mei 2025',
-        masaKontrak: '165 Hari Kalender',
-        tanggalKontrak: '29 Mei 2025',
-        akhirKontrak: '10 November 2025',
-        pembayaranTerakhir: 'Rp16.456.000.000',
-
-        // Progress data
-        fisikProgress: 68,
-        fisikDeviasi: 2.06,
-        fisikTarget: 100,
-
-        saluranProgress: 78500,
-        saluranDeviasi: 2100,
-        saluranTarget: 110000,
-
-        bangunanProgress: 72,
-        bangunanDeviasi: 8,
-        bangunanTarget: 100,
-
-        keuanganProgress: 68,
-        keuanganDeviasi: 3.2,
-        keuanganTarget: 100,
-
-        // Realisasi data
-        outputData: [
-          { label: 'Normalisasi', value: '76.250 m2' },
-          { label: 'Rehab Saluran', value: '9.8 km' },
-          { label: 'Rehab Pintu', value: '4' },
-          { label: 'Rehab Bangunan', value: '6' },
-        ],
-        tenagaKerjaData: [
-          { label: 'Mandor', value: '18' },
-          { label: 'Tukang', value: '89' },
-          { label: 'Pekerja', value: '112' },
-        ],
-        alatData: [
-          { label: 'Excavator STD', value: '6' },
-          { label: 'Excavator LA', value: '2' },
-          { label: 'Excavator Mini', value: '5' },
-          { label: 'Excavator Amphibi', value: '3' },
-        ],
-        materialData: [
-          { label: 'Semen', value: '26780' },
-          { label: 'Pasir', value: '67340' },
-          { label: 'Agregat', value: '78920' },
-          { label: 'Pintu', value: '98' },
-          { label: 'U-ditch', value: '320' },
-        ],
-      },
-    }),
-  ])
-
-  console.log(`✅ Created ${projects.length} projects`)
-
-  // Create Material Flow data for project 1 (Pasir)
-  const pasirMaterial = await prisma.material.create({
-    data: {
-      projectId: '1',
-      jenisMaterial: 'Pasir',
-      volumeSatuan: 'm3',
-      volumeTarget: 850,
-      tanggalMulai: '2025-06-18',
-      tanggalSelesai: '2025-08-31',
-      waktuSelesai: 74,
-    },
-  })
-
-  // Generate daily schedule data for June 2025 (18-30)
-  const generateDailyTargetFromTotal = (totalTarget: number, totalDays: number) => {
-    return totalTarget / totalDays
+  console.log('🌱 Starting database seeding process...\n');
+  
+  try {
+    // Run enhanced auth seeder (includes organizations, users, and roles)
+    console.log('📊 Seeding enhanced authentication system...');
+    execSync('tsx prisma/seed-enhanced-auth.ts', { stdio: 'inherit' });
+    console.log('✅ Enhanced auth system seeded successfully\n');
+    
+    // Run project assignments seeder (sample projects and assignments)
+    console.log('🏗️ Seeding project assignments...');
+    execSync('tsx prisma/seed-project-assignments.ts', { stdio: 'inherit' });
+    console.log('✅ Project assignments seeded successfully\n');
+    
+    // Run activities seeder (activities, sub-activities, schedules, and daily activities)
+    console.log('📋 Seeding activities and schedules...');
+    execSync('tsx prisma/seed-activities.ts', { stdio: 'inherit' });
+    console.log('✅ Activities and schedules seeded successfully\n');
+    
+    console.log('🎉 All seeding completed successfully!');
+    console.log('📋 Summary:');
+    console.log('   - Enhanced authentication system with 7 roles');
+    console.log('   - Organizational hierarchy (4 Balai, 8 Departments)');
+    console.log('   - 15 users across all roles');
+    console.log('   - 4 sample infrastructure projects');
+    console.log('   - PPK/VENDOR project assignments');
+    console.log('   - 7 activity categories with sub-activities');
+    console.log('   - Activity schedules and daily progress data');
+    
+  } catch (error) {
+    console.error('❌ Seeding failed:', error);
+    process.exit(1);
   }
-
-  const dailyTarget = generateDailyTargetFromTotal(850, 74) // ~11.49 per day
-
-  const juneScheduleData = [
-    { date: '2025-06-18', realisasi: 1082, realisasiKumulatif: 1082 },
-    { date: '2025-06-19', realisasi: 729, realisasiKumulatif: 1811 },
-    { date: '2025-06-20', realisasi: 1047, realisasiKumulatif: 2858 },
-    { date: '2025-06-21', realisasi: 1167, realisasiKumulatif: 4025 },
-    { date: '2025-06-22', realisasi: 1274, realisasiKumulatif: 5299 },
-    { date: '2025-06-23', realisasi: 1400, realisasiKumulatif: 6699 },
-    { date: '2025-06-24', realisasi: 1409, realisasiKumulatif: 8108 },
-    { date: '2025-06-25', realisasi: 1184, realisasiKumulatif: 9292 },
-    { date: '2025-06-26', realisasi: 831, realisasiKumulatif: 10123 },
-    { date: '2025-06-27', realisasi: 832, realisasiKumulatif: 10124 },
-    { date: '2025-06-28', realisasi: 833, realisasiKumulatif: 10125 },
-    { date: '2025-06-29', realisasi: 833, realisasiKumulatif: 10125 },
-    { date: '2025-06-30', realisasi: 833, realisasiKumulatif: 10125 },
-  ]
-
-  // Create material schedules
-  for (const [index, scheduleData] of juneScheduleData.entries()) {
-    const dayNumber = index + 1
-    const rencana = dailyTarget
-    const rencanaKumulatif = dailyTarget * dayNumber
-    const tercapai = scheduleData.realisasi >= rencana ? 'Y' : 'T'
-
-    await prisma.materialSchedule.create({
-      data: {
-        materialId: pasirMaterial.id,
-        date: scheduleData.date,
-        rencana: rencana,
-        rencanaKumulatif: rencanaKumulatif,
-        realisasi: scheduleData.realisasi,
-        realisasiKumulatif: scheduleData.realisasiKumulatif,
-        tercapai: tercapai,
-      },
-    })
-  }
-
-  console.log('✅ Created Material Flow data')
-
-  // Seed activities and sub-activities
-  await seedActivities()
-
-  console.log('🎉 Seeding completed!')
 }
 
 main()
-  .catch(e => {
-    console.error('❌ Seeding failed:', e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+  .catch((e) => {
+    console.error('❌ Unexpected error:', e);
+    process.exit(1);
+  });

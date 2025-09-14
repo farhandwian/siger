@@ -5,8 +5,15 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 
-// User role enum to match Prisma schema
-export type UserRole = 'USER' | 'ADMIN' | 'MANAGER' | 'VIEWER'
+// Enhanced user role enum to match new Prisma schema
+export type UserRole = 
+  | 'ADMIN_SISTEM'   // Global system administrator
+  | 'ADMIN_BALAI'    // Balai-level administrator  
+  | 'DIRJEN_SDA'     // Director General (read-only oversight)
+  | 'KABALAI'        // Head of Balai (read-only)
+  | 'SATKER'         // Budget execution unit (department-level CRUD)
+  | 'PPK'            // Project commitment officer (assigned projects CRUD)
+  | 'VENDOR'         // Contractor/vendor (progress updates only)
 
 // Validation schema for login credentials
 const LoginSchema = z.object({
@@ -21,6 +28,9 @@ declare module 'next-auth' {
       email: string
       name: string
       role: UserRole
+      balaiId?: string
+      departmentId?: string
+      projectIds?: string[]
     }
   }
 
@@ -29,6 +39,19 @@ declare module 'next-auth' {
     email: string
     name: string
     role: UserRole
+    balaiId?: string
+    departmentId?: string
+    projectIds?: string[]
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    userId: string
+    role: UserRole
+    balaiId?: string
+    departmentId?: string
+    projectIds?: string[]
   }
 }
 
@@ -61,7 +84,7 @@ export const authConfig: NextAuthConfig = {
 
           const { email, password } = validatedFields.data
 
-          // Find user in database
+          // Find user in database with enhanced organizational context
           const user = await prisma.user.findUnique({
             where: { email },
             select: {
@@ -71,6 +94,16 @@ export const authConfig: NextAuthConfig = {
               password: true,
               role: true,
               isActive: true,
+              balaiId: true,
+              departmentId: true,
+              // Include project assignments for PPK and VENDOR users
+              projectAssignments: {
+                where: { isActive: true },
+                select: {
+                  projectId: true,
+                  role: true
+                }
+              }
             },
           })
 
@@ -93,12 +126,18 @@ export const authConfig: NextAuthConfig = {
             data: { lastLoginAt: new Date() },
           })
 
-          // Return user object (password excluded)
+          // Extract project IDs for PPK and VENDOR users
+          const projectIds = user.projectAssignments?.map(assignment => assignment.projectId) || []
+
+          // Return user object (password excluded) with organizational context
           return {
             id: user.id,
             email: user.email,
             name: user.name,
             role: user.role as UserRole,
+            balaiId: user.balaiId || undefined,
+            departmentId: user.departmentId || undefined,
+            projectIds: projectIds.length > 0 ? projectIds : undefined,
           }
         } catch (error) {
           console.error('Auth error:', error)
@@ -116,18 +155,24 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // Include user info in JWT token
+      // Include user info and organizational context in JWT token
       if (user) {
         token.userId = user.id
         token.role = user.role
+        token.balaiId = user.balaiId
+        token.departmentId = user.departmentId
+        token.projectIds = user.projectIds
       }
       return token
     },
     async session({ session, token }) {
-      // Include user info in session
+      // Include user info and organizational context in session
       if (token && session.user) {
         session.user.id = token.userId as string
         session.user.role = token.role as UserRole
+        session.user.balaiId = token.balaiId as string | undefined
+        session.user.departmentId = token.departmentId as string | undefined
+        session.user.projectIds = token.projectIds as string[] | undefined
       }
       return session
     },

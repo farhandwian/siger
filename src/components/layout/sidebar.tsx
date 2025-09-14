@@ -13,6 +13,7 @@ import {
   SigerLogo,
 } from '../ui/icons'
 import { Users, Shield } from 'lucide-react'
+import { UserRole } from '@prisma/client'
 
 interface SidebarItem {
   id: string
@@ -20,7 +21,7 @@ interface SidebarItem {
   icon: React.ComponentType<{ className?: string }>
   href?: string
   children?: SidebarItem[]
-  roles?: ('ADMIN' | 'MANAGER' | 'USER' | 'VIEWER')[] // Role-based visibility
+  roles?: UserRole[] // Role-based visibility
 }
 
 interface SidebarProps {
@@ -56,7 +57,7 @@ const sidebarItems: SidebarItem[] = [
         label: 'Verifikasi Usulan',
         icon: DocumentDuplicateIcon,
         href: '/verifikasi-usulan',
-        roles: ['ADMIN', 'MANAGER'], // Only admins and managers can verify
+        roles: [UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER], // Only admins and SATKER can verify
       },
     ],
   },
@@ -89,7 +90,7 @@ const sidebarItems: SidebarItem[] = [
         label: 'Action Plan',
         icon: DocumentDuplicateIcon,
         href: '/monitoring-evaluasi/action-plan',
-        roles: ['ADMIN', 'MANAGER'], // Only admins and managers can create action plans
+        roles: [UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER], // Only admins and SATKER can create action plans
       },
       {
         id: 'material-flow',
@@ -121,28 +122,28 @@ const sidebarItems: SidebarItem[] = [
     id: 'user-management',
     label: 'Kelola Pengguna',
     icon: Users,
-    roles: ['ADMIN'], // Only admins can access user management
+    roles: [UserRole.ADMIN_SISTEM], // Only system admins can access user management
     children: [
       {
         id: 'users-list',
         label: 'Daftar Pengguna',
         icon: Users,
         href: '/admin/users',
-        roles: ['ADMIN'],
+        roles: [UserRole.ADMIN_SISTEM],
       },
       {
         id: 'users-create',
         label: 'Tambah Pengguna',
         icon: Users,
         href: '/admin/users/create',
-        roles: ['ADMIN'],
+        roles: [UserRole.ADMIN_SISTEM],
       },
       {
         id: 'user-roles',
         label: 'Kelola Role',
         icon: Shield,
         href: '/admin/roles',
-        roles: ['ADMIN'],
+        roles: [UserRole.ADMIN_SISTEM],
       },
     ],
   },
@@ -157,7 +158,7 @@ const SidebarItemComponent: React.FC<{
   const Icon = item.icon
 
   // Check if user has permission to see this item
-  if (item.roles && userRole && !item.roles.includes(userRole as any)) {
+  if (item.roles && userRole && !item.roles.includes(userRole as UserRole)) {
     return null
   }
 

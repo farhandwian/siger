@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 
 // Project schemas
 export const ProjectStatusSchema = z.enum(['on-track', 'at-risk', 'delayed'])
@@ -31,11 +32,9 @@ export const ProjectSchema = z.object({
   // Informasi Kontrak & Anggaran
   paguAnggaran: z
     .string()
-    .regex(/^Rp[\d.,]+$/, 'Format pagu anggaran tidak valid')
     .nullable(),
   nilaiKontrak: z
     .string()
-    .regex(/^Rp[\d.,]+$/, 'Format nilai kontrak tidak valid')
     .nullable(),
   nomorKontrak: z
     .string()
@@ -198,7 +197,7 @@ export const ProjectListItemSchema = z.object({
 })
 
 // User schemas
-export const UserRoleSchema = z.enum(['admin', 'supervisor', 'user'])
+export const UserRoleSchema = z.nativeEnum(UserRole)
 
 export const UserSchema = z.object({
   id: z.string(),
@@ -222,8 +221,8 @@ export const CreateUserSchema = z.object({
     .max(50, 'Username maksimal 50 karakter'),
   email: z.string().email('Format email tidak valid'),
   name: z.string().min(1, 'Nama wajib diisi').max(100, 'Nama maksimal 100 karakter'),
-  role: UserRoleSchema.default('user'),
-  phoneNumber: z.string().nullable().optional(),
+  password: z.string().min(6, 'Password minimal 6 karakter'),
+  role: UserRoleSchema.default(UserRole.PPK),
   isActive: z.boolean().default(true),
 })
 
@@ -488,7 +487,7 @@ export type User = z.infer<typeof UserSchema>
 export type CreateUser = z.infer<typeof CreateUserSchema>
 export type UpdateUser = z.infer<typeof UpdateUserSchema>
 export type UserQuery = z.infer<typeof UserQuerySchema>
-export type UserRole = z.infer<typeof UserRoleSchema>
+// Note: UserRole is imported from @prisma/client instead of being a zod type
 
 // Re-export daily sub activities schemas
 export * from './schemas/daily-sub-activities'

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { UserRole } from '@/lib/auth'
+import { UserRole } from '@prisma/client'
 
 /**
  * Utility functions for API route protection
@@ -43,7 +43,7 @@ export function hasRole(user: AuthenticatedUser, allowedRoles: UserRole[]): bool
  */
 export function canAccessResource(user: AuthenticatedUser, resourceOwnerId?: string): boolean {
   // Admins can access everything
-  if (user.role === 'ADMIN') return true
+  if (user.role === UserRole.ADMIN_SISTEM) return true
 
   // If no owner specified, allow access
   if (!resourceOwnerId) return true
@@ -71,7 +71,7 @@ export const ApiErrors = {
     error: 'Resource not found',
     code: 'NOT_FOUND',
   },
-  validationError: (details: any) => ({
+  validationError: (details: unknown) => ({
     success: false,
     error: 'Validation failed',
     code: 'VALIDATION_ERROR',
@@ -87,7 +87,7 @@ export const ApiErrors = {
 /**
  * Higher-order function to create protected API routes
  */
-export function createProtectedHandler<T extends any[]>(
+export function createProtectedHandler<T extends unknown[]>(
   allowedRoles: UserRole[],
   handler: (req: NextRequest, user: AuthenticatedUser, ...args: T) => Promise<Response>
 ) {
@@ -105,7 +105,7 @@ export function createProtectedHandler<T extends any[]>(
     try {
       return await handler(req, user, ...args)
     } catch (error) {
-      console.error('API Error:', error)
+      // console.error('API Error:', error)
       return Response.json(ApiErrors.internalError, { status: 500 })
     }
   }

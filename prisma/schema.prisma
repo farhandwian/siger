@@ -7,44 +7,86 @@ datasource db {
   url      = env("POSTGRES_URL")
 }
 
+// Organizational Models
+model Balai {
+  id           String       @id @default(cuid())
+  name         String       @map("name")
+  code         String       @unique @map("code")
+  description  String?      @map("description")
+  address      String?      @map("address")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  
+  // Relationships
+  departments  Department[]
+  users        User[]       // ADMIN_BALAI, KABALAI users
+
+  @@map("balai")
+}
+
+model Department {
+  id          String    @id @default(cuid())
+  name        String    @map("name")
+  code        String    @map("code")
+  description String?   @map("description")
+  balaiId     String    @map("balai_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Relationships
+  balai       Balai     @relation(fields: [balaiId], references: [id], onDelete: Cascade)
+  projects    Project[]
+  users       User[]    // SATKER users
+
+  @@unique([balaiId, code])
+  @@map("departments")
+}
+
 model Project {
-  id                 String            @id @default(cuid())
+  id                 String               @id @default(cuid())
   pekerjaan          String?
   spmk               String?
-  akhirKontrak       String?           @map("akhir_kontrak")
-  alatData           Json?             @map("alat_data")
-  bangunanDeviasi    Float?            @default(0) @map("bangunan_deviasi")
-  bangunanProgress   Float?            @default(0) @map("bangunan_progress")
-  bangunanTarget     Float?            @default(0) @map("bangunan_target")
-  createdAt          DateTime          @default(now()) @map("created_at")
-  fisikDeviasi       Float?            @default(0) @map("fisik_deviasi")
-  fisikProgress      Float?            @default(0) @map("fisik_progress")
-  fisikTarget        Float?            @default(100) @map("fisik_target")
-  jenisPaket         String?           @map("jenis_paket")
-  jenisPengadaan     String?           @map("jenis_pengadaan")
-  keuanganDeviasi    Float?            @default(0) @map("keuangan_deviasi")
-  keuanganProgress   Float?            @default(0) @map("keuangan_progress")
-  keuanganTarget     Float?            @default(0) @map("keuangan_target")
-  masaKontrak        String?           @map("masa_kontrak")
-  materialData       Json?             @map("material_data")
-  nilaiKontrak       String?           @map("nilai_kontrak")
-  nomorKontrak       String?           @map("nomor_kontrak")
-  outputData         Json?             @map("output_data")
-  paguAnggaran       String?           @map("pagu_anggaran")
-  pembayaranTerakhir String?           @map("pembayaran_terakhir")
-  penyediaJasa       String?           @map("penyedia_jasa")
-  saluranDeviasi     Float?            @default(0) @map("saluran_deviasi")
-  saluranProgress    Float?            @default(0) @map("saluran_progress")
-  saluranTarget      Float?            @default(0) @map("saluran_target")
-  tanggalKontrak     String?           @map("tanggal_kontrak")
-  tenagaKerjaData    Json?             @map("tenaga_kerja_data")
-  updatedAt          DateTime          @updatedAt @map("updated_at")
-  lokasiProyek       String?           @map("lokasi_proyek")
-  petaPekerjaan      Json?             @map("peta_pekerjaan")
-  tanggalSpmk        String?           @map("tanggal_spmk")
+  akhirKontrak       String?              @map("akhir_kontrak")
+  alatData           Json?                @map("alat_data")
+  bangunanDeviasi    Float?               @default(0) @map("bangunan_deviasi")
+  bangunanProgress   Float?               @default(0) @map("bangunan_progress")
+  bangunanTarget     Float?               @default(0) @map("bangunan_target")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  fisikDeviasi       Float?               @default(0) @map("fisik_deviasi")
+  fisikProgress      Float?               @default(0) @map("fisik_progress")
+  fisikTarget        Float?               @default(100) @map("fisik_target")
+  jenisPaket         String?              @map("jenis_paket")
+  jenisPengadaan     String?              @map("jenis_pengadaan")
+  keuanganDeviasi    Float?               @default(0) @map("keuangan_deviasi")
+  keuanganProgress   Float?               @default(0) @map("keuangan_progress")
+  keuanganTarget     Float?               @default(0) @map("keuangan_target")
+  masaKontrak        String?              @map("masa_kontrak")
+  materialData       Json?                @map("material_data")
+  nilaiKontrak       String?              @map("nilai_kontrak")
+  nomorKontrak       String?              @map("nomor_kontrak")
+  outputData         Json?                @map("output_data")
+  paguAnggaran       String?              @map("pagu_anggaran")
+  pembayaranTerakhir String?              @map("pembayaran_terakhir")
+  penyediaJasa       String?              @map("penyedia_jasa")
+  saluranDeviasi     Float?               @default(0) @map("saluran_deviasi")
+  saluranProgress    Float?               @default(0) @map("saluran_progress")
+  saluranTarget      Float?               @default(0) @map("saluran_target")
+  tanggalKontrak     String?              @map("tanggal_kontrak")
+  tenagaKerjaData    Json?                @map("tenaga_kerja_data")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  lokasiProyek       String?              @map("lokasi_proyek")
+  petaPekerjaan      Json?                @map("peta_pekerjaan")
+  tanggalSpmk        String?              @map("tanggal_spmk")
+  
+  // Organizational context
+  departmentId       String?              @map("department_id")
+  
+  // Relationships
+  department         Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   activities         Activity[]
   materials          Material[]
   auditLogs          ProjectAuditLog[]
+  assignments        ProjectAssignment[]  // PPK and VENDOR assignments
 
   @@map("projects")
 }
@@ -229,22 +271,36 @@ model ReadinessCriteria {
 }
 
 model User {
-  id              String             @id @default(cuid())
-  username        String             @unique @map("username")
-  email           String             @unique @map("email")
-  name            String             @map("name")
-  password        String             @map("password")
-  role            UserRole           @default(USER) @map("role")
-  phoneNumber     String?            @map("phone_number")
-  isActive        Boolean            @default(true) @map("is_active")
-  lastLoginAt     DateTime?          @map("last_login_at")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
+  id               String               @id @default(cuid())
+  username         String               @unique @map("username")
+  email            String               @unique @map("email")
+  name             String               @map("name")
+  password         String               @map("password")
+  role             UserRole             @default(PPK) @map("role")
+  isActive         Boolean              @default(true) @map("is_active")
+  lastLoginAt      DateTime?            @map("last_login_at")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+  
+  // Organizational relationships
+  balaiId          String?              @map("balai_id")          // For ADMIN_BALAI, KABALAI
+  departmentId     String?              @map("department_id")     // For SATKER
+  
+  // Mobile access metadata  
+  deviceInfo       Json?                @map("device_info")       // For mobile users (PPK, VENDOR)
+  lastMobileSync   DateTime?            @map("last_mobile_sync")  // Track mobile sync
+  
+  // Relationships
+  balai            Balai?               @relation(fields: [balaiId], references: [id], onDelete: SetNull)
+  department       Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   
   // NextAuth.js required fields
-  accounts        Account[]
-  sessions        Session[]
-  dailyActivities DailySubActivity[]
+  accounts         Account[]
+  sessions         Session[]
+  
+  // Project-specific relationships
+  dailyActivities  DailySubActivity[]
+  projectAssignments ProjectAssignment[] // PPK and VENDOR project assignments
 
   @@map("users")
 }
@@ -289,10 +345,40 @@ model VerificationToken {
 }
 
 enum UserRole {
-  USER
-  ADMIN
-  MANAGER
-  VIEWER
+  ADMIN_SISTEM   // Global system administrator
+  ADMIN_BALAI    // Balai-level administrator  
+  DIRJEN_SDA     // Director General (read-only oversight)
+  KABALAI        // Head of Balai (read-only)
+  SATKER         // Budget execution unit (department-level CRUD)
+  PPK            // Project commitment officer (assigned projects CRUD)
+  VENDOR         // Contractor/vendor (progress updates only)
+}
+
+model ProjectAssignment {
+  id           String                    @id @default(cuid())
+  userId       String                    @map("user_id")
+  projectId    String                    @map("project_id")
+  role         ProjectAssignmentRole     @map("role")
+  assignedAt   DateTime                  @default(now()) @map("assigned_at")
+  assignedBy   String?                   @map("assigned_by")    // Who assigned this user
+  isActive     Boolean                   @default(true) @map("is_active")
+  startDate    DateTime?                 @map("start_date")
+  endDate      DateTime?                 @map("end_date")
+  notes        String?                   @map("notes")
+  createdAt    DateTime                  @default(now()) @map("created_at")
+  updatedAt    DateTime                  @updatedAt @map("updated_at")
+  
+  // Relationships
+  user         User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId, role]) // Prevent duplicate assignments
+  @@map("project_assignments")
+}
+
+enum ProjectAssignmentRole {
+  PPK      // Project Commitment Officer
+  VENDOR   // Contractor/Vendor
 }
 
 model DailySubActivity {
