@@ -260,8 +260,20 @@ export function BuatAnalisaKebutuhanModal({
     }
   }
 
-  // Add new entry
+  // Add new entry (for individual items within a category)
   const addEntry = () => {
+    appendEntry({
+      kategoriKebutuhanId: '',
+      kebutuhanId: '',
+      koefisien: 0,
+      categoryName: '',
+      itemName: '',
+    })
+  }
+
+  // Add new category (for adding a new category section)
+  const addNewCategory = () => {
+    // Add entry with empty kategoriKebutuhanId - this will create a new unselected group
     appendEntry({
       kategoriKebutuhanId: '',
       kebutuhanId: '',
@@ -318,7 +330,7 @@ export function BuatAnalisaKebutuhanModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[900px] max-w-[1303px] gap-0 rounded-2xl p-0">
+      <DialogContent className="max-h-[90vh] max-w-6xl gap-0 rounded-2xl p-0">
         {/* Header */}
         <DialogHeader className="border-b border-gray-200 px-6 py-5">
           <div className="flex items-center justify-between">
@@ -436,209 +448,229 @@ export function BuatAnalisaKebutuhanModal({
 
                 {/* Analisa Kebutuhan Form */}
                 <div className="space-y-4">
-                  <Card className="bg-gray-100">
-                    <CardContent className="p-3">
-                      {/* Main Content with sidebar layout */}
-                      <div className="flex gap-3">
-                        {/* Left side - Form fields */}
-                        <div className="flex-1 space-y-3">
-                          {/* Kategori Kebutuhan Dropdown - Full Width */}
-                          <div>
-                            <Label className="mb-1 block text-sm font-medium text-gray-700">
-                              Kategori Kebutuhan
-                            </Label>
-                            <Select
-                              value={
-                                entriesFields.length > 0
-                                  ? watch(`entries.0.kategoriKebutuhanId`)
-                                  : ''
-                              }
-                              onValueChange={value => {
-                                const category = categories.find(cat => cat.id === value)
-                                if (entriesFields.length === 0) {
-                                  appendEntry({
-                                    kategoriKebutuhanId: value,
-                                    kebutuhanId: '',
-                                    koefisien: 0,
-                                    categoryName: category?.nama || '',
-                                    itemName: '',
+                  {/* Group entries by category */}
+                  {(() => {
+                    // Group entries by kategoriKebutuhanId, but create separate groups for unselected entries
+                    const entriesByCategory = entriesFields.reduce(
+                      (acc, field, index) => {
+                        const categoryId = watch(`entries.${index}.kategoriKebutuhanId`)
+                        // Create unique keys for unselected categories
+                        const groupKey = categoryId || `unselected_${index}`
+                        if (!acc[groupKey]) {
+                          acc[groupKey] = []
+                        }
+                        acc[groupKey].push({ field, index })
+                        return acc
+                      },
+                      {} as Record<string, Array<{ field: any; index: number }>>
+                    )
+
+                    return Object.entries(entriesByCategory).map(([groupKey, categoryEntries]) => {
+                      // Extract actual categoryId from groupKey
+                      const categoryId = groupKey.startsWith('unselected_') ? '' : groupKey
+                      const categoryName = categoryId
+                        ? categories.find(cat => cat.id === categoryId)?.nama ||
+                          'Kategori Tidak Diketahui'
+                        : 'Pilih Kategori'
+
+                      return (
+                        <Card key={groupKey} className="bg-gray-100">
+                          <CardContent className="p-3">
+                            {/* Category Header */}
+                            <div className="mb-3">
+                              <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                Kategori Kebutuhan
+                              </Label>
+                              <Select
+                                value={categoryId}
+                                onValueChange={value => {
+                                  const category = categories.find(cat => cat.id === value)
+                                  // Update all entries in this category
+                                  categoryEntries.forEach(({ index }) => {
+                                    setValue(`entries.${index}.kategoriKebutuhanId`, value)
+                                    setValue(`entries.${index}.categoryName`, category?.nama || '')
+                                    setValue(`entries.${index}.kebutuhanId`, '')
+                                    setValue(`entries.${index}.itemName`, '')
                                   })
-                                } else {
-                                  setValue(`entries.0.kategoriKebutuhanId`, value)
-                                  setValue(`entries.0.categoryName`, category?.nama || '')
-                                  setValue(`entries.0.kebutuhanId`, '')
-                                  setValue(`entries.0.itemName`, '')
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="bg-white">
-                                <SelectValue placeholder="Pilih Kategori Kebutuhan" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {categories.map(category => (
-                                  <SelectItem key={category.id} value={category.id}>
-                                    {category.nama}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                                }}
+                              >
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue placeholder="Pilih Kategori Kebutuhan" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categories.map(category => (
+                                    <SelectItem key={category.id} value={category.id}>
+                                      {category.nama}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                          {/* Entries */}
-                          <div className="space-y-3">
-                            {entriesFields.map((field, index) => (
-                              <div key={field.id} className="space-y-3">
-                                {/* Daftar Kebutuhan */}
-                                <div>
-                                  {index === 0 && (
-                                    <Label className="mb-1 block text-sm font-medium text-gray-700">
-                                      Daftar Kebutuhan
-                                    </Label>
-                                  )}
-                                  <Select
-                                    value={watch(`entries.${index}.kebutuhanId`)}
-                                    onValueChange={value => {
-                                      const item = getKebutuhanForCategory(
-                                        watch(`entries.${index}.kategoriKebutuhanId`)
-                                      ).find(item => item.id === value)
-                                      setValue(`entries.${index}.kebutuhanId`, value)
-                                      setValue(`entries.${index}.itemName`, item?.name || '')
-                                    }}
-                                    disabled={!watch(`entries.${index}.kategoriKebutuhanId`)}
-                                  >
-                                    <SelectTrigger className="bg-white">
-                                      <SelectValue placeholder="Pilih Kebutuhan" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {getKebutuhanForCategory(
-                                        watch(`entries.${index}.kategoriKebutuhanId`)
-                                      ).map(item => (
-                                        <SelectItem key={item.id} value={item.id}>
-                                          {item.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                {/* Calculation Row */}
-                                <div className="flex items-end gap-3">
-                                  {/* Koefisien */}
-                                  <div className="w-[162px]">
-                                    {index === 0 && (
-                                      <Label className="mb-1 block text-sm font-medium text-gray-700">
-                                        Koefisien
-                                      </Label>
-                                    )}
-                                    <Input
-                                      type="number"
-                                      step="0.01"
-                                      placeholder="Koefisien"
-                                      {...register(`entries.${index}.koefisien`, {
-                                        valueAsNumber: true,
-                                      })}
-                                      className="bg-white"
-                                    />
-                                  </div>
-
-                                  <div className="w-6 pb-2 text-center text-sm font-medium text-gray-700">
-                                    x
-                                  </div>
-
-                                  {/* Volume */}
-                                  <div className="w-[162px]">
-                                    {index === 0 && (
-                                      <Label className="mb-1 block text-sm font-medium text-gray-700">
-                                        Volume
-                                      </Label>
-                                    )}
-                                    <div className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400">
-                                      {calculateVolumePerHari().toFixed(2)}{' '}
-                                      {selectedSubActivity.satuan || 'm³'}
+                            {/* Entries for this category */}
+                            <div className="space-y-3">
+                              {categoryEntries.map(({ field, index }, entryIndex) => (
+                                <div key={field.id} className="space-y-3">
+                                  {/* Calculation Row */}
+                                  <div className="flex items-end gap-3">
+                                    {/* Daftar Kebutuhan */}
+                                    <div className="w-[200px]">
+                                      {entryIndex === 0 && (
+                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                          Daftar Kebutuhan
+                                        </Label>
+                                      )}
+                                      <Select
+                                        value={watch(`entries.${index}.kebutuhanId`)}
+                                        onValueChange={value => {
+                                          const item = getKebutuhanForCategory(categoryId).find(
+                                            item => item.id === value
+                                          )
+                                          setValue(`entries.${index}.kebutuhanId`, value)
+                                          setValue(`entries.${index}.itemName`, item?.name || '')
+                                        }}
+                                        disabled={!categoryId}
+                                      >
+                                        <SelectTrigger className="bg-white">
+                                          <SelectValue placeholder="Pilih Kebutuhan" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {getKebutuhanForCategory(categoryId).map(item => (
+                                            <SelectItem key={item.id} value={item.id}>
+                                              {item.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
                                     </div>
-                                  </div>
 
-                                  <div className="w-[26px] pb-2 text-center text-sm font-medium text-gray-700">
-                                    =
-                                  </div>
-
-                                  {/* Hasil */}
-                                  <div className="w-[125px]">
-                                    {index === 0 && (
-                                      <Label className="mb-1 block text-sm font-medium text-gray-700">
-                                        Hasil
-                                      </Label>
-                                    )}
-                                    <div className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400">
-                                      {calculateHasil(
-                                        watch(`entries.${index}.koefisien`) || 0
-                                      ).toFixed(2)}{' '}
-                                      unit
+                                    {/* Koefisien */}
+                                    <div className="w-[162px]">
+                                      {entryIndex === 0 && (
+                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                          Koefisien
+                                        </Label>
+                                      )}
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="0"
+                                        {...register(`entries.${index}.koefisien`, {
+                                          valueAsNumber: true,
+                                        })}
+                                        className="bg-white"
+                                      />
                                     </div>
-                                  </div>
 
-                                  {/* Hasil field */}
-                                  <div className="w-[125px]">
-                                    {index === 0 && (
-                                      <Label className="mb-1 block text-sm font-medium text-gray-700">
-                                        Analisa Kebutuhan
-                                      </Label>
-                                    )}
-                                    <div className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400">
-                                      {calculateHasil(
-                                        watch(`entries.${index}.koefisien`) || 0
-                                      ).toFixed(2)}{' '}
-                                      {getUnitForCategory(
-                                        watch(`entries.${index}.kategoriKebutuhanId`)
+                                    <div className="w-6 pb-2 text-center text-sm font-medium text-gray-700">
+                                      x
+                                    </div>
+
+                                    {/* Volume */}
+                                    <div className="w-[162px]">
+                                      {entryIndex === 0 && (
+                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                          Volume
+                                        </Label>
+                                      )}
+                                      <div className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400">
+                                        {calculateVolumePerHari().toFixed(2)}{' '}
+                                        {selectedSubActivity.satuan || 'm³'}
+                                      </div>
+                                    </div>
+
+                                    <div className="w-[26px] pb-2 text-center text-sm font-medium text-gray-700">
+                                      =
+                                    </div>
+
+                                    {/* Hasil */}
+                                    <div className="w-[125px]">
+                                      {entryIndex === 0 && (
+                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                          Hasil
+                                        </Label>
+                                      )}
+                                      <div className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400">
+                                        {calculateHasil(
+                                          watch(`entries.${index}.koefisien`) || 0
+                                        ).toFixed(2)}{' '}
+                                        unit
+                                      </div>
+                                    </div>
+
+                                    {/* Analisa Kebutuhan */}
+                                    <div className="w-[125px]">
+                                      {entryIndex === 0 && (
+                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                          Analisa Kebutuhan
+                                        </Label>
+                                      )}
+                                      <div className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400">
+                                        {calculateHasil(
+                                          watch(`entries.${index}.koefisien`) || 0
+                                        ).toFixed(2)}{' '}
+                                        {getUnitForCategory(categoryId)}
+                                      </div>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div className="flex gap-1.5">
+                                      {/* Delete Button */}
+                                      {entriesFields.length > 1 && (
+                                        <Button
+                                          type="button"
+                                          variant="destructive"
+                                          size="sm"
+                                          onClick={() => removeEntry(index)}
+                                          className="h-9 w-9 p-2"
+                                        >
+                                          <Trash2 className="h-5 w-5" />
+                                        </Button>
+                                      )}
+
+                                      {/* Add Button - only show on last entry of this category */}
+                                      {entryIndex === categoryEntries.length - 1 && (
+                                        <Button
+                                          type="button"
+                                          onClick={() => {
+                                            // Add new entry with same category
+                                            appendEntry({
+                                              kategoriKebutuhanId: categoryId || '',
+                                              kebutuhanId: '',
+                                              koefisien: 0,
+                                              categoryName: categoryId
+                                                ? categories.find(cat => cat.id === categoryId)
+                                                    ?.nama || ''
+                                                : '',
+                                              itemName: '',
+                                            })
+                                          }}
+                                          size="sm"
+                                          className="h-9 w-9 bg-blue-500 p-2 text-white hover:bg-blue-600"
+                                        >
+                                          <Plus className="h-5 w-5" />
+                                        </Button>
                                       )}
                                     </div>
                                   </div>
-
-                                  {/* Action buttons */}
-                                  <div className="flex gap-1.5">
-                                    {/* Delete Button */}
-                                    {entriesFields.length > 1 && (
-                                      <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => removeEntry(index)}
-                                        className="h-9 w-9 p-2"
-                                      >
-                                        <Trash2 className="h-5 w-5" />
-                                      </Button>
-                                    )}
-
-                                    {/* Add Button - only show on last entry */}
-                                    {index === entriesFields.length - 1 && (
-                                      <Button
-                                        type="button"
-                                        onClick={addEntry}
-                                        size="sm"
-                                        className="h-9 w-9 bg-blue-500 p-2 text-white hover:bg-blue-600"
-                                      >
-                                        <Plus className="h-5 w-5" />
-                                      </Button>
-                                    )}
-                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })
+                  })()}
 
-                      {/* Add Button - Full width */}
-                      <Button
-                        type="button"
-                        onClick={addEntry}
-                        className="mt-3 w-full bg-blue-500 text-white hover:bg-blue-600"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Tambah Kebutuhan
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  {/* Add New Category Button */}
+                  <Button
+                    type="button"
+                    onClick={addNewCategory}
+                    className="w-full bg-blue-500 text-white hover:bg-blue-600"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Tambah Kategori Kebutuhan
+                  </Button>
                 </div>
 
                 {/* Actions */}
