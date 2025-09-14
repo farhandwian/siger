@@ -54,9 +54,14 @@ export async function POST(request: NextRequest) {
     const scheduleMap = new Map(allSchedules.map(s => [s.date, s]))
 
     // Update the map with the new data
+    const existingSchedule = scheduleMap.get(validatedData.date)
     scheduleMap.set(validatedData.date, {
-      ...scheduleMap.get(validatedData.date),
+      ...existingSchedule,
       ...validatedData,
+      id: existingSchedule?.id || '', // Ensure id is always a string
+      createdAt: existingSchedule?.createdAt || new Date(),
+      updatedAt: existingSchedule?.updatedAt || new Date(),
+      tercapai: existingSchedule?.tercapai || null,
     })
 
     // Convert map back to array and sort by date
@@ -137,7 +142,7 @@ export async function POST(request: NextRequest) {
       currentRencanaKumulatif += subSchedule.rencana || 0
       currentRealisasiKumulatif += subSchedule.realisasi || 0
 
-      const newTercapai = subSchedule.realisasi >= subSchedule.rencana ? 'Y' : 'T'
+      const newTercapai = (subSchedule.realisasi || 0) >= (subSchedule.rencana || 0) ? 'Y' : 'T'
 
       await prisma.materialSchedule.update({
         where: { id: subSchedule.id },

@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
+import { ActivityScheduleTableNew } from '@/components/activities/ActivityScheduleTableNew'
 import { CSVImportModal } from '@/components/activities/csv-import-modal'
+import { ActionPlanScheduleTable } from '@/components/action-plan/ActionPlanScheduleTable'
+import { ActionPlanScheduleTableNew } from '@/components/action-plan/ActionPlanScheduleTableNew'
+import { ActionPlanCSVImportModal } from '@/components/action-plan/ActionPlanCSVImportModal'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
 import { AddMaterialModal } from '@/components/materials/add-material-modal'
@@ -12,7 +16,7 @@ import { MaterialFlowTable } from '@/components/materials/material-flow-table'
 import { MaterialChart } from '@/components/materials/material-chart'
 import { AIInsights } from '@/components/monitoring/ai-insights'
 import { MonitoringMetrics } from '@/components/monitoring/monitoring-metrics'
-import { SCurveChart } from '@/components/monitoring/s-curve-chart-activity-schedule-table'
+import { SCurveChart } from '@/components/monitoring/SCurveChartNew'
 import { ProjectWorkMap } from '@/components/monitoring/project-work-map'
 import { AutoSaveField } from '@/components/ui/auto-save-field'
 import { Button } from '@/components/ui/button'
@@ -191,6 +195,7 @@ export default function ProjectDetailPage() {
 
   const [addMaterialModalOpen, setAddMaterialModalOpen] = useState(false)
   const [csvImportModalOpen, setCsvImportModalOpen] = useState(false)
+  const [actionPlanCsvImportModalOpen, setActionPlanCsvImportModalOpen] = useState(false)
   const [selectedMaterial, setSelectedMaterial] = useState<string>('')
 
   const projectId = (params?.id as string) || '1'
@@ -679,7 +684,7 @@ export default function ProjectDetailPage() {
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="flex flex-col gap-6 xl:col-span-2">
                       <MonitoringMetrics projectId={projectId} />
-                      <SCurveChart projectId={projectId} />
+                      <SCurveChart projectId={projectId} type="activity" />
                     </div>
                     <div className="flex flex-col">
                       <AIInsights />
@@ -700,7 +705,7 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActivityScheduleTable projectId={projectId} />
+                    <ActivityScheduleTableNew projectId={projectId} />
                   </div>
                 </div>
               )}
@@ -762,19 +767,19 @@ export default function ProjectDetailPage() {
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="flex flex-col xl:col-span-2">
-                      <SCurveChart projectId={projectId} />
+                      <SCurveChart projectId={projectId} type="actionPlan" />
                     </div>
                     <div className="flex flex-col">
                       <AIInsights />
                     </div>
                   </div>
 
-                  {/* Activity Schedule Table */}
+                  {/* Action Plan Schedule Table */}
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-gray-900">Activity Schedule</h2>
+                      <h2 className="text-sm font-medium text-gray-900">Action Plan Schedule</h2>
                       <Button
-                        onClick={() => setCsvImportModalOpen(true)}
+                        onClick={() => setActionPlanCsvImportModalOpen(true)}
                         variant="outline"
                         size="sm"
                         className="flex items-center gap-2"
@@ -783,7 +788,7 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActivityScheduleTable projectId={projectId} />
+                    <ActionPlanScheduleTableNew projectId={projectId} />
                   </div>
                 </div>
               )}
@@ -882,6 +887,14 @@ export default function ProjectDetailPage() {
         <CSVImportModal
           isOpen={csvImportModalOpen}
           onClose={() => setCsvImportModalOpen(false)}
+          projectId={String(params.id)}
+          onSuccess={refreshActivities}
+        />
+
+        {/* Action Plan CSV Import Modal */}
+        <ActionPlanCSVImportModal
+          isOpen={actionPlanCsvImportModalOpen}
+          onClose={() => setActionPlanCsvImportModalOpen(false)}
           projectId={String(params.id)}
           onSuccess={refreshActivities}
         />

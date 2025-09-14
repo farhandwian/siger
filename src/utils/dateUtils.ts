@@ -20,7 +20,6 @@ export interface MonthData {
  */
 export function getActualPeriodsFromScheduleData(activities: any[]): MonthData[] | null {
   if (!activities || activities.length === 0) {
-    console.log('No activities provided to getActualPeriodsFromScheduleData')
     return null
   }
 
@@ -547,14 +546,12 @@ export interface SequentialWeek {
  * Parse Indonesian date format (e.g., "23 Mei 2025")
  */
 function parseIndonesianDate(dateStr: string): Date | null {
-  console.log('📅 Parsing Indonesian date:', dateStr)
-  
   if (!dateStr) return null
-  
+
   // Indonesian month mapping
   const indonesianMonths: { [key: string]: string } = {
     januari: '01',
-    februari: '02', 
+    februari: '02',
     maret: '03',
     april: '04',
     mei: '05',
@@ -566,23 +563,22 @@ function parseIndonesianDate(dateStr: string): Date | null {
     november: '11',
     desember: '12',
   }
-  
+
   try {
     // Handle Indonesian format (contains month names)
     const indonesianPattern = /(\d{1,2})\s+(\w+)\s+(\d{4})/i
     const indonesianMatch = dateStr.match(indonesianPattern)
-    
+
     if (indonesianMatch) {
       const [, day, monthName, year] = indonesianMatch
       const monthNum = indonesianMonths[monthName.toLowerCase()]
       if (monthNum) {
         const formattedDate = `${year}-${monthNum}-${day.padStart(2, '0')}`
         const date = new Date(formattedDate)
-        console.log('📅 Parsed Indonesian date:', dateStr, '->', formattedDate, '->', date.toISOString())
         return date
       }
     }
-    
+
     // Handle standard formats
     if (dateStr.includes('-')) {
       // Check if it's YYYY-MM-DD or DD-MM-YYYY
@@ -599,7 +595,7 @@ function parseIndonesianDate(dateStr: string): Date | null {
       const parts = dateStr.split('/')
       return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
     }
-    
+
     // Try direct parsing as fallback
     return new Date(dateStr)
   } catch (error) {
@@ -612,11 +608,11 @@ function parseIndonesianDate(dateStr: string): Date | null {
  * Generate sequential weeks starting from SPMK date
  * This creates a linear progression of weeks regardless of month boundaries
  */
-export function generateSequentialWeeks(spmkDate: string | null, totalWeeks: number = 20): SequentialWeek[] {
-  console.log('📅 generateSequentialWeeks called with:', { spmkDate, totalWeeks })
-  
+export function generateSequentialWeeks(
+  spmkDate: string | null,
+  totalWeeks: number = 20
+): SequentialWeek[] {
   if (!spmkDate) {
-    console.log('⚠️ No SPMK date provided, using fallback start date: May 19, 2025')
     // Fallback to May 19, 2025 so that W2 aligns with CSV Period 1 (May 26-June 1)
     const fallbackStart = new Date('2025-05-19')
     return generateSequentialWeeksFromDate(fallbackStart, totalWeeks)
@@ -627,8 +623,7 @@ export function generateSequentialWeeks(spmkDate: string | null, totalWeeks: num
     if (!startDate) {
       throw new Error('Failed to parse SPMK date')
     }
-    
-    console.log('📅 Parsed SPMK date successfully:', startDate.toISOString())
+
     return generateSequentialWeeksFromDate(startDate, totalWeeks)
   } catch (error) {
     console.error('❌ Error parsing SPMK date, using fallback:', error)
@@ -643,7 +638,7 @@ export function generateSequentialWeeks(spmkDate: string | null, totalWeeks: num
  */
 function generateSequentialWeeksFromDate(startDate: Date, totalWeeks: number): SequentialWeek[] {
   const weeks: SequentialWeek[] = []
-  
+
   // Find the Monday of the week containing the start date
   const getMonday = (date: Date): Date => {
     const day = date.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
@@ -652,27 +647,26 @@ function generateSequentialWeeksFromDate(startDate: Date, totalWeeks: number): S
     monday.setDate(date.getDate() - daysFromMonday)
     return monday
   }
-  
+
   let currentMonday = getMonday(startDate)
-  console.log('📅 Starting sequential weeks from Monday:', currentMonday.toISOString().slice(0, 10))
-  
+
   for (let i = 0; i < totalWeeks; i++) {
     const weekStart = new Date(currentMonday)
     const weekEnd = new Date(currentMonday)
     weekEnd.setDate(weekEnd.getDate() + 6) // Sunday
-    
+
     // Use Thursday to determine which month this week belongs to
     const thursday = new Date(currentMonday)
     thursday.setDate(currentMonday.getDate() + 3)
-    
+
     const month = thursday.getMonth() + 1
     const year = thursday.getFullYear()
-    
+
     // Calculate week number within the month
     const weekInMonth = getWeekInMonth(thursday)
-    
+
     const range = `${weekStart.getDate().toString().padStart(2, '0')}-${weekEnd.getDate().toString().padStart(2, '0')} ${getMonthNameIndonesian(month)}`
-    
+
     weeks.push({
       weekNumber: i + 1,
       startDate: weekStart,
@@ -682,13 +676,11 @@ function generateSequentialWeeksFromDate(startDate: Date, totalWeeks: number): S
       year,
       weekInMonth,
     })
-    
-    console.log(`📅 Week ${i + 1}: ${range} (${weekStart.toISOString().slice(0, 10)} to ${weekEnd.toISOString().slice(0, 10)})`)
-    
+
     // Move to next Monday
     currentMonday.setDate(currentMonday.getDate() + 7)
   }
-  
+
   return weeks
 }
 
@@ -699,7 +691,7 @@ function generateSequentialWeeksFromDate(startDate: Date, totalWeeks: number): S
 function getWeekInMonth(date: Date): number {
   const month = date.getMonth() + 1 // Convert to 1-based month
   const year = date.getFullYear()
-  
+
   // Find the Monday of the week containing this date
   const getMonday = (date: Date): Date => {
     const day = date.getDay()
@@ -708,24 +700,26 @@ function getWeekInMonth(date: Date): number {
     monday.setDate(date.getDate() - daysFromMonday)
     return monday
   }
-  
+
   const targetMonday = getMonday(date)
   const thursday = new Date(targetMonday)
   thursday.setDate(targetMonday.getDate() + 3)
-  
+
   // Use Thursday to determine which month this week belongs to (ISO week rule)
   const thursdayMonth = thursday.getMonth() + 1
   const thursdayYear = thursday.getFullYear()
-  
+
   // If Thursday is not in the target month, this week doesn't belong to this month
   if (thursdayMonth !== month || thursdayYear !== year) {
     // Fallback calculation for edge cases
     const firstDayOfMonth = new Date(year, month - 1, 1)
     const firstMonday = getMonday(firstDayOfMonth)
-    const weeksDiff = Math.floor((targetMonday.getTime() - firstMonday.getTime()) / (7 * 24 * 60 * 60 * 1000))
+    const weeksDiff = Math.floor(
+      (targetMonday.getTime() - firstMonday.getTime()) / (7 * 24 * 60 * 60 * 1000)
+    )
     return weeksDiff + 1
   }
-  
+
   // Calculate week number within the month using same logic as CSV import
   let week = 1
   const firstDayOfMonth = new Date(year, month - 1, 1)
@@ -754,8 +748,18 @@ function getWeekInMonth(date: Date): number {
  */
 function getMonthNameIndonesian(month: number): string {
   const months = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ]
   return months[month - 1] || 'Unknown'
 }

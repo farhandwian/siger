@@ -81,7 +81,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
               <div className="flex flex-col gap-1.5 text-[9px] text-gray-700 sm:flex-row sm:items-center sm:gap-3 lg:text-[10px]">
                 <div className="flex items-center gap-1">
                   <MapPinIcon className="h-2 w-2 lg:h-2.5 lg:w-2.5 xl:h-3 xl:w-3" />
-                  <span>{project.location}</span>
+                  <span>{project.location ? project.location : 'Lokasi belum dipilih'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <CurrencyDollarIcon className="h-2 w-2 lg:h-2.5 lg:w-2.5 xl:h-3 xl:w-3" />
