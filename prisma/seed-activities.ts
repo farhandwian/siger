@@ -348,7 +348,7 @@ async function createSampleDailyActivities() {
 
   // Get some users to assign daily activities
   const users = await prisma.user.findMany({
-    where: { role: 'user' },
+    where: { role: 'USER' },
     take: 3,
   })
 
