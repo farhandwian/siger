@@ -645,195 +645,203 @@ export function ActionPlanCSVImportModal({
               </div>
             </div>
 
-          {/* File Upload Section */}
-          <div className="space-y-4">
-            <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleFileSelect}
-                className="hidden"
-                aria-label="Select CSV file for action plan import"
-              />
+            {/* File Upload Section */}
+            <div className="space-y-4">
+              <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  aria-label="Select CSV file for action plan import"
+                />
 
-              {!file ? (
-                <div className="space-y-2">
-                  <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-600">Pilih file CSV yang berisi data action plan</p>
+                {!file ? (
+                  <div className="space-y-2">
+                    <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        Pilih file CSV yang berisi data action plan
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="mt-2"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Pilih File
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <CheckCircle className="mx-auto h-8 w-8 text-green-500" />
+                    <p className="text-sm font-medium">{file.name}</p>
+                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
                     <Button
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
-                      className="mt-2"
+                      size="sm"
                     >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Pilih File
+                      Ganti File
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <CheckCircle className="mx-auto h-8 w-8 text-green-500" />
-                  <p className="text-sm font-medium">{file.name}</p>
-                  <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
-                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} size="sm">
-                    Ganti File
-                  </Button>
+                )}
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm text-red-700">{error}</p>
                 </div>
               )}
-            </div>
 
-            {/* Error Display */}
-            {error && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
-                <AlertCircle className="h-4 w-4 text-red-500" />
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-
-            {/* Process Button */}
-            <div className="flex gap-2">
-              <Button onClick={processCSV} disabled={!file || isProcessing} className="flex-1">
-                {isProcessing ? 'Memproses...' : 'Parse & Pratinjau'}
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  resetModal()
-                  onClose()
-                }}
-              >
-                Batal
-              </Button>
-            </div>
-          </div>
-
-          {/* Results Preview */}
-          {parseResult && !importResult && (
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="text-sm font-medium">Pratinjau Impor Action Plan</h3>
-              <div className="rounded bg-gray-50 p-3 text-sm text-gray-600">
-                <p>✅ Berhasil mem-parse {parseResult.length} item</p>
-                <p>📁 Pekerjaan: {parseResult.filter(item => item.type === 'activity').length}</p>
-                <p>📋 Kegiatan: {parseResult.filter(item => item.type === 'subActivity').length}</p>
-                <p className="mt-2 text-xs">
-                  Siap untuk diimpor ke database. Klik tombol di bawah untuk melanjutkan.
-                </p>
-              </div>
-
-              {/* Import Mode Selection */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium">Mode Impor</h4>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="importMode"
-                      value="upsert"
-                      checked={importMode === 'upsert'}
-                      onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
-                      className="text-blue-600"
-                    />
-                    <div>
-                      <div className="text-sm font-medium">Upsert (Gabungkan)</div>
-                      <div className="text-xs text-gray-500">
-                        Perbarui data yang ada dan buat yang baru. Menjaga data yang sudah ada.
-                      </div>
-                    </div>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="importMode"
-                      value="replace"
-                      checked={importMode === 'replace'}
-                      onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
-                      className="text-blue-600"
-                    />
-                    <div>
-                      <div className="text-sm font-medium">Ganti Semua</div>
-                      <div className="text-xs text-gray-500">
-                        Hapus semua data action plan yang ada dan ganti dengan data dari CSV. ⚠️ Tidak dapat
-                        dikembalikan!
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Import to Database Button */}
+              {/* Process Button */}
               <div className="flex gap-2">
-                <Button
-                  onClick={importToDatabase}
-                  disabled={isImporting}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  {isImporting ? 'Mengimpor...' : 'Impor ke Database'}
+                <Button onClick={processCSV} disabled={!file || isProcessing} className="flex-1">
+                  {isProcessing ? 'Memproses...' : 'Parse & Pratinjau'}
                 </Button>
 
                 <Button
                   variant="outline"
-                  onClick={() => setParseResult(null)}
-                  disabled={isImporting}
+                  onClick={() => {
+                    resetModal()
+                    onClose()
+                  }}
                 >
-                  Edit CSV
+                  Batal
                 </Button>
               </div>
             </div>
-          )}
 
-          {/* Import Success */}
-          {importResult && (
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="text-sm font-medium text-green-700">Impor Action Plan Berhasil!</h3>
-              <div className="rounded border border-green-200 bg-green-50 p-3 text-sm">
-                <p className="font-medium text-green-800">✅ {importResult.message}</p>
-                <div className="mt-2 space-y-1 text-green-700">
-                  <div>
-                    <p className="font-semibold">📁 Pekerjaan:</p>
-                    <p className="ml-4 text-sm">
-                      Ditambahkan: {importResult.stats?.activitiesCreated || 0}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-semibold">📋 Kegiatan:</p>
-                    <p className="ml-4 text-sm">
-                      Ditambahkan: {importResult.stats?.subActivitiesCreated || 0}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-semibold">📅 Action Plan Schedules:</p>
-                    <p className="ml-4 text-sm">
-                      Ditambahkan: {importResult.stats?.schedulesCreated || 0} | Diubah:{' '}
-                      {importResult.stats?.schedulesUpdated || 0}
-                    </p>
-                  </div>
-                  {importResult.stats?.errors?.length > 0 && (
-                    <div>
-                      <p className="font-semibold text-red-600">⚠️ Errors:</p>
-                      <div className="ml-4 text-sm text-red-600">
-                        {importResult.stats.errors.map((error: string, index: number) => (
-                          <p key={index}>• {error}</p>
-                        ))}
+            {/* Results Preview */}
+            {parseResult && !importResult && (
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="text-sm font-medium">Pratinjau Impor Action Plan</h3>
+                <div className="rounded bg-gray-50 p-3 text-sm text-gray-600">
+                  <p>✅ Berhasil mem-parse {parseResult.length} item</p>
+                  <p>📁 Pekerjaan: {parseResult.filter(item => item.type === 'activity').length}</p>
+                  <p>
+                    📋 Kegiatan: {parseResult.filter(item => item.type === 'subActivity').length}
+                  </p>
+                  <p className="mt-2 text-xs">
+                    Siap untuk diimpor ke database. Klik tombol di bawah untuk melanjutkan.
+                  </p>
+                </div>
+
+                {/* Import Mode Selection */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium">Mode Impor</h4>
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        value="upsert"
+                        checked={importMode === 'upsert'}
+                        onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                        className="text-blue-600"
+                      />
+                      <div>
+                        <div className="text-sm font-medium">Upsert (Gabungkan)</div>
+                        <div className="text-xs text-gray-500">
+                          Perbarui data yang ada dan buat yang baru. Menjaga data yang sudah ada.
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        value="replace"
+                        checked={importMode === 'replace'}
+                        onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                        className="text-blue-600"
+                      />
+                      <div>
+                        <div className="text-sm font-medium">Ganti Semua</div>
+                        <div className="text-xs text-gray-500">
+                          Hapus semua data action plan yang ada dan ganti dengan data dari CSV. ⚠️
+                          Tidak dapat dikembalikan!
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Import to Database Button */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={importToDatabase}
+                    disabled={isImporting}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    {isImporting ? 'Mengimpor...' : 'Impor ke Database'}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setParseResult(null)}
+                    disabled={isImporting}
+                  >
+                    Edit CSV
+                  </Button>
                 </div>
               </div>
+            )}
 
-              <Button
-                onClick={() => {
-                  resetModal()
-                  onClose()
-                }}
-                className="w-full"
-              >
-                Tutup
-              </Button>
-            </div>
-          )}
+            {/* Import Success */}
+            {importResult && (
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="text-sm font-medium text-green-700">Impor Action Plan Berhasil!</h3>
+                <div className="rounded border border-green-200 bg-green-50 p-3 text-sm">
+                  <p className="font-medium text-green-800">✅ {importResult.message}</p>
+                  <div className="mt-2 space-y-1 text-green-700">
+                    <div>
+                      <p className="font-semibold">📁 Pekerjaan:</p>
+                      <p className="ml-4 text-sm">
+                        Ditambahkan: {importResult.stats?.activitiesCreated || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">📋 Kegiatan:</p>
+                      <p className="ml-4 text-sm">
+                        Ditambahkan: {importResult.stats?.subActivitiesCreated || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">📅 Action Plan Schedules:</p>
+                      <p className="ml-4 text-sm">
+                        Ditambahkan: {importResult.stats?.schedulesCreated || 0} | Diubah:{' '}
+                        {importResult.stats?.schedulesUpdated || 0}
+                      </p>
+                    </div>
+                    {importResult.stats?.errors?.length > 0 && (
+                      <div>
+                        <p className="font-semibold text-red-600">⚠️ Errors:</p>
+                        <div className="ml-4 text-sm text-red-600">
+                          {importResult.stats.errors.map((error: string, index: number) => (
+                            <p key={index}>• {error}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => {
+                    resetModal()
+                    onClose()
+                  }}
+                  className="w-full"
+                >
+                  Tutup
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
