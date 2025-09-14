@@ -27,6 +27,7 @@ type Project = {
   id: string
   tanggalKontrak?: string | null
   akhirKontrak?: string | null
+  tanggalSpmk?: string | null
   // other project fields...
 }
 
@@ -174,7 +175,7 @@ export function useProject(projectId: string) {
   return useQuery({
     queryKey: projectKeys.detail(projectId),
     queryFn: async () => {
-      const response = await apiClient.get<Project>(`/projects/${projectId}`)
+      const response = await apiClient.getProject(projectId)
       return response
     },
     enabled: !!projectId,

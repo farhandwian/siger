@@ -10,22 +10,31 @@ const CreateProjectSchema = z.object({
   pekerjaan: z.string().min(1, 'Pekerjaan is required'),
   jenisPaket: z.string().optional(),
   jenisPengadaan: z.string().optional(),
-  paguAnggaran: z.string().optional().refine((val) => {
-    if (!val || val === '') return true
-    return /^Rp[\d.,]+$/.test(val)
-  }, 'Format pagu anggaran tidak valid'),
-  nilaiKontrak: z.string().min(1, 'Nilai kontrak is required').refine((val) => {
-    return /^Rp[\d.,]+$/.test(val)
-  }, 'Format nilai kontrak tidak valid'),
+  paguAnggaran: z
+    .string()
+    .optional()
+    .refine(val => {
+      if (!val || val === '') return true
+      return /^Rp[\d.,]+$/.test(val)
+    }, 'Format pagu anggaran tidak valid'),
+  nilaiKontrak: z
+    .string()
+    .min(1, 'Nilai kontrak is required')
+    .refine(val => {
+      return /^Rp[\d.,]+$/.test(val)
+    }, 'Format nilai kontrak tidak valid'),
   nomorKontrak: z.string().min(1, 'Nomor kontrak is required'),
   tanggalKontrak: z.string().optional(),
   spmk: z.string().optional(),
   tanggalSpmk: z.string().optional(),
   akhirKontrak: z.string().optional(),
-  pembayaranTerakhir: z.string().optional().refine((val) => {
-    if (!val || val === '') return true
-    return /^Rp[\d.,]+$/.test(val)
-  }, 'Format pembayaran terakhir tidak valid'),
+  pembayaranTerakhir: z
+    .string()
+    .optional()
+    .refine(val => {
+      if (!val || val === '') return true
+      return /^Rp[\d.,]+$/.test(val)
+    }, 'Format pembayaran terakhir tidak valid'),
   lokasiProyek: z.string().optional(), // Add missing field
 })
 
@@ -65,6 +74,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
+          lokasiProyek: true,
           pekerjaan: true,
           penyediaJasa: true,
           nilaiKontrak: true,
@@ -83,7 +93,7 @@ export async function GET(request: NextRequest) {
       const transformed = {
         id: project.id,
         title: project.pekerjaan || '',
-        location: 'Sumatra', // You can add location field to schema later
+        location: project.lokasiProyek || '',
         budget: project.nilaiKontrak || '',
         status: getProjectStatus(project.fisikProgress || 0, project.fisikDeviasi || 0),
         progress: project.fisikProgress || 0,
