@@ -41,7 +41,7 @@ interface Project {
 
 interface CategoryItem {
   id: string
-  name: string
+  nama: string // Changed from 'name' to 'nama' to match Prisma schema
   kategoriKebutuhanId: string
 }
 
@@ -119,16 +119,22 @@ export function BuatAnalisaKebutuhanModal({
   const { data: categoriesData } = useQuery<{ success: boolean; data: Category[] }>({
     queryKey: ['categories'],
     queryFn: async () => {
+      console.log('🌐 DEBUG - Fetching categories from:', '/api/analisa-kebutuhan/categories')
       const response = await fetch('/api/analisa-kebutuhan/categories')
-      return response.json()
+      const result = await response.json()
+      console.log('📦 DEBUG - Categories API response:', result)
+      return result
     },
   })
 
   const { data: kebutuhanData } = useQuery<{ success: boolean; data: CategoryItem[] }>({
     queryKey: ['kebutuhan'],
     queryFn: async () => {
+      console.log('🌐 DEBUG - Fetching kebutuhan from:', '/api/analisa-kebutuhan/kebutuhan')
       const response = await fetch('/api/analisa-kebutuhan/kebutuhan')
-      return response.json()
+      const result = await response.json()
+      console.log('📦 DEBUG - Kebutuhan API response:', result)
+      return result
     },
   })
 
@@ -195,6 +201,17 @@ export function BuatAnalisaKebutuhanModal({
   const project = projectData?.data
   const categories = categoriesData?.data || []
   const kebutuhanItems = kebutuhanData?.data || []
+
+  // Debug: Log fetched data
+  console.log('📊 DEBUG - Fetched Data:', {
+    activitiesData,
+    categoriesData,
+    kebutuhanData,
+    categories: categories.length,
+    kebutuhanItems: kebutuhanItems.length,
+    categoriesDetail: categories,
+    kebutuhanItemsDetail: kebutuhanItems,
+  })
 
   // Find selected sub-activity
   const selectedSubActivity = activities
@@ -307,6 +324,12 @@ export function BuatAnalisaKebutuhanModal({
 
   // Get kebutuhan items for selected category
   const getKebutuhanForCategory = (categoryId: string) => {
+    console.log('🔍 DEBUG - getKebutuhanForCategory called with:', {
+      categoryId,
+      allKebutuhanItems: kebutuhanItems,
+      categoriesData: categories,
+      filteredItems: kebutuhanItems.filter(item => item.kategoriKebutuhanId === categoryId),
+    })
     return kebutuhanItems.filter(item => item.kategoriKebutuhanId === categoryId)
   }
 
@@ -330,7 +353,7 @@ export function BuatAnalisaKebutuhanModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[90vh] max-w-6xl gap-0 rounded-2xl p-0">
+      <DialogContent className="max-h-[90vh] max-w-[80vw] gap-0 rounded-2xl p-0">
         {/* Header */}
         <DialogHeader className="border-b border-gray-200 px-6 py-5">
           <div className="flex items-center justify-between">
@@ -484,9 +507,24 @@ export function BuatAnalisaKebutuhanModal({
                               <Select
                                 value={categoryId}
                                 onValueChange={value => {
+                                  console.log('🔧 DEBUG - Category selection changed:', {
+                                    newValue: value,
+                                    categoryEntries: categoryEntries.map(({ index }) => ({
+                                      index,
+                                      currentKategoriId: watch(
+                                        `entries.${index}.kategoriKebutuhanId`
+                                      ),
+                                    })),
+                                    allCategories: categories,
+                                  })
+
                                   const category = categories.find(cat => cat.id === value)
                                   // Update all entries in this category
                                   categoryEntries.forEach(({ index }) => {
+                                    console.log(
+                                      `📝 Setting entry ${index} kategoriKebutuhanId to:`,
+                                      value
+                                    )
                                     setValue(`entries.${index}.kategoriKebutuhanId`, value)
                                     setValue(`entries.${index}.categoryName`, category?.nama || '')
                                     setValue(`entries.${index}.kebutuhanId`, '')
@@ -523,23 +561,50 @@ export function BuatAnalisaKebutuhanModal({
                                       <Select
                                         value={watch(`entries.${index}.kebutuhanId`)}
                                         onValueChange={value => {
-                                          const item = getKebutuhanForCategory(categoryId).find(
-                                            item => item.id === value
+                                          const currentCategoryId = watch(
+                                            `entries.${index}.kategoriKebutuhanId`
                                           )
+                                          console.log('🛒 DEBUG - Kebutuhan selection:', {
+                                            entryIndex: index,
+                                            currentCategoryId,
+                                            newValue: value,
+                                            availableItems:
+                                              getKebutuhanForCategory(currentCategoryId),
+                                          })
+
+                                          const item = getKebutuhanForCategory(
+                                            currentCategoryId
+                                          ).find(item => item.id === value)
                                           setValue(`entries.${index}.kebutuhanId`, value)
-                                          setValue(`entries.${index}.itemName`, item?.name || '')
+                                          setValue(`entries.${index}.itemName`, item?.nama || '') // Changed from 'name' to 'nama'
                                         }}
-                                        disabled={!categoryId}
+                                        disabled={!watch(`entries.${index}.kategoriKebutuhanId`)}
                                       >
                                         <SelectTrigger className="bg-white">
                                           <SelectValue placeholder="Pilih Kebutuhan" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                          {getKebutuhanForCategory(categoryId).map(item => (
-                                            <SelectItem key={item.id} value={item.id}>
-                                              {item.name}
-                                            </SelectItem>
-                                          ))}
+                                          {(() => {
+                                            const currentCategoryId =
+                                              watch(`entries.${index}.kategoriKebutuhanId`) || ''
+                                            const availableItems =
+                                              getKebutuhanForCategory(currentCategoryId)
+
+                                            console.log(
+                                              `📋 DEBUG - Rendering SelectContent for entry ${index}:`,
+                                              {
+                                                currentCategoryId,
+                                                availableItems,
+                                                itemsCount: availableItems.length,
+                                              }
+                                            )
+
+                                            return availableItems.map(item => (
+                                              <SelectItem key={item.id} value={item.id}>
+                                                {item.nama}
+                                              </SelectItem>
+                                            ))
+                                          })()}
                                         </SelectContent>
                                       </Select>
                                     </div>
@@ -609,7 +674,9 @@ export function BuatAnalisaKebutuhanModal({
                                         {calculateHasil(
                                           watch(`entries.${index}.koefisien`) || 0
                                         ).toFixed(2)}{' '}
-                                        {getUnitForCategory(categoryId)}
+                                        {getUnitForCategory(
+                                          watch(`entries.${index}.kategoriKebutuhanId`) || ''
+                                        )}
                                       </div>
                                     </div>
 

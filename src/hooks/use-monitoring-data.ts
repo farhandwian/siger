@@ -47,7 +47,7 @@ export function useMonitoringData() {
       const result = await response.json()
       return result.data
     },
-    refetchInterval: 5000, // 5 seconds
+    // refetchInterval: 5000, // 5 seconds for real-time updates, ubah nanti
     staleTime: 0,
     gcTime: 30000, // Keep in cache for 30 seconds
   })
