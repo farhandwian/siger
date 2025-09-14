@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 
-// Validation schemas for action plan schedule import
-const ActionPlanScheduleDataSchema = z.object({
+// Validation schemas for action plan scheduleplan import
+const ActionPlanDataSchema = z.object({
   period: z.string(),
   month: z.number().min(1).max(12),
   year: z.number(),
@@ -20,7 +20,7 @@ const ActionPlanActivityImportSchema = z.object({
   volumeKontrak: z.number().optional(),
   bobotMC0: z.number().optional(),
   volumeMC0: z.number().optional(),
-  scheduleData: z.array(ActionPlanScheduleDataSchema),
+  scheduleplanData: z.array(ActionPlanDataSchema),
 })
 
 const ActionPlanImportRequestSchema = z.object({
@@ -81,16 +81,16 @@ export async function POST(request: NextRequest) {
     let stats = {
       activitiesCreated: 0,
       subActivitiesCreated: 0,
-      schedulesCreated: 0,
-      schedulesUpdated: 0,
+      scheduleplansCreated: 0,
+      scheduleplansUpdated: 0,
       errors: [] as string[],
     }
 
-    // If replace mode, delete existing action plan schedules first
+    // If replace mode, delete existing action plan scheduleplans first
     if (importMode === 'replace') {
-      console.log('🗑️ Replace mode: deleting existing action plan schedules...')
+      console.log('🗑️ Replace mode: deleting existing action plan scheduleplans...')
 
-      // Get all activities for this project to delete their action plan schedules
+      // Get all activities for this project to delete their action plan scheduleplans
       const projectActivities = await prisma.activity.findMany({
         where: { projectId },
         include: { subActivities: true },
@@ -99,14 +99,14 @@ export async function POST(request: NextRequest) {
       const activityIds = projectActivities.map(a => a.id)
       const subActivityIds = projectActivities.flatMap(a => a.subActivities?.map(sa => sa.id) || [])
 
-      // Delete existing action plan schedules
-      await prisma.actionPlanSchedule.deleteMany({
+      // Delete existing action plan scheduleplans
+      await prisma.actionPlan.deleteMany({
         where: {
           OR: [{ activityId: { in: activityIds } }, { subActivityId: { in: subActivityIds } }],
         },
       })
 
-      console.log('✅ Existing action plan schedules deleted')
+      console.log('✅ Existing action plan scheduleplans deleted')
     }
 
     // Create a transaction for all database operations
@@ -193,9 +193,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Third pass: create/update action plan schedules
+      // Third pass: create/update action plan scheduleplans
       for (const activityData of activities) {
-        if (activityData.scheduleData.length === 0) continue
+        if (activityData.scheduleplanData.length === 0) continue
 
         let targetActivityId: string | null = null
         let targetSubActivityId: string | null = null
@@ -211,55 +211,55 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Process schedule data
-        for (const scheduleData of activityData.scheduleData) {
+        // Process scheduleplan data
+        for (const scheduleplanData of activityData.scheduleplanData) {
           try {
-            // Use upsert logic for action plan schedules
+            // Use upsert logic for action plan scheduleplans
             const whereClause = targetSubActivityId
               ? {
                   subActivityId: targetSubActivityId,
-                  month: scheduleData.month,
-                  year: scheduleData.year,
-                  week: scheduleData.week,
+                  month: scheduleplanData.month,
+                  year: scheduleplanData.year,
+                  week: scheduleplanData.week,
                 }
               : {
                   activityId: targetActivityId,
-                  month: scheduleData.month,
-                  year: scheduleData.year,
-                  week: scheduleData.week,
+                  month: scheduleplanData.month,
+                  year: scheduleplanData.year,
+                  week: scheduleplanData.week,
                 }
 
-            const existingSchedule = await tx.actionPlanSchedule.findFirst({
+            const existingSchedulePlan = await tx.actionPlan.findFirst({
               where: whereClause,
             })
 
-            if (existingSchedule) {
-              // Update existing action plan schedule
-              await tx.actionPlanSchedule.update({
-                where: { id: existingSchedule.id },
+            if (existingSchedulePlan) {
+              // Update existing action plan scheduleplan
+              await tx.actionPlan.update({
+                where: { id: existingSchedulePlan.id },
                 data: {
-                  planPercentage: scheduleData.planPercentage,
-                  actualPercentage: scheduleData.actualPercentage,
+                  planPercentage: scheduleplanData.planPercentage,
+                  actualPercentage: scheduleplanData.actualPercentage,
                 },
               })
-              stats.schedulesUpdated++
+              stats.scheduleplansUpdated++
             } else {
-              // Create new action plan schedule
-              await tx.actionPlanSchedule.create({
+              // Create new action plan scheduleplan
+              await tx.actionPlan.create({
                 data: {
                   activityId: targetActivityId,
                   subActivityId: targetSubActivityId,
-                  month: scheduleData.month,
-                  year: scheduleData.year,
-                  week: scheduleData.week,
-                  planPercentage: scheduleData.planPercentage,
-                  actualPercentage: scheduleData.actualPercentage,
+                  month: scheduleplanData.month,
+                  year: scheduleplanData.year,
+                  week: scheduleplanData.week,
+                  planPercentage: scheduleplanData.planPercentage,
+                  actualPercentage: scheduleplanData.actualPercentage,
                 },
               })
-              stats.schedulesCreated++
+              stats.scheduleplansCreated++
             }
           } catch (error: any) {
-            const errorMsg = `Failed to process schedule for ${activityData.name} - ${scheduleData.period}: ${error.message}`
+            const errorMsg = `Failed to process scheduleplan for ${activityData.name} - ${scheduleplanData.period}: ${error.message}`
             stats.errors.push(errorMsg)
             console.error('❌', errorMsg)
           }

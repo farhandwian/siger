@@ -1,8 +1,8 @@
-// Schema for Action Plan Schedule data
+// Schema for Action Plan SchedulePlan data
 import { z } from 'zod'
 
-// Base schema for Action Plan Schedule
-export const ActionPlanScheduleSchema = z.object({
+// Base schema for Action Plan SchedulePlan
+export const ActionPlanSchema = z.object({
   id: z.string(),
   activityId: z.string().nullable(),
   subActivityId: z.string().nullable(),
@@ -16,7 +16,7 @@ export const ActionPlanScheduleSchema = z.object({
 })
 
 // Schema for API responses where dates come as ISO strings
-export const ActionPlanScheduleApiSchema = z.object({
+export const ActionPlanApiSchema = z.object({
   id: z.string(),
   activityId: z.string().nullable(),
   subActivityId: z.string().nullable(),
@@ -29,8 +29,8 @@ export const ActionPlanScheduleApiSchema = z.object({
   updatedAt: z.string().transform(str => new Date(str)),
 })
 
-// Schema for Action Plan Schedule with related data (includes activity/subActivity details)
-export const ActionPlanScheduleWithRelationsSchema = ActionPlanScheduleSchema.extend({
+// Schema for Action Plan SchedulePlan with related data (includes activity/subActivity details)
+export const ActionPlanWithRelationsSchema = ActionPlanSchema.extend({
   activity: z
     .object({
       id: z.string(),
@@ -48,7 +48,7 @@ export const ActionPlanScheduleWithRelationsSchema = ActionPlanScheduleSchema.ex
 })
 
 // Schema for API responses with relations where dates come as ISO strings
-export const ActionPlanScheduleWithRelationsApiSchema = ActionPlanScheduleApiSchema.extend({
+export const ActionPlanWithRelationsApiSchema = ActionPlanApiSchema.extend({
   activity: z
     .object({
       id: z.string(),
@@ -65,28 +65,28 @@ export const ActionPlanScheduleWithRelationsApiSchema = ActionPlanScheduleApiSch
     .nullable(),
 })
 
-export type ActionPlanSchedule = z.infer<typeof ActionPlanScheduleSchema>
-export type ActionPlanScheduleWithRelations = z.infer<typeof ActionPlanScheduleWithRelationsSchema>
-export type ActionPlanScheduleApi = z.infer<typeof ActionPlanScheduleApiSchema>
-export type ActionPlanScheduleWithRelationsApi = z.infer<
-  typeof ActionPlanScheduleWithRelationsApiSchema
+export type ActionPlan = z.infer<typeof ActionPlanSchema>
+export type ActionPlanWithRelations = z.infer<typeof ActionPlanWithRelationsSchema>
+export type ActionPlanApi = z.infer<typeof ActionPlanApiSchema>
+export type ActionPlanWithRelationsApi = z.infer<
+  typeof ActionPlanWithRelationsApiSchema
 >
 
-export const CreateActionPlanScheduleSchema = ActionPlanScheduleSchema.omit({
+export const CreateActionPlanSchema = ActionPlanSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 })
 
-export const UpdateActionPlanScheduleSchema = CreateActionPlanScheduleSchema.partial()
+export const UpdateActionPlanSchema = CreateActionPlanSchema.partial()
 
 // Schema for API responses
-export const ActionPlanScheduleResponseSchema = z.object({
+export const ActionPlanResponseSchema = z.object({
   success: z.literal(true),
-  data: z.array(ActionPlanScheduleWithRelationsApiSchema),
+  data: z.array(ActionPlanWithRelationsApiSchema),
 })
 
-export const SingleActionPlanScheduleResponseSchema = z.object({
+export const SingleActionPlanResponseSchema = z.object({
   success: z.literal(true),
-  data: ActionPlanScheduleWithRelationsApiSchema,
+  data: ActionPlanWithRelationsApiSchema,
 })

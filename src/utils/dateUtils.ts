@@ -15,46 +15,46 @@ export interface MonthData {
 }
 
 /**
- * Extract actual week periods from schedule data (not just date range)
+ * Extract actual week periods from scheduleplan data (not just date range)
  * This accounts for partial months and varying week counts per month
  */
-export function getActualPeriodsFromScheduleData(activities: any[]): MonthData[] | null {
+export function getActualPeriodsFromSchedulePlanData(activities: any[]): MonthData[] | null {
   if (!activities || activities.length === 0) {
     return null
   }
 
   const periodMap = new Map<string, { month: number; year: number; week: number; count: number }>()
 
-  // Collect all unique periods from schedule data
+  // Collect all unique periods from scheduleplan data
   activities.forEach((activity, activityIndex) => {
-    // Check main activity schedules
-    if (activity.schedules) {
-      activity.schedules.forEach((schedule: any, scheduleIndex: number) => {
-        if (schedule.month && schedule.year && schedule.week) {
-          const key = `${schedule.year}-${schedule.month.toString().padStart(2, '0')}-W${schedule.week}`
+    // Check main activity scheduleplans
+    if (activity.scheduleplans) {
+      activity.scheduleplans.forEach((scheduleplan: any, scheduleplanIndex: number) => {
+        if (scheduleplan.month && scheduleplan.year && scheduleplan.week) {
+          const key = `${scheduleplan.year}-${scheduleplan.month.toString().padStart(2, '0')}-W${scheduleplan.week}`
           const existing = periodMap.get(key)
           periodMap.set(key, {
-            month: schedule.month,
-            year: schedule.year,
-            week: schedule.week,
+            month: scheduleplan.month,
+            year: scheduleplan.year,
+            week: scheduleplan.week,
             count: (existing?.count || 0) + 1,
           })
         }
       })
     }
 
-    // Check sub-activity schedules
+    // Check sub-activity scheduleplans
     if (activity.subActivities) {
       activity.subActivities.forEach((subActivity: any, subIndex: number) => {
-        if (subActivity.schedules) {
-          subActivity.schedules.forEach((schedule: any, scheduleIndex: number) => {
-            if (schedule.month && schedule.year && schedule.week) {
-              const key = `${schedule.year}-${schedule.month.toString().padStart(2, '0')}-W${schedule.week}`
+        if (subActivity.scheduleplans) {
+          subActivity.scheduleplans.forEach((scheduleplan: any, scheduleplanIndex: number) => {
+            if (scheduleplan.month && scheduleplan.year && scheduleplan.week) {
+              const key = `${scheduleplan.year}-${scheduleplan.month.toString().padStart(2, '0')}-W${scheduleplan.week}`
               const existing = periodMap.get(key)
               periodMap.set(key, {
-                month: schedule.month,
-                year: schedule.year,
-                week: schedule.week,
+                month: scheduleplan.month,
+                year: scheduleplan.year,
+                week: scheduleplan.week,
                 count: (existing?.count || 0) + 1,
               })
             }
@@ -93,7 +93,7 @@ export function getActualPeriodsFromScheduleData(activities: any[]): MonthData[]
 
     const weeks: WeekRange[] = sortedWeeks.map(weekNum => {
       // Generate appropriate date range for the week
-      // This is approximate since we don't have exact dates from schedule data
+      // This is approximate since we don't have exact dates from scheduleplan data
       const weekStartDay = (weekNum - 1) * 7 + 1
       const weekEndDay = Math.min(
         weekStartDay + 6,
@@ -126,19 +126,19 @@ function getDaysInMonth(month: number, year: number): number {
 }
 
 /**
- * Generate months with weeks based on actual schedule data
+ * Generate months with weeks based on actual scheduleplan data
  * This respects partial months and varying week counts from imported data
  */
-export function generateMonthsFromScheduleData(activities?: any[]): MonthData[] {
-  // First try to get actual periods from schedule data
+export function generateMonthsFromSchedulePlanData(activities?: any[]): MonthData[] {
+  // First try to get actual periods from scheduleplan data
   if (activities) {
-    const actualPeriods = getActualPeriodsFromScheduleData(activities)
+    const actualPeriods = getActualPeriodsFromSchedulePlanData(activities)
     if (actualPeriods && actualPeriods.length > 0) {
       return actualPeriods
     }
   }
 
-  // Fallback: if no schedule data, generate default range
+  // Fallback: if no scheduleplan data, generate default range
 
   return generateMonthsFromRange(5, 2025, 9, 2025) // May to September 2025
 }
@@ -202,19 +202,19 @@ export function formatDateForDisplay(dateStr: string | null): string {
 }
 
 /**
- * Generate month and week data based on contract dates or schedule data
+ * Generate month and week data based on contract dates or scheduleplan data
  * Uses Monday-Sunday week rules with Thursday ownership for cross-month weeks
  */
 export function generateMonthsFromContract(
   tanggalKontrak: string | null,
   akhirKontrak: string | null,
-  activities?: any[] // Optional activities parameter to check for schedule data
+  activities?: any[] // Optional activities parameter to check for scheduleplan data
 ): MonthData[] {
-  // First, try to generate from actual schedule data
+  // First, try to generate from actual scheduleplan data
   if (activities && activities.length > 0) {
-    const scheduleMonths = generateMonthsFromScheduleData(activities)
-    if (scheduleMonths && scheduleMonths.length > 0) {
-      return scheduleMonths
+    const scheduleplanMonths = generateMonthsFromSchedulePlanData(activities)
+    if (scheduleplanMonths && scheduleplanMonths.length > 0) {
+      return scheduleplanMonths
     }
   }
 

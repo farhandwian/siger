@@ -1,19 +1,19 @@
-// Copy of useActionPlanSchedules.ts with correct hooks
+// Copy of useActionPlans.ts with correct hooks
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import {
-  ActionPlanSchedule,
-  ActionPlanScheduleWithRelations,
-  ActionPlanScheduleResponseSchema,
-  SingleActionPlanScheduleResponseSchema,
-  CreateActionPlanScheduleSchema,
-  UpdateActionPlanScheduleSchema,
-} from '@/lib/schemas/action-plan-schedule'
+  ActionPlan,
+  ActionPlanWithRelations,
+  ActionPlanResponseSchema,
+  SingleActionPlanResponseSchema,
+  CreateActionPlanSchema,
+  UpdateActionPlanSchema,
+} from '@/lib/schemas/action-plan-scheduleplan'
 
-// Query parameters for filtering action plan schedules
-interface ActionPlanScheduleFilters {
+// Query parameters for filtering action plan scheduleplans
+interface ActionPlanFilters {
   projectId?: string
   activityId?: string
   subActivityId?: string
@@ -21,10 +21,10 @@ interface ActionPlanScheduleFilters {
   month?: number
 }
 
-// Hook to fetch action plan schedules with optional filters
-export function useActionPlanSchedules(filters: ActionPlanScheduleFilters = {}) {
+// Hook to fetch action plan scheduleplans with optional filters
+export function useActionPlans(filters: ActionPlanFilters = {}) {
   return useQuery({
-    queryKey: ['action-plan-schedules', filters],
+    queryKey: ['action-plan-scheduleplans', filters],
     queryFn: async () => {
       const params = new URLSearchParams()
 
@@ -34,7 +34,7 @@ export function useActionPlanSchedules(filters: ActionPlanScheduleFilters = {}) 
         }
       })
 
-      const url = `/api/action-plan-schedules${params.toString() ? `?${params.toString()}` : ''}`
+      const url = `/api/action-plan-scheduleplans${params.toString() ? `?${params.toString()}` : ''}`
       const response = await fetch(url, { cache: 'no-store' })
 
       if (!response.ok) {
@@ -45,7 +45,7 @@ export function useActionPlanSchedules(filters: ActionPlanScheduleFilters = {}) 
       const contentType = response.headers.get('content-type')
       if (contentType && contentType.includes('application/json')) {
         const json = await response.json()
-        const result = ActionPlanScheduleResponseSchema.parse(json).data
+        const result = ActionPlanResponseSchema.parse(json).data
         return result
       } else {
         throw new Error('Expected JSON response but received empty content')
@@ -56,12 +56,12 @@ export function useActionPlanSchedules(filters: ActionPlanScheduleFilters = {}) 
   })
 }
 
-// Hook to fetch a single action plan schedule by ID
-export function useActionPlanSchedule(id: string) {
+// Hook to fetch a single action plan scheduleplan by ID
+export function useActionPlan(id: string) {
   return useQuery({
-    queryKey: ['action-plan-schedule', id],
+    queryKey: ['action-plan-scheduleplan', id],
     queryFn: async () => {
-      const response = await fetch(`/api/action-plan-schedules/${id}`, { cache: 'no-store' })
+      const response = await fetch(`/api/action-plan-scheduleplans/${id}`, { cache: 'no-store' })
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
@@ -71,7 +71,7 @@ export function useActionPlanSchedule(id: string) {
       const contentType = response.headers.get('content-type')
       if (contentType && contentType.includes('application/json')) {
         const json = await response.json()
-        return SingleActionPlanScheduleResponseSchema.parse(json).data
+        return SingleActionPlanResponseSchema.parse(json).data
       } else {
         throw new Error('Expected JSON response but received empty content')
       }
@@ -82,15 +82,15 @@ export function useActionPlanSchedule(id: string) {
   })
 }
 
-// Hook to create a new action plan schedule
-export function useCreateActionPlanSchedule() {
+// Hook to create a new action plan scheduleplan
+export function useCreateActionPlan() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: z.infer<typeof CreateActionPlanScheduleSchema>) => {
-      const validatedData = CreateActionPlanScheduleSchema.parse(data)
+    mutationFn: async (data: z.infer<typeof CreateActionPlanSchema>) => {
+      const validatedData = CreateActionPlanSchema.parse(data)
 
-      const response = await fetch('/api/action-plan-schedules', {
+      const response = await fetch('/api/action-plan-scheduleplans', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,23 +105,23 @@ export function useCreateActionPlanSchedule() {
           try {
             const errorData = await response.json()
 
-            // Handle the specific case of duplicate schedule creation
+            // Handle the specific case of duplicate scheduleplan creation
             if (response.status === 409 && errorData.error?.includes('already exists')) {
-              throw new Error('DUPLICATE_SCHEDULE')
+              throw new Error('DUPLICATE_SCHEDULEPLAN')
             }
 
             throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
           } catch (jsonError) {
             // If JSON parsing fails, check for specific status codes
             if (response.status === 409) {
-              throw new Error('DUPLICATE_SCHEDULE')
+              throw new Error('DUPLICATE_SCHEDULEPLAN')
             }
             throw new Error(`HTTP ${response.status}: ${response.statusText}`)
           }
         } else {
           // Handle non-JSON error responses
           if (response.status === 409) {
-            throw new Error('DUPLICATE_SCHEDULE')
+            throw new Error('DUPLICATE_SCHEDULEPLAN')
           }
           throw new Error(`HTTP ${response.status}: ${response.statusText}`)
         }
@@ -131,37 +131,37 @@ export function useCreateActionPlanSchedule() {
       const contentType = response.headers.get('content-type')
       if (contentType && contentType.includes('application/json')) {
         const json = await response.json()
-        return SingleActionPlanScheduleResponseSchema.parse(json).data
+        return SingleActionPlanResponseSchema.parse(json).data
       } else {
         // If no JSON content, this is unexpected for a create operation
         throw new Error('Expected JSON response but received empty content')
       }
     },
-    onSuccess: newSchedule => {
-      // Invalidate and refetch action plan schedules queries
-      queryClient.invalidateQueries({ queryKey: ['action-plan-schedules'] })
+    onSuccess: newSchedulePlan => {
+      // Invalidate and refetch action plan scheduleplans queries
+      queryClient.invalidateQueries({ queryKey: ['action-plan-scheduleplans'] })
 
-      // Add the new schedule to the cache
-      queryClient.setQueryData(['action-plan-schedule', newSchedule.id], newSchedule)
+      // Add the new scheduleplan to the cache
+      queryClient.setQueryData(['action-plan-scheduleplan', newSchedulePlan.id], newSchedulePlan)
 
-      // If the schedule belongs to a specific project, invalidate project-specific queries
-      if (newSchedule.activity?.projectId) {
+      // If the scheduleplan belongs to a specific project, invalidate project-specific queries
+      if (newSchedulePlan.activity?.projectId) {
         queryClient.invalidateQueries({
-          queryKey: ['action-plan-schedules', { projectId: newSchedule.activity.projectId }],
+          queryKey: ['action-plan-scheduleplans', { projectId: newSchedulePlan.activity.projectId }],
         })
       }
 
-      if (newSchedule.subActivity?.activityId) {
+      if (newSchedulePlan.subActivity?.activityId) {
         queryClient.invalidateQueries({
-          queryKey: ['action-plan-schedules', { activityId: newSchedule.subActivity.activityId }],
+          queryKey: ['action-plan-scheduleplans', { activityId: newSchedulePlan.subActivity.activityId }],
         })
       }
     },
   })
 }
 
-// Hook to update an existing action plan schedule
-export function useUpdateActionPlanSchedule() {
+// Hook to update an existing action plan scheduleplan
+export function useUpdateActionPlan() {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -170,11 +170,11 @@ export function useUpdateActionPlanSchedule() {
       data,
     }: {
       id: string
-      data: z.infer<typeof UpdateActionPlanScheduleSchema>
+      data: z.infer<typeof UpdateActionPlanSchema>
     }) => {
-      const validatedData = UpdateActionPlanScheduleSchema.parse(data)
+      const validatedData = UpdateActionPlanSchema.parse(data)
 
-      const response = await fetch(`/api/action-plan-schedules/${id}`, {
+      const response = await fetch(`/api/action-plan-scheduleplans/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -202,32 +202,32 @@ export function useUpdateActionPlanSchedule() {
       const contentType = response.headers.get('content-type')
       if (contentType && contentType.includes('application/json')) {
         const json = await response.json()
-        return SingleActionPlanScheduleResponseSchema.parse(json).data
+        return SingleActionPlanResponseSchema.parse(json).data
       } else {
         // If no JSON content, return a minimal response structure
         // This handles cases where the server returns 204 No Content or similar
         throw new Error('Expected JSON response but received empty content')
       }
     },
-    onSuccess: updatedSchedule => {
+    onSuccess: updatedSchedulePlan => {
       // Update the cache with the new data
-      queryClient.setQueryData(['action-plan-schedule', updatedSchedule.id], updatedSchedule)
+      queryClient.setQueryData(['action-plan-scheduleplan', updatedSchedulePlan.id], updatedSchedulePlan)
 
-      // Invalidate and refetch action plan schedules queries
-      queryClient.invalidateQueries({ queryKey: ['action-plan-schedules'] })
+      // Invalidate and refetch action plan scheduleplans queries
+      queryClient.invalidateQueries({ queryKey: ['action-plan-scheduleplans'] })
 
-      // If the schedule belongs to a specific project, invalidate project-specific queries
-      if (updatedSchedule.activity?.projectId) {
+      // If the scheduleplan belongs to a specific project, invalidate project-specific queries
+      if (updatedSchedulePlan.activity?.projectId) {
         queryClient.invalidateQueries({
-          queryKey: ['action-plan-schedules', { projectId: updatedSchedule.activity.projectId }],
+          queryKey: ['action-plan-scheduleplans', { projectId: updatedSchedulePlan.activity.projectId }],
         })
       }
 
-      if (updatedSchedule.subActivity?.activityId) {
+      if (updatedSchedulePlan.subActivity?.activityId) {
         queryClient.invalidateQueries({
           queryKey: [
-            'action-plan-schedules',
-            { activityId: updatedSchedule.subActivity.activityId },
+            'action-plan-scheduleplans',
+            { activityId: updatedSchedulePlan.subActivity.activityId },
           ],
         })
       }
@@ -235,21 +235,21 @@ export function useUpdateActionPlanSchedule() {
   })
 }
 
-// Hook to upsert (create or update) action plan schedule - handles duplicates gracefully
-export function useUpsertActionPlanSchedule() {
+// Hook to upsert (create or update) action plan scheduleplan - handles duplicates gracefully
+export function useUpsertActionPlan() {
   const queryClient = useQueryClient()
-  const createMutation = useCreateActionPlanSchedule()
-  const updateMutation = useUpdateActionPlanSchedule()
+  const createMutation = useCreateActionPlan()
+  const updateMutation = useUpdateActionPlan()
 
   return useMutation({
     mutationFn: async (
-      data: z.infer<typeof CreateActionPlanScheduleSchema> & { existingId?: string }
+      data: z.infer<typeof CreateActionPlanSchema> & { existingId?: string }
     ) => {
       const { existingId, ...createData } = data
 
       if (existingId) {
-        // Update existing schedule - only pass the fields that can be updated
-        const updateData: z.infer<typeof UpdateActionPlanScheduleSchema> = {}
+        // Update existing scheduleplan - only pass the fields that can be updated
+        const updateData: z.infer<typeof UpdateActionPlanSchema> = {}
         if (createData.planPercentage !== undefined) {
           updateData.planPercentage = createData.planPercentage
         }
@@ -262,19 +262,19 @@ export function useUpsertActionPlanSchedule() {
           data: updateData,
         })
       } else {
-        // Try to create new schedule
-        console.log('Upsert: Attempting to create new schedule', createData)
+        // Try to create new scheduleplan
+        console.log('Upsert: Attempting to create new scheduleplan', createData)
         try {
           const result = await createMutation.mutateAsync(createData)
-          console.log('Upsert: Successfully created new schedule', result)
+          console.log('Upsert: Successfully created new scheduleplan', result)
           return result
         } catch (error) {
           console.log('Upsert: Create failed with error:', error)
-          if (error instanceof Error && error.message === 'DUPLICATE_SCHEDULE') {
-            // If duplicate, fetch the existing schedule and update it instead
-            console.log('Upsert: Duplicate detected, fetching existing schedule to update...')
+          if (error instanceof Error && error.message === 'DUPLICATE_SCHEDULEPLAN') {
+            // If duplicate, fetch the existing scheduleplan and update it instead
+            console.log('Upsert: Duplicate detected, fetching existing scheduleplan to update...')
 
-            // Directly fetch the conflicting schedule from the API
+            // Directly fetch the conflicting scheduleplan from the API
             const queryParams = new URLSearchParams()
             if (createData.activityId) queryParams.append('activityId', createData.activityId)
             if (createData.subActivityId)
@@ -283,29 +283,29 @@ export function useUpsertActionPlanSchedule() {
             if (createData.month) queryParams.append('month', createData.month.toString())
 
             console.log('Upsert: Fetching with params:', queryParams.toString())
-            const response = await fetch(`/api/action-plan-schedules?${queryParams.toString()}`, {
+            const response = await fetch(`/api/action-plan-scheduleplans?${queryParams.toString()}`, {
               cache: 'no-store',
             })
 
             if (!response.ok) {
-              console.error('Upsert: Failed to fetch existing schedules', response.status)
+              console.error('Upsert: Failed to fetch existing scheduleplans', response.status)
               throw error
             }
 
             // Check if response has JSON content before parsing
             const contentType = response.headers.get('content-type')
-            let schedules: any[] = []
+            let scheduleplans: any[] = []
             if (contentType && contentType.includes('application/json')) {
               const result = await response.json()
-              schedules = result.data || []
-              console.log('Upsert: Fetched schedules:', schedules.length)
+              scheduleplans = result.data || []
+              console.log('Upsert: Fetched scheduleplans:', scheduleplans.length)
             } else {
               console.error('Upsert: Expected JSON response but received empty content')
               throw error
             }
 
-            // Find the exact conflicting schedule
-            const existingSchedule = schedules.find((s: any) => {
+            // Find the exact conflicting scheduleplan
+            const existingSchedulePlan = scheduleplans.find((s: any) => {
               if (createData.subActivityId) {
                 return (
                   s.subActivityId === createData.subActivityId &&
@@ -323,10 +323,10 @@ export function useUpsertActionPlanSchedule() {
               }
             })
 
-            if (existingSchedule) {
-              // Update the existing schedule with new data
-              console.log('Upsert: Found existing schedule, updating:', existingSchedule.id)
-              const updateData: z.infer<typeof UpdateActionPlanScheduleSchema> = {}
+            if (existingSchedulePlan) {
+              // Update the existing scheduleplan with new data
+              console.log('Upsert: Found existing scheduleplan, updating:', existingSchedulePlan.id)
+              const updateData: z.infer<typeof UpdateActionPlanSchema> = {}
               if (createData.planPercentage !== undefined) {
                 updateData.planPercentage = createData.planPercentage
               }
@@ -335,14 +335,14 @@ export function useUpsertActionPlanSchedule() {
               }
 
               const updateResult = await updateMutation.mutateAsync({
-                id: existingSchedule.id,
+                id: existingSchedulePlan.id,
                 data: updateData,
               })
-              console.log('Upsert: Successfully updated existing schedule', updateResult)
+              console.log('Upsert: Successfully updated existing scheduleplan', updateResult)
               return updateResult
             } else {
               // If we can't find it even after fresh fetch, throw the original error
-              console.error('Upsert: Could not find existing schedule after duplicate detection')
+              console.error('Upsert: Could not find existing scheduleplan after duplicate detection')
               throw error
             }
           }
@@ -354,13 +354,13 @@ export function useUpsertActionPlanSchedule() {
   })
 }
 
-// Hook to delete an action plan schedule
-export function useDeleteActionPlanSchedule() {
+// Hook to delete an action plan scheduleplan
+export function useDeleteActionPlan() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/action-plan-schedules/${id}`, {
+      const response = await fetch(`/api/action-plan-scheduleplans/${id}`, {
         method: 'DELETE',
       })
 
@@ -389,26 +389,26 @@ export function useDeleteActionPlanSchedule() {
       }
     },
     onSuccess: (_, deletedId) => {
-      // Invalidate and refetch action plan schedules queries
-      queryClient.invalidateQueries({ queryKey: ['action-plan-schedules'] })
+      // Invalidate and refetch action plan scheduleplans queries
+      queryClient.invalidateQueries({ queryKey: ['action-plan-scheduleplans'] })
 
-      // Remove the deleted schedule from the cache
-      queryClient.removeQueries({ queryKey: ['action-plan-schedule', deletedId] })
+      // Remove the deleted scheduleplan from the cache
+      queryClient.removeQueries({ queryKey: ['action-plan-scheduleplan', deletedId] })
     },
   })
 }
 
-// Hook to bulk create action plan schedules
-export function useBulkCreateActionPlanSchedules() {
+// Hook to bulk create action plan scheduleplans
+export function useBulkCreateActionPlans() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (schedules: z.infer<typeof CreateActionPlanScheduleSchema>[]) => {
+    mutationFn: async (scheduleplans: z.infer<typeof CreateActionPlanSchema>[]) => {
       const results = await Promise.allSettled(
-        schedules.map(async schedule => {
-          const validatedData = CreateActionPlanScheduleSchema.parse(schedule)
+        scheduleplans.map(async scheduleplan => {
+          const validatedData = CreateActionPlanSchema.parse(scheduleplan)
 
-          const response = await fetch('/api/action-plan-schedules', {
+          const response = await fetch('/api/action-plan-scheduleplans', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -437,15 +437,15 @@ export function useBulkCreateActionPlanSchedules() {
           const contentType = response.headers.get('content-type')
           if (contentType && contentType.includes('application/json')) {
             const json = await response.json()
-            return SingleActionPlanScheduleResponseSchema.parse(json).data
+            return SingleActionPlanResponseSchema.parse(json).data
           } else {
             throw new Error('Expected JSON response but received empty content')
           }
         })
       )
 
-      const successful: ActionPlanScheduleWithRelations[] = []
-      const failed: { schedule: z.infer<typeof CreateActionPlanScheduleSchema>; error: string }[] =
+      const successful: ActionPlanWithRelations[] = []
+      const failed: { scheduleplan: z.infer<typeof CreateActionPlanSchema>; error: string }[] =
         []
 
       results.forEach((result, index) => {
@@ -453,7 +453,7 @@ export function useBulkCreateActionPlanSchedules() {
           successful.push(result.value)
         } else {
           failed.push({
-            schedule: schedules[index],
+            scheduleplan: scheduleplans[index],
             error: result.reason.message || 'Unknown error',
           })
         }
@@ -462,8 +462,8 @@ export function useBulkCreateActionPlanSchedules() {
       return { successful, failed }
     },
     onSuccess: () => {
-      // Invalidate all action plan schedules queries to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ['action-plan-schedules'] })
+      // Invalidate all action plan scheduleplans queries to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ['action-plan-scheduleplans'] })
     },
   })
 }

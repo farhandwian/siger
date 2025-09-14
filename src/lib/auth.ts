@@ -11,7 +11,7 @@ export type UserRole =
   | 'ADMIN_BALAI'    // Balai-level administrator  
   | 'DIRJEN_SDA'     // Director General (read-only oversight)
   | 'KABALAI'        // Head of Balai (read-only)
-  | 'SATKER'         // Budget execution unit (department-level CRUD)
+  | 'SATKER'         // Budget execution unit (satker-level CRUD)
   | 'PPK'            // Project commitment officer (assigned projects CRUD)
   | 'VENDOR'         // Contractor/vendor (progress updates only)
 
@@ -29,7 +29,7 @@ declare module 'next-auth' {
       name: string
       role: UserRole
       balaiId?: string
-      departmentId?: string
+      satkerId?: string
       projectIds?: string[]
     }
   }
@@ -40,7 +40,7 @@ declare module 'next-auth' {
     name: string
     role: UserRole
     balaiId?: string
-    departmentId?: string
+    satkerId?: string
     projectIds?: string[]
   }
 }
@@ -50,7 +50,7 @@ declare module 'next-auth/jwt' {
     userId: string
     role: UserRole
     balaiId?: string
-    departmentId?: string
+    satkerId?: string
     projectIds?: string[]
   }
 }
@@ -95,7 +95,7 @@ export const authConfig: NextAuthConfig = {
               role: true,
               isActive: true,
               balaiId: true,
-              departmentId: true,
+              satkerId: true,
               // Include project assignments for PPK and VENDOR users
               projectAssignments: {
                 where: { isActive: true },
@@ -136,7 +136,7 @@ export const authConfig: NextAuthConfig = {
             name: user.name,
             role: user.role as UserRole,
             balaiId: user.balaiId || undefined,
-            departmentId: user.departmentId || undefined,
+            satkerId: user.satkerId || undefined,
             projectIds: projectIds.length > 0 ? projectIds : undefined,
           }
         } catch (error) {
@@ -160,7 +160,7 @@ export const authConfig: NextAuthConfig = {
         token.userId = user.id
         token.role = user.role
         token.balaiId = user.balaiId
-        token.departmentId = user.departmentId
+        token.satkerId = user.satkerId
         token.projectIds = user.projectIds
       }
       return token
@@ -171,7 +171,7 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.userId as string
         session.user.role = token.role as UserRole
         session.user.balaiId = token.balaiId as string | undefined
-        session.user.departmentId = token.departmentId as string | undefined
+        session.user.satkerId = token.satkerId as string | undefined
         session.user.projectIds = token.projectIds as string[] | undefined
       }
       return session

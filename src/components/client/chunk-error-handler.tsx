@@ -14,7 +14,7 @@ export default function ChunkErrorHandler() {
         msg.includes('ChunkLoadError') ||
         name === 'ChunkLoadError'
       ) {
-        // schedule a short delay to allow any logging to complete
+        // scheduleplan a short delay to allow any logging to complete
         setTimeout(async () => {
           try {
             // unregister all service workers (helps when SW serves stale assets)

@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useProject } from '@/hooks/useActivityQueries'
-import { useActionPlanSchedules } from '@/hooks/useActionPlanSchedules'
+import { useActionPlans } from '@/hooks/useActionPlans'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 
 export interface ActionPlanSCurveDataPoint {
@@ -16,16 +16,16 @@ export interface ActionPlanSCurveDataPoint {
 }
 
 /**
- * Hook to provide S-curve data based on action plan schedules
+ * Hook to provide S-curve data based on action plan scheduleplans
  */
 export function useActionPlanSCurveData(projectId: string) {
-  const { data: actionPlanSchedules, isLoading: schedulesLoading } = useActionPlanSchedules({
+  const { data: actionPlans, isLoading: scheduleplansLoading } = useActionPlans({
     projectId,
   })
   const { data: project, isLoading: projectLoading } = useProject(projectId)
 
   const sCurveData = useMemo(() => {
-    if (!actionPlanSchedules || !project || schedulesLoading || projectLoading) {
+    if (!actionPlans || !project || scheduleplansLoading || projectLoading) {
       return []
     }
 
@@ -47,21 +47,21 @@ export function useActionPlanSCurveData(projectId: string) {
       const sequentialWeek = sequentialWeeks[weekIndex]
       const weekNumber = weekIndex + 1
 
-      // Find all action plan schedules for this week
-      const weekSchedules = actionPlanSchedules.filter(
-        schedule =>
-          schedule.month === sequentialWeek.month &&
-          schedule.week === sequentialWeek.weekInMonth &&
-          schedule.year === currentYear
+      // Find all action plan scheduleplans for this week
+      const weekSchedulePlans = actionPlans.filter(
+        scheduleplan =>
+          scheduleplan.month === sequentialWeek.month &&
+          scheduleplan.week === sequentialWeek.weekInMonth &&
+          scheduleplan.year === currentYear
       )
 
       // Calculate total plan and actual for this week
-      const weekPlan = weekSchedules.reduce(
-        (sum, schedule) => sum + (schedule.planPercentage || 0),
+      const weekPlan = weekSchedulePlans.reduce(
+        (sum, scheduleplan) => sum + (scheduleplan.planPercentage || 0),
         0
       )
-      const weekActual = weekSchedules.reduce(
-        (sum, schedule) => sum + (schedule.actualPercentage || 0),
+      const weekActual = weekSchedulePlans.reduce(
+        (sum, scheduleplan) => sum + (scheduleplan.actualPercentage || 0),
         0
       )
 
@@ -83,11 +83,11 @@ export function useActionPlanSCurveData(projectId: string) {
     }
 
     return sCurvePoints
-  }, [actionPlanSchedules, project, schedulesLoading, projectLoading])
+  }, [actionPlans, project, scheduleplansLoading, projectLoading])
 
   return {
     data: sCurveData,
-    isLoading: schedulesLoading || projectLoading,
+    isLoading: scheduleplansLoading || projectLoading,
     isEmpty: sCurveData.length === 0,
   }
 }

@@ -1,13 +1,13 @@
-// API route for Action Plan Schedules - GET and POST
+// API route for Action Plan SchedulePlans - GET and POST
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import {
-  CreateActionPlanScheduleSchema,
-  ActionPlanScheduleResponseSchema,
-} from '@/lib/schemas/action-plan-schedule'
+  CreateActionPlanSchema,
+  ActionPlanResponseSchema,
+} from '@/lib/schemas/action-plan-scheduleplan'
 
-// Query parameters schema for filtering action plan schedules
+// Query parameters schema for filtering action plan scheduleplans
 const QuerySchema = z.object({
   projectId: z.string().optional(),
   activityId: z.string().optional(),
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       ]
     }
 
-    const actionPlanSchedules = await prisma.actionPlanSchedule.findMany({
+    const actionPlans = await prisma.actionPlan.findMany({
       where,
       include: {
         activity: {
@@ -81,10 +81,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: actionPlanSchedules,
+      data: actionPlans,
     })
   } catch (error) {
-    console.error('Error fetching action plan schedules:', error)
+    console.error('Error fetching action plan scheduleplans:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -99,11 +99,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('=== ACTION PLAN SCHEDULES POST API ===')
+    console.log('=== ACTION PLAN SCHEDULEPLANS POST API ===')
     const body = await req.json()
     console.log('Request body:', body)
 
-    const data = CreateActionPlanScheduleSchema.parse(body)
+    const data = CreateActionPlanSchema.parse(body)
     console.log('Parsed data:', data)
 
     // Validate that either activityId or subActivityId is provided, but not both
@@ -123,8 +123,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if a schedule already exists for this activity/subactivity and time period
-    const existingSchedule = await prisma.actionPlanSchedule.findFirst({
+    // Check if a scheduleplan already exists for this activity/subactivity and time period
+    const existingSchedulePlan = await prisma.actionPlan.findFirst({
       where: {
         ...(data.activityId
           ? { activityId: data.activityId }
@@ -135,14 +135,14 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    if (existingSchedule) {
+    if (existingSchedulePlan) {
       return NextResponse.json(
-        { success: false, error: 'Action plan schedule already exists for this time period' },
+        { success: false, error: 'Action plan scheduleplan already exists for this time period' },
         { status: 409 }
       )
     }
 
-    const actionPlanSchedule = await prisma.actionPlanSchedule.create({
+    const actionPlan = await prisma.actionPlan.create({
       data,
       include: {
         activity: {
@@ -165,12 +165,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        data: actionPlanSchedule,
+        data: actionPlan,
       },
       { status: 201 }
     )
   } catch (error) {
-    console.error('Error creating action plan schedule:', error)
+    console.error('Error creating action plan scheduleplan:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

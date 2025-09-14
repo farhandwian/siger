@@ -13,11 +13,11 @@ export interface RealMonitoringData {
   lastUpdated: string
   weeksPassed: number
   totalWeeks: number
-  scheduleProgress: number // Percentage of timeline passed
+  scheduleplanProgress: number // Percentage of timeline passed
 }
 
 /**
- * Hook to provide real monitoring metrics based on actual activity schedules
+ * Hook to provide real monitoring metrics based on actual activity scheduleplans
  */
 export function useRealMonitoringData(projectId: string) {
   const { data: activities, isLoading: activitiesLoading } = useActivities(projectId)
@@ -46,7 +46,7 @@ export function useRealMonitoringData(projectId: string) {
         lastUpdated: new Date().toLocaleString('id-ID'),
         weeksPassed: 0,
         totalWeeks: 0,
-        scheduleProgress: 0,
+        scheduleplanProgress: 0,
       }
     }
 
@@ -66,7 +66,7 @@ export function useRealMonitoringData(projectId: string) {
     // (not a percentage of the planned value)
     const deviationPercentage = deviation
 
-    // Calculate schedule progress (how much of the timeline has passed)
+    // Calculate scheduleplan progress (how much of the timeline has passed)
     const totalWeeks = cumulativeData.length
     const currentWeek = new Date()
     const contractStart = project.tanggalKontrak ? new Date(project.tanggalKontrak) : new Date()
@@ -74,7 +74,7 @@ export function useRealMonitoringData(projectId: string) {
       0,
       Math.floor((currentWeek.getTime() - contractStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
     )
-    const scheduleProgress = totalWeeks > 0 ? Math.min((weeksPassed / totalWeeks) * 100, 100) : 0
+    const scheduleplanProgress = totalWeeks > 0 ? Math.min((weeksPassed / totalWeeks) * 100, 100) : 0
 
     return {
       current: currentProgress,
@@ -84,7 +84,7 @@ export function useRealMonitoringData(projectId: string) {
       lastUpdated: new Date().toLocaleString('id-ID'),
       weeksPassed: Math.min(weeksPassed, totalWeeks),
       totalWeeks,
-      scheduleProgress: Number(scheduleProgress.toFixed(1)),
+      scheduleplanProgress: Number(scheduleplanProgress.toFixed(1)),
     }
   }, [activities, project, activitiesLoading, projectLoading])
 

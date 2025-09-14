@@ -147,8 +147,8 @@ export function useCreateSubActivity(projectId: string, activityId: string) {
   })
 }
 
-// Update schedule mutation
-export function useUpdateSchedule() {
+// Update scheduleplan mutation
+export function useUpdateSchedulePlan() {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -161,7 +161,7 @@ export function useUpdateSchedule() {
       planPercentage?: number | null
       actualPercentage?: number | null
     }) => {
-      const response = await apiClient.put<{ data: any }>('/activities/schedule', data)
+      const response = await apiClient.put<{ data: any }>('/activities/scheduleplan', data)
       return response.data
     },
     onSuccess: () => {

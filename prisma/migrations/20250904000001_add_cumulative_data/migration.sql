@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "cumulative_schedules" (
+CREATE TABLE "cumulative_scheduleplans" (
     "id" TEXT NOT NULL,
     "project_id" TEXT NOT NULL,
     "month" INTEGER NOT NULL,
@@ -11,11 +11,11 @@ CREATE TABLE "cumulative_schedules" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "cumulative_schedules_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "cumulative_scheduleplans_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "cumulative_schedules_project_id_month_year_week_key" ON "cumulative_schedules"("project_id", "month", "year", "week");
+CREATE UNIQUE INDEX "cumulative_scheduleplans_project_id_month_year_week_key" ON "cumulative_scheduleplans"("project_id", "month", "year", "week");
 
 -- AddForeignKey
-ALTER TABLE "cumulative_schedules" ADD CONSTRAINT "cumulative_schedules_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "cumulative_scheduleplans" ADD CONSTRAINT "cumulative_scheduleplans_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;

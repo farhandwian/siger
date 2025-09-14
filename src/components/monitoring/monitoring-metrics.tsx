@@ -113,10 +113,10 @@ export function MonitoringMetrics({ projectId = '1' }: { projectId?: string }) {
         trend={data.deviation > 0 ? 'up' : data.deviation < 0 ? 'down' : 'neutral'}
       />
 
-      {/* Schedule Progress Card */}
+      {/* SchedulePlan Progress Card */}
       <MetricCard
         title="Progres Waktu Kontrak"
-        value={`${data.scheduleProgress.toFixed(1)}%`}
+        value={`${data.scheduleplanProgress.toFixed(1)}%`}
         subtitle={`Minggu ${data.weeksPassed} dari ${data.totalWeeks}`}
         showProgress={true}
         current={data.weeksPassed}

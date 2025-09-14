@@ -82,7 +82,7 @@ const roleDescriptions = {
   [UserRole.ADMIN_BALAI]: 'Balai-level administrator with regional oversight',
   [UserRole.DIRJEN_SDA]: 'Director General with read-only oversight access',
   [UserRole.KABALAI]: 'Head of Balai with read-only regional access',
-  [UserRole.SATKER]: 'Budget execution unit with department-level CRUD access',
+  [UserRole.SATKER]: 'Budget execution unit with satker-level CRUD access',
   [UserRole.PPK]: 'Project commitment officer with assigned project management',
   [UserRole.VENDOR]: 'Contractor/vendor with progress update access only',
 }

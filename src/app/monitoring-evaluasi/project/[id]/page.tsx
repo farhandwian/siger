@@ -3,11 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
-import { ActivityScheduleTableNew } from '@/components/activities/ActivityScheduleTableNew'
+import { SchedulePlanTableNew } from '@/components/activities/SchedulePlanTableNew'
 import { CSVImportModal } from '@/components/activities/csv-import-modal'
-import { ActionPlanScheduleTable } from '@/components/action-plan/ActionPlanScheduleTable'
-import { ActionPlanScheduleTableNew } from '@/components/action-plan/ActionPlanScheduleTableNew'
+import { ActionPlanTableNew } from '@/components/action-plan/ActionPlanTableNew'
 import { ActionPlanCSVImportModal } from '@/components/action-plan/ActionPlanCSVImportModal'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
@@ -264,8 +262,8 @@ export default function ProjectDetailPage() {
 
   const refreshActivities = () => {
     queryClient.invalidateQueries({ queryKey: ['activities', 'list', projectId] })
-    queryClient.invalidateQueries({ queryKey: ['action-plan-schedules'] })
-    queryClient.invalidateQueries({ queryKey: ['schedules'] })
+    queryClient.invalidateQueries({ queryKey: ['action-plan-scheduleplans'] })
+    queryClient.invalidateQueries({ queryKey: ['scheduleplans'] })
   }
 
   const tabs = [
@@ -693,10 +691,10 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
 
-                  {/* Activity Schedule Table */}
+                  {/* Activity SchedulePlan Table */}
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-gray-900">Activity Schedule</h2>
+                      <h2 className="text-sm font-medium text-gray-900">Activity SchedulePlan</h2>
                       <Button
                         onClick={() => setCsvImportModalOpen(true)}
                         variant="outline"
@@ -707,7 +705,7 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActivityScheduleTableNew projectId={projectId} />
+                    <SchedulePlanTableNew projectId={projectId} />
                   </div>
                 </div>
               )}
@@ -776,10 +774,10 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
 
-                  {/* Action Plan Schedule Table */}
+                  {/* Action Plan SchedulePlan Table */}
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-gray-900">Action Plan Schedule</h2>
+                      <h2 className="text-sm font-medium text-gray-900">Action Plan SchedulePlan</h2>
                       <Button
                         onClick={() => setActionPlanCsvImportModalOpen(true)}
                         variant="outline"
@@ -790,7 +788,7 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActionPlanScheduleTableNew projectId={projectId} />
+                    <ActionPlanTableNew projectId={projectId} />
                   </div>
                 </div>
               )}

@@ -120,7 +120,7 @@ export class ApiClient {
       userContext?: {
         role: string
         balaiId: string | null
-        departmentId: string | null
+        satkerId: string | null
         assignedProjectsCount: number
       }
     }>(`/projects?${searchParams}`)

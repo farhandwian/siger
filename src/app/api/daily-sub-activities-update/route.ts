@@ -38,7 +38,7 @@ function getWeekInfo(dateString: string) {
  * - Progress Date
  *
  * If a record already exists with the same combination, it will be updated.
- * The weekly activity schedule is also recalculated to reflect the changes.
+ * The weekly activity scheduleplan is also recalculated to reflect the changes.
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -81,7 +81,7 @@ export async function PUT(request: NextRequest) {
     // Get week information from the date
     const weekInfo = getWeekInfo(tanggal_progres)
 
-    // Start transaction to update both daily activity and weekly schedule
+    // Start transaction to update both daily activity and weekly scheduleplan
     // This ensures data consistency between daily records and weekly aggregates
     const result = await prisma.$transaction(async tx => {
       // 1. Get the existing daily activity record (if any) to track previous progress
@@ -123,8 +123,8 @@ export async function PUT(request: NextRequest) {
         },
       })
 
-      // 3. Get existing weekly schedule
-      const existingSchedule = await tx.activitySchedule.findUnique({
+      // 3. Get existing weekly scheduleplan
+      const existingSchedulePlan = await tx.scheduleplan.findUnique({
         where: {
           subActivityId_month_year_week: {
             subActivityId: sub_activities_id,
@@ -136,7 +136,7 @@ export async function PUT(request: NextRequest) {
       })
 
       // 4. Calculate new weekly progress properly handling updates
-      const currentWeeklyProgress = existingSchedule?.actualPercentage || 0
+      const currentWeeklyProgress = existingSchedulePlan?.actualPercentage || 0
       let newWeeklyProgress: number
 
       if (existingDailyActivity) {
@@ -151,8 +151,8 @@ export async function PUT(request: NextRequest) {
         newWeeklyProgress = Math.min(currentWeeklyProgress + progres_realisasi_per_hari, 100)
       }
 
-      // 5. Update or create the weekly schedule record
-      await tx.activitySchedule.upsert({
+      // 5. Update or create the weekly scheduleplan record
+      await tx.scheduleplan.upsert({
         where: {
           subActivityId_month_year_week: {
             subActivityId: sub_activities_id,

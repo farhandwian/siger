@@ -1,8 +1,8 @@
-// API route for individual Action Plan Schedule operations - GET, PUT, DELETE
+// API route for individual Action Plan SchedulePlan operations - GET, PUT, DELETE
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { UpdateActionPlanScheduleSchema } from '@/lib/schemas/action-plan-schedule'
+import { UpdateActionPlanSchema } from '@/lib/schemas/action-plan-scheduleplan'
 
 const ParamsSchema = z.object({
   id: z.string(),
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     const params = await context.params
     const { id } = ParamsSchema.parse(params)
 
-    const actionPlanSchedule = await prisma.actionPlanSchedule.findUnique({
+    const actionPlan = await prisma.actionPlan.findUnique({
       where: { id },
       include: {
         activity: {
@@ -33,23 +33,23 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       },
     })
 
-    if (!actionPlanSchedule) {
+    if (!actionPlan) {
       return NextResponse.json(
-        { success: false, error: 'Action plan schedule not found' },
+        { success: false, error: 'Action plan scheduleplan not found' },
         { status: 404 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      data: actionPlanSchedule,
+      data: actionPlan,
     })
   } catch (error) {
-    console.error('Error fetching action plan schedule:', error)
+    console.error('Error fetching action plan scheduleplan:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Invalid schedule ID', details: error.errors },
+        { success: false, error: 'Invalid scheduleplan ID', details: error.errors },
         { status: 400 }
       )
     }
@@ -63,39 +63,39 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     const params = await context.params
     const { id } = ParamsSchema.parse(params)
     const body = await req.json()
-    const data = UpdateActionPlanScheduleSchema.parse(body)
+    const data = UpdateActionPlanSchema.parse(body)
 
-    // Check if the action plan schedule exists
-    const existingSchedule = await prisma.actionPlanSchedule.findUnique({
+    // Check if the action plan scheduleplan exists
+    const existingSchedulePlan = await prisma.actionPlan.findUnique({
       where: { id },
     })
 
-    if (!existingSchedule) {
+    if (!existingSchedulePlan) {
       return NextResponse.json(
-        { success: false, error: 'Action plan schedule not found' },
+        { success: false, error: 'Action plan scheduleplan not found' },
         { status: 404 }
       )
     }
 
     // Use upsert with composite unique keys to handle conflicts gracefully
     // This will update existing records with the same activity/subactivity + time combination
-    const updatedSchedule = await prisma.actionPlanSchedule.upsert({
+    const updatedSchedulePlan = await prisma.actionPlan.upsert({
       where: {
-        ...(existingSchedule.activityId
+        ...(existingSchedulePlan.activityId
           ? {
               activityId_month_year_week: {
-                activityId: existingSchedule.activityId,
-                month: data.month || existingSchedule.month,
-                year: data.year || existingSchedule.year,
-                week: data.week || existingSchedule.week,
+                activityId: existingSchedulePlan.activityId,
+                month: data.month || existingSchedulePlan.month,
+                year: data.year || existingSchedulePlan.year,
+                week: data.week || existingSchedulePlan.week,
               },
             }
           : {
               subActivityId_month_year_week: {
-                subActivityId: existingSchedule.subActivityId!,
-                month: data.month || existingSchedule.month,
-                year: data.year || existingSchedule.year,
-                week: data.week || existingSchedule.week,
+                subActivityId: existingSchedulePlan.subActivityId!,
+                month: data.month || existingSchedulePlan.month,
+                year: data.year || existingSchedulePlan.year,
+                week: data.week || existingSchedulePlan.week,
               },
             }),
       },
@@ -108,14 +108,14 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         ...(data.week !== undefined && { week: data.week }),
       },
       create: {
-        month: data.month || existingSchedule.month,
-        year: data.year || existingSchedule.year,
-        week: data.week || existingSchedule.week,
+        month: data.month || existingSchedulePlan.month,
+        year: data.year || existingSchedulePlan.year,
+        week: data.week || existingSchedulePlan.week,
         planPercentage: data.planPercentage || 0,
         actualPercentage: data.actualPercentage || 0,
-        ...(existingSchedule.activityId
-          ? { activityId: existingSchedule.activityId }
-          : { subActivityId: existingSchedule.subActivityId }),
+        ...(existingSchedulePlan.activityId
+          ? { activityId: existingSchedulePlan.activityId }
+          : { subActivityId: existingSchedulePlan.subActivityId }),
       },
       include: {
         activity: {
@@ -137,10 +137,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
     return NextResponse.json({
       success: true,
-      data: updatedSchedule,
+      data: updatedSchedulePlan,
     })
   } catch (error) {
-    console.error('Error updating action plan schedule:', error)
+    console.error('Error updating action plan scheduleplan:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -158,32 +158,32 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
     const params = await context.params
     const { id } = ParamsSchema.parse(params)
 
-    // Check if the action plan schedule exists
-    const existingSchedule = await prisma.actionPlanSchedule.findUnique({
+    // Check if the action plan scheduleplan exists
+    const existingSchedulePlan = await prisma.actionPlan.findUnique({
       where: { id },
     })
 
-    if (!existingSchedule) {
+    if (!existingSchedulePlan) {
       return NextResponse.json(
-        { success: false, error: 'Action plan schedule not found' },
+        { success: false, error: 'Action plan scheduleplan not found' },
         { status: 404 }
       )
     }
 
-    await prisma.actionPlanSchedule.delete({
+    await prisma.actionPlan.delete({
       where: { id },
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Action plan schedule deleted successfully',
+      message: 'Action plan scheduleplan deleted successfully',
     })
   } catch (error) {
-    console.error('Error deleting action plan schedule:', error)
+    console.error('Error deleting action plan scheduleplan:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Invalid schedule ID', details: error.errors },
+        { success: false, error: 'Invalid scheduleplan ID', details: error.errors },
         { status: 400 }
       )
     }

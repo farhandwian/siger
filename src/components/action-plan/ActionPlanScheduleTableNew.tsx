@@ -1,37 +1,37 @@
 'use client'
 
 import React from 'react'
-import { UnifiedScheduleTable } from '@/components/shared/UnifiedScheduleTable'
+import { UnifiedSchedulePlanTable } from '@/components/shared/UnifiedSchedulePlanTable'
 import { useActivities, useProject } from '@/hooks/useActivityQueries'
-import { useActionPlanSchedules, useUpsertActionPlanSchedule } from '@/hooks/useActionPlanSchedules'
+import { useActionPlans, useUpsertActionPlan } from '@/hooks/useActionPlans'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 
 /**
- * Action Plan Schedule Table Component
+ * Action Plan SchedulePlan Table Component
  *
- * This component wraps the UnifiedScheduleTable to handle Action Plan Schedules specifically.
- * It provides the necessary data fetching and mutation functions for action plan schedules.
+ * This component wraps the UnifiedSchedulePlanTable to handle Action Plan SchedulePlans specifically.
+ * It provides the necessary data fetching and mutation functions for action plan scheduleplans.
  */
-interface ActionPlanScheduleTableProps {
+interface ActionPlanTableProps {
   projectId: string
 }
 
-export function ActionPlanScheduleTableNew({ projectId }: ActionPlanScheduleTableProps) {
+export function ActionPlanTableNew({ projectId }: ActionPlanTableProps) {
   const { data: activities, isLoading } = useActivities(projectId)
   const { data: project } = useProject(projectId)
-  const { data: actionPlanSchedules } = useActionPlanSchedules({ projectId })
-  const upsertActionPlanMutation = useUpsertActionPlanSchedule()
+  const { data: actionPlans } = useActionPlans({ projectId })
+  const upsertActionPlanMutation = useUpsertActionPlan()
 
   const currentYear = new Date().getFullYear()
 
-  // Function to get action plan schedule value
-  const getScheduleValue = (
+  // Function to get action plan scheduleplan value
+  const getSchedulePlanValue = (
     activityId: string,
     subActivityId: string | null,
     weekNumber: number,
     type: 'plan' | 'actual'
   ): number | null => {
-    if (!actionPlanSchedules || !project?.tanggalSpmk) return null
+    if (!actionPlans || !project?.tanggalSpmk) return null
 
     // Generate sequential weeks to get the correct mapping
     const sequentialWeeks = generateSequentialWeeks(project.tanggalSpmk, 20)
@@ -42,8 +42,8 @@ export function ActionPlanScheduleTableNew({ projectId }: ActionPlanScheduleTabl
     const month = sequentialWeek.month
     const week = sequentialWeek.weekInMonth
 
-    // Find the schedule for this activity/subActivity and week
-    const schedule = actionPlanSchedules.find(s => {
+    // Find the scheduleplan for this activity/subActivity and week
+    const scheduleplan = actionPlans.find(s => {
       if (subActivityId) {
         return (
           s.subActivityId === subActivityId &&
@@ -61,14 +61,14 @@ export function ActionPlanScheduleTableNew({ projectId }: ActionPlanScheduleTabl
       }
     })
 
-    if (!schedule) return null
+    if (!scheduleplan) return null
 
-    const value = type === 'plan' ? schedule.planPercentage : schedule.actualPercentage
+    const value = type === 'plan' ? scheduleplan.planPercentage : scheduleplan.actualPercentage
     return value !== undefined ? value : null
   }
 
-  // Function to save action plan schedule values
-  const saveScheduleValue = async (
+  // Function to save action plan scheduleplan values
+  const saveSchedulePlanValue = async (
     activityId: string,
     subActivityId: string | null,
     weekNumber: number,
@@ -115,7 +115,7 @@ export function ActionPlanScheduleTableNew({ projectId }: ActionPlanScheduleTabl
     week: number,
     type: 'plan' | 'actual' | 'deviation'
   ): number => {
-    if (!activities || !actionPlanSchedules || !project?.tanggalSpmk) return 0
+    if (!activities || !actionPlans || !project?.tanggalSpmk) return 0
 
     // Generate sequential weeks to determine the cutoff point
     const sequentialWeeks = generateSequentialWeeks(project.tanggalSpmk, 20)
@@ -135,7 +135,7 @@ export function ActionPlanScheduleTableNew({ projectId }: ActionPlanScheduleTabl
       const weekTotal = activities.reduce((total, activity) => {
         const subActivityTotal =
           activity.subActivities?.reduce((subTotal, subActivity) => {
-            const value = getScheduleValue(
+            const value = getSchedulePlanValue(
               activity.id,
               subActivity.id,
               currentWeek.weekNumber,
@@ -159,14 +159,14 @@ export function ActionPlanScheduleTableNew({ projectId }: ActionPlanScheduleTabl
   }
 
   return (
-    <UnifiedScheduleTable
+    <UnifiedSchedulePlanTable
       projectId={projectId}
-      title="Action Plan Schedule"
+      title="Action Plan SchedulePlan"
       activities={activities}
       project={project}
       isLoading={isLoading}
-      getScheduleValue={getScheduleValue}
-      saveScheduleValue={saveScheduleValue}
+      getSchedulePlanValue={getSchedulePlanValue}
+      saveSchedulePlanValue={saveSchedulePlanValue}
       getCumulativeValueForWeek={getCumulativeValueForWeek}
       showAddButton={true}
       showTitle={false} // Don't show title as it's handled by parent component

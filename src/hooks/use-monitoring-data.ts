@@ -25,7 +25,7 @@ export interface MonitoringData {
     description: string
     color: 'green' | 'blue' | 'red'
   }>
-  scheduleData: Array<{
+  scheduleplanData: Array<{
     id: string
     name: string
     level: number

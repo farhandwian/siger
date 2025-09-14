@@ -1,29 +1,29 @@
 'use client'
 
 import React from 'react'
-import { UnifiedScheduleTable } from '@/components/shared/UnifiedScheduleTable'
-import { useActivities, useUpdateSchedule, useProject } from '@/hooks/useActivityQueries'
+import { UnifiedSchedulePlanTable } from '@/components/shared/UnifiedSchedulePlanTable'
+import { useActivities, useUpdateSchedulePlan, useProject } from '@/hooks/useActivityQueries'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 
 /**
- * Activity Schedule Table Component
+ * Activity SchedulePlan Table Component
  *
- * This component wraps the UnifiedScheduleTable to handle Activity Schedules specifically.
- * It provides the necessary data fetching and mutation functions for activity schedules.
+ * This component wraps the UnifiedSchedulePlanTable to handle Activity SchedulePlans specifically.
+ * It provides the necessary data fetching and mutation functions for activity scheduleplans.
  */
-interface ActivityScheduleTableProps {
+interface SchedulePlanTableProps {
   projectId: string
 }
 
-export function ActivityScheduleTableNew({ projectId }: ActivityScheduleTableProps) {
+export function SchedulePlanTableNew({ projectId }: SchedulePlanTableProps) {
   const { data: activities, isLoading } = useActivities(projectId)
   const { data: project } = useProject(projectId)
-  const updateScheduleMutation = useUpdateSchedule()
+  const updateSchedulePlanMutation = useUpdateSchedulePlan()
 
   const currentYear = new Date().getFullYear()
 
-  // Function to get schedule value from activity data
-  const getScheduleValue = (
+  // Function to get scheduleplan value from activity data
+  const getSchedulePlanValue = (
     activityId: string,
     subActivityId: string | null,
     weekNumber: number,
@@ -45,22 +45,22 @@ export function ActivityScheduleTableNew({ projectId }: ActivityScheduleTablePro
 
     if (subActivityId) {
       const subActivity = activity.subActivities?.find(sa => sa.id === subActivityId)
-      const schedule = subActivity?.schedules?.find(
+      const scheduleplan = subActivity?.scheduleplans?.find(
         s => s.month === month && s.week === week && s.year === currentYear
       )
-      const value = type === 'plan' ? schedule?.planPercentage : schedule?.actualPercentage
+      const value = type === 'plan' ? scheduleplan?.planPercentage : scheduleplan?.actualPercentage
       return value !== undefined ? value : null
     } else {
-      const schedule = activity.schedules?.find(
+      const scheduleplan = activity.scheduleplans?.find(
         s => s.month === month && s.week === week && s.year === currentYear
       )
-      const value = type === 'plan' ? schedule?.planPercentage : schedule?.actualPercentage
+      const value = type === 'plan' ? scheduleplan?.planPercentage : scheduleplan?.actualPercentage
       return value !== undefined ? value : null
     }
   }
 
-  // Function to save schedule values
-  const saveScheduleValue = async (
+  // Function to save scheduleplan values
+  const saveSchedulePlanValue = async (
     activityId: string,
     subActivityId: string | null,
     weekNumber: number,
@@ -82,7 +82,7 @@ export function ActivityScheduleTableNew({ projectId }: ActivityScheduleTablePro
     const month = sequentialWeek.month
     const week = sequentialWeek.weekInMonth
 
-    await updateScheduleMutation.mutateAsync({
+    await updateSchedulePlanMutation.mutateAsync({
       activityId: subActivityId ? undefined : activityId,
       subActivityId: subActivityId || undefined,
       month,
@@ -118,7 +118,7 @@ export function ActivityScheduleTableNew({ projectId }: ActivityScheduleTablePro
       const weekTotal = activities.reduce((total, activity) => {
         const subActivityTotal =
           activity.subActivities?.reduce((subTotal, subActivity) => {
-            const value = getScheduleValue(
+            const value = getSchedulePlanValue(
               activity.id,
               subActivity.id,
               currentWeek.weekNumber,
@@ -142,14 +142,14 @@ export function ActivityScheduleTableNew({ projectId }: ActivityScheduleTablePro
   }
 
   return (
-    <UnifiedScheduleTable
+    <UnifiedSchedulePlanTable
       projectId={projectId}
-      title="Activity Schedule"
+      title="Activity SchedulePlan"
       activities={activities}
       project={project}
       isLoading={isLoading}
-      getScheduleValue={getScheduleValue}
-      saveScheduleValue={saveScheduleValue}
+      getSchedulePlanValue={getSchedulePlanValue}
+      saveSchedulePlanValue={saveSchedulePlanValue}
       getCumulativeValueForWeek={getCumulativeValueForWeek}
       showAddButton={true}
       showTitle={false} // Don't show title as it's handled by parent component

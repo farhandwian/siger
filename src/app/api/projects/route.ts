@@ -20,7 +20,7 @@ function getUserFromHeaders(request: NextRequest) {
     email: request.headers.get('x-user-email'),
     role: request.headers.get('x-user-role') as UserRole,
     balaiId: request.headers.get('x-user-balai-id'),
-    departmentId: request.headers.get('x-user-department-id'),
+    satkerId: request.headers.get('x-user-satker-id'),
     projectIds: request.headers.get('x-user-project-ids') 
       ? JSON.parse(request.headers.get('x-user-project-ids')!) 
       : undefined
@@ -52,16 +52,16 @@ function buildProjectWhereClause(user: ReturnType<typeof getUserFromHeaders>, se
     case 'KABALAI':
       // Can see projects in their balai
       if (user.balaiId) {
-        where.department = {
+        where.satker = {
           balaiId: user.balaiId
         }
       }
       break
 
     case 'SATKER':
-      // Can see projects in their department
-      if (user.departmentId) {
-        where.departmentId = user.departmentId
+      // Can see projects in their satker
+      if (user.satkerId) {
+        where.satkerId = user.satkerId
       }
       break
 
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
       prisma.project.findMany({
         where,
         include: {
-          department: {
+          satker: {
             include: {
               balai: {
                 select: {
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
         userContext: {
           role: user.role,
           balaiId: user.balaiId,
-          departmentId: user.departmentId,
+          satkerId: user.satkerId,
           assignedProjectsCount: user.projectIds?.length || 0
         }
       }

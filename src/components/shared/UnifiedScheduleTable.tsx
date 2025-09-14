@@ -10,12 +10,12 @@ import { generateSequentialWeeks, type SequentialWeek } from '@/utils/dateUtils'
 import type { Activity } from '@/lib/schemas'
 
 /**
- * Generic Schedule Table Component
+ * Generic SchedulePlan Table Component
  *
- * This component can be used for both Activity Schedules and Action Plan Schedules
+ * This component can be used for both Activity SchedulePlans and Action Plan SchedulePlans
  * by passing different data sources and mutation functions as props.
  */
-interface UnifiedScheduleTableProps {
+interface UnifiedSchedulePlanTableProps {
   projectId: string
   title?: string
   activities?: Activity[]
@@ -23,14 +23,14 @@ interface UnifiedScheduleTableProps {
   isLoading?: boolean
 
   // Functions to handle data retrieval and updates
-  getScheduleValue: (
+  getSchedulePlanValue: (
     activityId: string,
     subActivityId: string | null,
     weekNumber: number,
     type: 'plan' | 'actual'
   ) => number | null
 
-  saveScheduleValue: (
+  saveSchedulePlanValue: (
     activityId: string,
     subActivityId: string | null,
     weekNumber: number,
@@ -52,20 +52,20 @@ interface UnifiedScheduleTableProps {
   weekCount?: number
 }
 
-export function UnifiedScheduleTable({
+export function UnifiedSchedulePlanTable({
   projectId,
-  title = 'Schedule Table',
+  title = 'SchedulePlan Table',
   activities,
   project,
   isLoading = false,
-  getScheduleValue,
-  saveScheduleValue,
+  getSchedulePlanValue,
+  saveSchedulePlanValue,
   getCumulativeValueForWeek,
   showAddButton = true,
   showTitle = true,
   showCumulativeSection = true,
   weekCount = 20,
-}: UnifiedScheduleTableProps) {
+}: UnifiedSchedulePlanTableProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
@@ -241,11 +241,11 @@ export function UnifiedScheduleTable({
     }
 
     try {
-      await saveScheduleValue(activityId, subActivityId, weekNumber, type, value)
+      await saveSchedulePlanValue(activityId, subActivityId, weekNumber, type, value)
       setEditingCell(null)
       setEditValue('')
     } catch (error) {
-      console.error('Error updating schedule:', error)
+      console.error('Error updating scheduleplan:', error)
     }
   }
 
@@ -397,7 +397,7 @@ export function UnifiedScheduleTable({
                         </td>
                         {sequentialWeeks.map((week, weekIndex) => {
                           const cellId = `${subActivity.id}-W${week.weekNumber}-plan`
-                          const value = getScheduleValue(
+                          const value = getSchedulePlanValue(
                             activity.id,
                             subActivity.id,
                             week.weekNumber,
@@ -461,7 +461,7 @@ export function UnifiedScheduleTable({
                         {/* Name and weight cells are merged with rowspan above */}
                         {sequentialWeeks.map((week, weekIndex) => {
                           const cellId = `${subActivity.id}-W${week.weekNumber}-actual`
-                          const value = getScheduleValue(
+                          const value = getSchedulePlanValue(
                             activity.id,
                             subActivity.id,
                             week.weekNumber,
@@ -542,7 +542,7 @@ export function UnifiedScheduleTable({
                         activities?.reduce((total, activity) => {
                           const subActivityTotal =
                             activity.subActivities?.reduce((subTotal, subActivity) => {
-                              const value = getScheduleValue(
+                              const value = getSchedulePlanValue(
                                 activity.id,
                                 subActivity.id,
                                 week.weekNumber,
@@ -574,7 +574,7 @@ export function UnifiedScheduleTable({
                         activities?.reduce((total, activity) => {
                           const subActivityTotal =
                             activity.subActivities?.reduce((subTotal, subActivity) => {
-                              const value = getScheduleValue(
+                              const value = getSchedulePlanValue(
                                 activity.id,
                                 subActivity.id,
                                 week.weekNumber,

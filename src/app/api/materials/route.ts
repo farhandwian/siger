@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const materials = await prisma.material.findMany({
       where: { projectId },
       include: {
-        schedules: {
+        scheduleplans: {
           orderBy: { date: 'asc' },
         },
       },
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const material = await prisma.material.create({
       data: validatedData,
       include: {
-        schedules: true,
+        scheduleplans: true,
       },
     })
 
@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: validatedData,
       include: {
-        schedules: {
+        scheduleplans: {
           orderBy: { date: 'asc' },
         },
       },

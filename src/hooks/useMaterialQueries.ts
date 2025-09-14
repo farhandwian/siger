@@ -13,10 +13,10 @@ export interface Material {
   waktuSelesai?: number
   createdAt: string
   updatedAt: string
-  schedules: MaterialSchedule[]
+  scheduleplans: MaterialSchedulePlan[]
 }
 
-export interface MaterialSchedule {
+export interface MaterialSchedulePlan {
   id: string
   materialId: string
   date: string
@@ -48,7 +48,7 @@ export interface UpdateMaterialData {
   waktuSelesai?: number
 }
 
-export interface UpdateScheduleData {
+export interface UpdateSchedulePlanData {
   realisasi?: number
   realisasiKumulatif?: number
 }
@@ -109,16 +109,16 @@ export const useDeleteMaterial = () => {
   })
 }
 
-export const useUpdateMaterialSchedule = () => {
+export const useUpdateMaterialSchedulePlan = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateScheduleData }) => {
-      const response = await apiClient.put<{ schedule: MaterialSchedule }>(
-        `/materials/schedules?id=${id}`,
+    mutationFn: async ({ id, data }: { id: string; data: UpdateSchedulePlanData }) => {
+      const response = await apiClient.put<{ scheduleplan: MaterialSchedulePlan }>(
+        `/materials/scheduleplans?id=${id}`,
         data
       )
-      return response.schedule
+      return response.scheduleplan
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['materials'] })
@@ -126,7 +126,7 @@ export const useUpdateMaterialSchedule = () => {
   })
 }
 
-export const useCreateMaterialSchedule = () => {
+export const useCreateMaterialSchedulePlan = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -138,11 +138,11 @@ export const useCreateMaterialSchedule = () => {
       realisasi?: number
       realisasiKumulatif?: number
     }) => {
-      const response = await apiClient.post<{ schedule: MaterialSchedule }>(
-        `/materials/schedules`,
+      const response = await apiClient.post<{ scheduleplan: MaterialSchedulePlan }>(
+        `/materials/scheduleplans`,
         data
       )
-      return response.schedule
+      return response.scheduleplan
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['materials'] })

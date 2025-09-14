@@ -47,9 +47,9 @@ async function seedOrganizationalData() {
     console.log(`✅ Created/Updated Balai: ${balai.name}`)
   }
 
-  // Create Departments (SATKER) under each Balai
-  const departmentData = [
-    // BWS Sumatera I Departments
+  // Create Satkers (SATKER) under each Balai
+  const satkerData = [
+    // BWS Sumatera I Satkers
     { 
       id: 'dept-001', 
       name: 'SATKER Pembangunan SDA Sumatera I',
@@ -64,7 +64,7 @@ async function seedOrganizationalData() {
       description: 'Satuan Kerja Operasi & Pemeliharaan SDA BWS Sumatera I',
       balaiId: 'balai-001'
     },
-    // BWS Sumatera II Departments
+    // BWS Sumatera II Satkers
     {
       id: 'dept-003',
       name: 'SATKER Pembangunan SDA Sumatera II',
@@ -79,7 +79,7 @@ async function seedOrganizationalData() {
       description: 'Satuan Kerja Operasi & Pemeliharaan SDA BWS Sumatera II', 
       balaiId: 'balai-002'
     },
-    // BWS Jawa I Departments  
+    // BWS Jawa I Satkers  
     {
       id: 'dept-005',
       name: 'SATKER Pembangunan SDA Jawa I',
@@ -94,7 +94,7 @@ async function seedOrganizationalData() {
       description: 'Satuan Kerja Operasi & Pemeliharaan SDA BWS Jawa I',
       balaiId: 'balai-003'
     },
-    // BWS Jawa II Departments
+    // BWS Jawa II Satkers
     {
       id: 'dept-007',
       name: 'SATKER Pembangunan SDA Jawa II', 
@@ -111,8 +111,8 @@ async function seedOrganizationalData() {
     }
   ]
 
-  for (const dept of departmentData) {
-    await prisma.department.upsert({
+  for (const dept of satkerData) {
+    await prisma.satker.upsert({
       where: { 
         balaiId_code: {
           balaiId: dept.balaiId,
@@ -122,7 +122,7 @@ async function seedOrganizationalData() {
       update: dept,
       create: dept
     })
-    console.log(`✅ Created/Updated Department: ${dept.name}`)
+    console.log(`✅ Created/Updated Satker: ${dept.name}`)
   }
 }
 
@@ -207,7 +207,7 @@ async function seedUserRoles() {
       password: hashedPassword,
       role: UserRole.SATKER,
       isActive: true,
-      departmentId: 'dept-001'
+      satkerId: 'dept-001'
     },
     {
       id: 'user-satker-op-s1',
@@ -217,7 +217,7 @@ async function seedUserRoles() {
       password: hashedPassword,
       role: UserRole.SATKER,
       isActive: true,
-      departmentId: 'dept-002'
+      satkerId: 'dept-002'
     },
     {
       id: 'user-satker-psda-j1',
@@ -227,7 +227,7 @@ async function seedUserRoles() {
       password: hashedPassword,
       role: UserRole.SATKER, 
       isActive: true,
-      departmentId: 'dept-005'
+      satkerId: 'dept-005'
     },
 
     // PPK Users (Project Commitment Officers) 

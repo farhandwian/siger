@@ -5,13 +5,13 @@ const prisma = new PrismaClient()
 async function seedProjectAssignments() {
   console.log('🔗 Seeding project assignments...')
 
-  // First, let's create some sample projects in departments
+  // First, let's create some sample projects in satkers
   const sampleProjects = [
     {
       id: 'project-001',
       pekerjaan: 'Pembangunan Bendung Sungai Musi',
       lokasiProyek: 'Kabupaten Musi Banyuasin, Sumatera Selatan',
-      departmentId: 'dept-001', // SATKER Pembangunan SDA Sumatera I
+      satkerId: 'dept-001', // SATKER Pembangunan SDA Sumatera I
       nomorKontrak: 'SPK-001/2024',
       nilaiKontrak: '15000000000',
       penyediaJasa: 'PT. Karya Mandiri',
@@ -24,7 +24,7 @@ async function seedProjectAssignments() {
       id: 'project-002', 
       pekerjaan: 'Rehabilitasi Irigasi Daerah Lampung Tengah',
       lokasiProyek: 'Lampung Tengah, Lampung',
-      departmentId: 'dept-002', // SATKER OP SDA Sumatera I
+      satkerId: 'dept-002', // SATKER OP SDA Sumatera I
       nomorKontrak: 'SPK-002/2024',
       nilaiKontrak: '8500000000',
       penyediaJasa: 'CV. Sejahtera Jaya',
@@ -37,7 +37,7 @@ async function seedProjectAssignments() {
       id: 'project-003',
       pekerjaan: 'Normalisasi Sungai Ciliwung Segmen 3',
       lokasiProyek: 'Jakarta Selatan, DKI Jakarta', 
-      departmentId: 'dept-005', // SATKER Pembangunan SDA Jawa I
+      satkerId: 'dept-005', // SATKER Pembangunan SDA Jawa I
       nomorKontrak: 'SPK-003/2024',
       nilaiKontrak: '25000000000',
       penyediaJasa: 'PT. Bangun Nusantara',
@@ -50,7 +50,7 @@ async function seedProjectAssignments() {
       id: 'project-004',
       pekerjaan: 'Pemeliharaan Bendung Katulampa',
       lokasiProyek: 'Bogor, Jawa Barat',
-      departmentId: 'dept-006', // SATKER OP SDA Jawa I  
+      satkerId: 'dept-006', // SATKER OP SDA Jawa I  
       nomorKontrak: 'SPK-004/2024',
       nilaiKontrak: '3200000000',
       penyediaJasa: 'PT. Karya Mandiri',

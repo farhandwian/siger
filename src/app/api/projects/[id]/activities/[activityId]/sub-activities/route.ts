@@ -20,7 +20,7 @@ export async function GET(
         activityId: validatedActivityId,
       },
       include: {
-        schedules: true,
+        scheduleplans: true,
       },
       orderBy: { order: 'asc' },
     })
@@ -90,7 +90,7 @@ export async function POST(
         order: (maxOrderSubActivity?.order || 0) + 1,
       },
       include: {
-        schedules: true,
+        scheduleplans: true,
       },
     })
 

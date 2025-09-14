@@ -58,10 +58,10 @@ export function MaterialChart({
     })
     .toUpperCase()
 
-  // Generate chart data based on selected month and material schedules
+  // Generate chart data based on selected month and material scheduleplans
   const chartData = useMemo(() => {
     if (
-      !currentMaterial?.schedules ||
+      !currentMaterial?.scheduleplans ||
       !currentMaterial?.tanggalMulai ||
       !currentMaterial?.tanggalSelesai
     ) {
@@ -98,22 +98,22 @@ export function MaterialChart({
       currentDate.setDate(currentDate.getDate() + 1)
     }
 
-    // Sort schedules by date to ensure proper cumulative calculation
-    const sortedSchedules = [...(currentMaterial.schedules || [])].sort((a, b) =>
+    // Sort scheduleplans by date to ensure proper cumulative calculation
+    const sortedSchedulePlans = [...(currentMaterial.scheduleplans || [])].sort((a, b) =>
       a.date.localeCompare(b.date)
     )
 
     // Calculate cumulative values for each date in the selected month
     return dates.map(dateObj => {
-      // Calculate cumulative rencana up to this date (from all schedules, not just current month)
-      const rencanaKumulatif = sortedSchedules
-        .filter(schedule => schedule.date <= dateObj.date)
-        .reduce((sum, schedule) => sum + (schedule.rencana || 0), 0)
+      // Calculate cumulative rencana up to this date (from all scheduleplans, not just current month)
+      const rencanaKumulatif = sortedSchedulePlans
+        .filter(scheduleplan => scheduleplan.date <= dateObj.date)
+        .reduce((sum, scheduleplan) => sum + (scheduleplan.rencana || 0), 0)
 
-      // Calculate cumulative realisasi up to this date (from all schedules, not just current month)
-      const realisasiKumulatif = sortedSchedules
-        .filter(schedule => schedule.date <= dateObj.date)
-        .reduce((sum, schedule) => sum + (schedule.realisasi || 0), 0)
+      // Calculate cumulative realisasi up to this date (from all scheduleplans, not just current month)
+      const realisasiKumulatif = sortedSchedulePlans
+        .filter(scheduleplan => scheduleplan.date <= dateObj.date)
+        .reduce((sum, scheduleplan) => sum + (scheduleplan.realisasi || 0), 0)
 
       return {
         date: dateObj.display,

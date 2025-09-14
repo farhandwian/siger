@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
-const createScheduleSchema = z.object({
+const createSchedulePlanSchema = z.object({
   materialId: z.string(),
   date: z.string(),
   rencana: z.number().optional().default(0),
@@ -11,12 +11,12 @@ const createScheduleSchema = z.object({
   realisasiKumulatif: z.number().optional().default(0),
 })
 
-const updateScheduleSchema = z.object({
+const updateSchedulePlanSchema = z.object({
   realisasi: z.number().optional(),
   realisasiKumulatif: z.number().optional(),
 })
 
-// GET /api/materials/schedules - Get schedules for a material
+// GET /api/materials/scheduleplans - Get scheduleplans for a material
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -26,58 +26,58 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Material ID is required' }, { status: 400 })
     }
 
-    const schedules = await prisma.materialSchedule.findMany({
+    const scheduleplans = await prisma.materialSchedulePlan.findMany({
       where: { materialId },
       orderBy: { date: 'asc' },
     })
 
-    return NextResponse.json({ success: true, data: { schedules } })
+    return NextResponse.json({ success: true, data: { scheduleplans } })
   } catch (error) {
-    console.error('Error fetching material schedules:', error)
-    return NextResponse.json({ error: 'Failed to fetch schedules' }, { status: 500 })
+    console.error('Error fetching material scheduleplans:', error)
+    return NextResponse.json({ error: 'Failed to fetch scheduleplans' }, { status: 500 })
   }
 }
 
-// POST /api/materials/schedules - Create or update a schedule entry
+// POST /api/materials/scheduleplans - Create or update a scheduleplan entry
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const validatedData = createScheduleSchema.parse(body)
+    const validatedData = createSchedulePlanSchema.parse(body)
 
-    // Get all schedules for this material to calculate cumulative values
-    const allSchedules = await prisma.materialSchedule.findMany({
+    // Get all scheduleplans for this material to calculate cumulative values
+    const allSchedulePlans = await prisma.materialSchedulePlan.findMany({
       where: { materialId: validatedData.materialId },
       orderBy: { date: 'asc' },
     })
 
-    // Create a map of existing schedules
-    const scheduleMap = new Map(allSchedules.map(s => [s.date, s]))
+    // Create a map of existing scheduleplans
+    const scheduleplanMap = new Map(allSchedulePlans.map(s => [s.date, s]))
 
     // Update the map with the new data
-    const existingSchedule = scheduleMap.get(validatedData.date)
-    scheduleMap.set(validatedData.date, {
-      ...existingSchedule,
+    const existingSchedulePlan = scheduleplanMap.get(validatedData.date)
+    scheduleplanMap.set(validatedData.date, {
+      ...existingSchedulePlan,
       ...validatedData,
-      id: existingSchedule?.id || '', // Ensure id is always a string
-      createdAt: existingSchedule?.createdAt || new Date(),
-      updatedAt: existingSchedule?.updatedAt || new Date(),
-      tercapai: existingSchedule?.tercapai || null,
+      id: existingSchedulePlan?.id || '', // Ensure id is always a string
+      createdAt: existingSchedulePlan?.createdAt || new Date(),
+      updatedAt: existingSchedulePlan?.updatedAt || new Date(),
+      tercapai: existingSchedulePlan?.tercapai || null,
     })
 
     // Convert map back to array and sort by date
-    const sortedSchedules = Array.from(scheduleMap.entries())
-      .map(([date, schedule]) => ({ ...schedule, date }))
+    const sortedSchedulePlans = Array.from(scheduleplanMap.entries())
+      .map(([date, scheduleplan]) => ({ ...scheduleplan, date }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
     // Recalculate cumulative values
     let rencanaKumulatif = 0
     let realisasiKumulatif = 0
 
-    for (const schedule of sortedSchedules) {
-      rencanaKumulatif += schedule.rencana || 0
-      realisasiKumulatif += schedule.realisasi || 0
+    for (const scheduleplan of sortedSchedulePlans) {
+      rencanaKumulatif += scheduleplan.rencana || 0
+      realisasiKumulatif += scheduleplan.realisasi || 0
 
-      if (schedule.date === validatedData.date) {
+      if (scheduleplan.date === validatedData.date) {
         validatedData.rencanaKumulatif = rencanaKumulatif
         validatedData.realisasiKumulatif = realisasiKumulatif
         break
@@ -87,11 +87,11 @@ export async function POST(request: NextRequest) {
     // Determine tercapai based on realisasi vs rencana
     const tercapai = validatedData.realisasi >= validatedData.rencana ? 'Y' : 'T'
 
-    let schedule
+    let scheduleplan
 
     try {
-      // Try to create new schedule first
-      schedule = await prisma.materialSchedule.create({
+      // Try to create new scheduleplan first
+      scheduleplan = await prisma.materialSchedulePlan.create({
         data: {
           ...validatedData,
           tercapai,
@@ -100,16 +100,16 @@ export async function POST(request: NextRequest) {
     } catch (createError: any) {
       // If create fails due to unique constraint, update existing record
       if (createError.code === 'P2002') {
-        const existingSchedule = await prisma.materialSchedule.findFirst({
+        const existingSchedulePlan = await prisma.materialSchedulePlan.findFirst({
           where: {
             materialId: validatedData.materialId,
             date: validatedData.date,
           },
         })
 
-        if (existingSchedule) {
-          schedule = await prisma.materialSchedule.update({
-            where: { id: existingSchedule.id },
+        if (existingSchedulePlan) {
+          scheduleplan = await prisma.materialSchedulePlan.update({
+            where: { id: existingSchedulePlan.id },
             data: {
               rencana: validatedData.rencana,
               rencanaKumulatif: validatedData.rencanaKumulatif,
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update cumulative values for all subsequent dates
-    const subsequentSchedules = await prisma.materialSchedule.findMany({
+    const subsequentSchedulePlans = await prisma.materialSchedulePlan.findMany({
       where: {
         materialId: validatedData.materialId,
         date: { gt: validatedData.date },
@@ -138,14 +138,14 @@ export async function POST(request: NextRequest) {
     let currentRencanaKumulatif = validatedData.rencanaKumulatif
     let currentRealisasiKumulatif = validatedData.realisasiKumulatif
 
-    for (const subSchedule of subsequentSchedules) {
-      currentRencanaKumulatif += subSchedule.rencana || 0
-      currentRealisasiKumulatif += subSchedule.realisasi || 0
+    for (const subSchedulePlan of subsequentSchedulePlans) {
+      currentRencanaKumulatif += subSchedulePlan.rencana || 0
+      currentRealisasiKumulatif += subSchedulePlan.realisasi || 0
 
-      const newTercapai = (subSchedule.realisasi || 0) >= (subSchedule.rencana || 0) ? 'Y' : 'T'
+      const newTercapai = (subSchedulePlan.realisasi || 0) >= (subSchedulePlan.rencana || 0) ? 'Y' : 'T'
 
-      await prisma.materialSchedule.update({
-        where: { id: subSchedule.id },
+      await prisma.materialSchedulePlan.update({
+        where: { id: subSchedulePlan.id },
         data: {
           rencanaKumulatif: currentRencanaKumulatif,
           realisasiKumulatif: currentRealisasiKumulatif,
@@ -154,45 +154,45 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({ success: true, data: { schedule } })
+    return NextResponse.json({ success: true, data: { scheduleplan } })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
-    console.error('Error creating/updating schedule:', error)
-    return NextResponse.json({ error: 'Failed to create/update schedule' }, { status: 500 })
+    console.error('Error creating/updating scheduleplan:', error)
+    return NextResponse.json({ error: 'Failed to create/update scheduleplan' }, { status: 500 })
   }
 }
 
-// PUT /api/materials/schedules - Update a schedule entry
+// PUT /api/materials/scheduleplans - Update a scheduleplan entry
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
     if (!id) {
-      return NextResponse.json({ error: 'Schedule ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'SchedulePlan ID is required' }, { status: 400 })
     }
 
     const body = await request.json()
-    const validatedData = updateScheduleSchema.parse(body)
+    const validatedData = updateSchedulePlanSchema.parse(body)
 
-    // Get the current schedule to calculate tercapai
-    const currentSchedule = await prisma.materialSchedule.findUnique({
+    // Get the current scheduleplan to calculate tercapai
+    const currentSchedulePlan = await prisma.materialSchedulePlan.findUnique({
       where: { id },
     })
 
-    if (!currentSchedule) {
-      return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
+    if (!currentSchedulePlan) {
+      return NextResponse.json({ error: 'SchedulePlan not found' }, { status: 404 })
     }
 
     // Determine tercapai based on realisasi vs rencana
-    let tercapai = currentSchedule.tercapai
+    let tercapai = currentSchedulePlan.tercapai
     if (validatedData.realisasi !== undefined) {
-      tercapai = validatedData.realisasi >= (currentSchedule.rencana || 0) ? 'Y' : 'T'
+      tercapai = validatedData.realisasi >= (currentSchedulePlan.rencana || 0) ? 'Y' : 'T'
     }
 
-    const updatedSchedule = await prisma.materialSchedule.update({
+    const updatedSchedulePlan = await prisma.materialSchedulePlan.update({
       where: { id },
       data: {
         ...validatedData,
@@ -200,12 +200,12 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, data: { schedule: updatedSchedule } })
+    return NextResponse.json({ success: true, data: { scheduleplan: updatedSchedulePlan } })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
-    console.error('Error updating schedule:', error)
-    return NextResponse.json({ error: 'Failed to update schedule' }, { status: 500 })
+    console.error('Error updating scheduleplan:', error)
+    return NextResponse.json({ error: 'Failed to update scheduleplan' }, { status: 500 })
   }
 }

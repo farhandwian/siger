@@ -287,7 +287,7 @@ export const FilterOptionsSchema = z.object({
       end: z.any(), // Temporary: allow any type for date
     })
     .optional(),
-  department: z.array(z.string()).optional(),
+  satker: z.array(z.string()).optional(),
   region: z.array(z.string()).optional(),
   category: z.array(z.string()).optional(),
   status: z.array(z.string()).optional(),
@@ -324,7 +324,7 @@ export const ChartDataSchema = z.object({
 })
 
 // Activity schemas
-export const ActivityScheduleSchema = z.object({
+export const SchedulePlanSchema = z.object({
   id: z.any(), // Temporary: allow any type for id
   activityId: z.any().optional(), // Temporary: allow any type
   subActivityId: z.any().optional(), // Temporary: allow any type
@@ -349,7 +349,7 @@ export const SubActivitySchema = z.object({
   order: z.number().min(0).default(0),
   createdAt: z.any(), // Temporary: allow any type for createdAt
   updatedAt: z.any(), // Temporary: allow any type for updatedAt
-  schedules: z.array(ActivityScheduleSchema).optional(),
+  scheduleplans: z.array(SchedulePlanSchema).optional(),
 })
 
 export const ActivitySchema = z.object({
@@ -360,7 +360,7 @@ export const ActivitySchema = z.object({
   createdAt: z.any(), // Temporary: allow any type for createdAt
   updatedAt: z.any(), // Temporary: allow any type for updatedAt
   subActivities: z.array(SubActivitySchema).optional(),
-  schedules: z.array(ActivityScheduleSchema).optional(),
+  scheduleplans: z.array(SchedulePlanSchema).optional(),
 })
 
 export const CreateActivitySchema = z.object({
@@ -391,7 +391,7 @@ export const UpdateSubActivitySchema = z.object({
   order: z.number().min(0).optional(),
 })
 
-export const CreateActivityScheduleSchema = ActivityScheduleSchema.omit({
+export const CreateSchedulePlanSchema = SchedulePlanSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -410,7 +410,7 @@ export type Report = z.infer<typeof CreateReportSchema> & {
 
 export type Activity = z.infer<typeof ActivitySchema>
 export type SubActivity = z.infer<typeof SubActivitySchema>
-export type ActivitySchedule = z.infer<typeof ActivityScheduleSchema>
+export type SchedulePlan = z.infer<typeof SchedulePlanSchema>
 
 // Daily Sub Activity schemas for mobile API
 export const DailySubActivitySchema = z.object({

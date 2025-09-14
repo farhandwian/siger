@@ -7,7 +7,7 @@ async function seedActivities() {
 
   // Clear existing activity data
   await prisma.dailySubActivity.deleteMany({})
-  await prisma.activitySchedule.deleteMany({})
+  await prisma.scheduleplan.deleteMany({})
   await prisma.subActivity.deleteMany({})
   await prisma.activity.deleteMany({})
 
@@ -288,11 +288,11 @@ async function seedActivities() {
 
         console.log(`    ✅ Created sub-activity: ${subActivity.name}`)
 
-        // Create schedules for the current year (2025) for each sub-activity
+        // Create scheduleplans for the current year (2025) for each sub-activity
         const currentYear = 2025
-        const scheduleData = []
+        const scheduleplanData = []
 
-        // Create monthly schedules for the entire year
+        // Create monthly scheduleplans for the entire year
         for (let month = 1; month <= 12; month++) {
           for (let week = 1; week <= 4; week++) {
             // Calculate plan percentage based on activity progression
@@ -316,7 +316,7 @@ async function seedActivities() {
               }
             }
 
-            scheduleData.push({
+            scheduleplanData.push({
               subActivityId: subActivity.id,
               month,
               year: currentYear,
@@ -327,12 +327,12 @@ async function seedActivities() {
           }
         }
 
-        // Insert all schedules for this sub-activity
-        await prisma.activitySchedule.createMany({
-          data: scheduleData,
+        // Insert all scheduleplans for this sub-activity
+        await prisma.scheduleplan.createMany({
+          data: scheduleplanData,
         })
 
-        console.log(`    📅 Created ${scheduleData.length} schedules for ${subActivity.name}`)
+        console.log(`    📅 Created ${scheduleplanData.length} scheduleplans for ${subActivity.name}`)
       }
     }
   }

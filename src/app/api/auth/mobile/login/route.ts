@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
         role: true,
         isActive: true,
         balaiId: true,
-        departmentId: true,
+        satkerId: true,
         // Include project assignments for PPK and VENDOR users
         projectAssignments: {
           where: { isActive: true },
@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
             code: true
           }
         },
-        // Include department info if user belongs to one
-        department: {
+        // Include satker info if user belongs to one
+        satker: {
           select: {
             id: true,
             name: true,
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
         email: user.email,
         role: user.role,
         balaiId: user.balaiId,
-        departmentId: user.departmentId,
+        satkerId: user.satkerId,
         projectIds: projectIds.length > 0 ? projectIds : undefined,
       },
       process.env.NEXTAUTH_SECRET,
@@ -153,13 +153,13 @@ export async function POST(req: NextRequest) {
         name: user.name,
         role: user.role,
         balaiId: user.balaiId,
-        departmentId: user.departmentId,
+        satkerId: user.satkerId,
         projectIds: projectIds.length > 0 ? projectIds : undefined,
       },
       expiresIn: user.role === 'VENDOR' ? 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000, // 24h for vendor, 30d for others
       organizational: {
         balai: user.balai,
-        department: user.department,
+        satker: user.satker,
         projects: user.projectAssignments?.map(assignment => ({
           id: assignment.project.id,
           name: assignment.project.pekerjaan,

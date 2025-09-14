@@ -204,7 +204,7 @@
     opacity: 1 !important;
   }
 
-  /* Activity Schedule Table Components */
+  /* Activity SchedulePlan Table Components */
   .activity-table-header-primary {
     @apply border-b border-gray-200 bg-[#364878] px-2 py-1 text-center text-[9px] font-bold text-white lg:px-3 lg:py-1.5 lg:text-[10px] xl:px-6 xl:py-1.5 xl:text-xs;
   }

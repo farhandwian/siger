@@ -17,7 +17,7 @@ const protectedApiRoutes = [
   '/api/materials',
   '/api/proposals',
   '/api/daily-activities',
-  '/api/departments',
+  '/api/satkers',
   '/api/balai',
   '/api/assignments',
 ]
@@ -37,7 +37,7 @@ const protectedWebPages = [
 const systemAdminRoutes = [
   '/api/users/admin',
   '/api/balai',
-  '/api/departments',
+  '/api/satkers',
   '/admin',
 ]
 
@@ -47,10 +47,10 @@ const balaiAdminRoutes = [
   '/management/balai',
 ]
 
-// Routes for department-level management (SATKER)
-const departmentManagementRoutes = [
-  '/api/projects/department',
-  '/management/department',
+// Routes for satker-level management (SATKER)
+const satkerManagementRoutes = [
+  '/api/projects/satker',
+  '/management/satker',
 ]
 
 // Mobile-only routes (PPK and VENDOR access)
@@ -65,7 +65,7 @@ const mobileOnlyRoutes = [
  */
 function hasRequiredPermissions(userRole: UserRole, pathname: string, userContext?: {
   balaiId?: string
-  departmentId?: string
+  satkerId?: string
   projectIds?: string[]
 }): boolean {
   // ADMIN_SISTEM has access to everything
@@ -81,8 +81,8 @@ function hasRequiredPermissions(userRole: UserRole, pathname: string, userContex
     return ['ADMIN_SISTEM', 'ADMIN_BALAI'].includes(userRole)
   }
 
-  // Check department management routes
-  if (departmentManagementRoutes.some(route => pathname.startsWith(route))) {
+  // Check satker management routes
+  if (satkerManagementRoutes.some(route => pathname.startsWith(route))) {
     return ['ADMIN_SISTEM', 'ADMIN_BALAI', 'SATKER'].includes(userRole)
   }
 
@@ -101,7 +101,7 @@ function hasRequiredPermissions(userRole: UserRole, pathname: string, userContex
       case 'KABALAI':
         return !!userContext?.balaiId // Can access projects in their balai
       case 'SATKER':
-        return !!userContext?.departmentId // Can access projects in their department
+        return !!userContext?.satkerId // Can access projects in their satker
       case 'PPK':
       case 'VENDOR':
         return !!userContext?.projectIds?.length // Can access assigned projects only
@@ -134,7 +134,7 @@ async function verifyMobileToken(token: string) {
       email: string
       role: UserRole
       balaiId?: string
-      departmentId?: string
+      satkerId?: string
       projectIds?: string[]
       exp: number
     }
@@ -176,7 +176,7 @@ export default auth(req => {
           if (decoded) {
             const userContext = {
               balaiId: decoded.balaiId,
-              departmentId: decoded.departmentId,
+              satkerId: decoded.satkerId,
               projectIds: decoded.projectIds,
             }
 
@@ -187,7 +187,7 @@ export default auth(req => {
               requestHeaders.set('x-user-email', decoded.email)
               requestHeaders.set('x-user-role', decoded.role)
               if (decoded.balaiId) requestHeaders.set('x-user-balai-id', decoded.balaiId)
-              if (decoded.departmentId) requestHeaders.set('x-user-department-id', decoded.departmentId)
+              if (decoded.satkerId) requestHeaders.set('x-user-satker-id', decoded.satkerId)
               if (decoded.projectIds) requestHeaders.set('x-user-project-ids', JSON.stringify(decoded.projectIds))
 
               return NextResponse.next({

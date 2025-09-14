@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Trash2, ChevronDown, Loader2 } from 'lucide-react'
 import {
   useDeleteMaterial,
-  useUpdateMaterialSchedule,
-  useCreateMaterialSchedule,
+  useUpdateMaterialSchedulePlan,
+  useCreateMaterialSchedulePlan,
   Material,
 } from '@/hooks/useMaterialQueries'
 import { cn } from '@/lib/utils'
@@ -88,8 +88,8 @@ export function MaterialFlowTable({
   const [loadingCell, setLoadingCell] = useState<string | null>(null)
 
   const deleteMaterial = useDeleteMaterial()
-  const updateSchedule = useUpdateMaterialSchedule()
-  const createSchedule = useCreateMaterialSchedule()
+  const updateSchedulePlan = useUpdateMaterialSchedulePlan()
+  const createSchedulePlan = useCreateMaterialSchedulePlan()
 
   // Find the selected material
   const currentMaterial = materials.find(m => m.jenisMaterial === selectedMaterial) || materials[0]
@@ -160,21 +160,21 @@ export function MaterialFlowTable({
 
   // Calculate cumulative values for a specific date
   const calculateRencanaKumulatif = (targetDate: string) => {
-    if (!currentMaterial?.schedules) return 0
+    if (!currentMaterial?.scheduleplans) return 0
 
-    // Use ALL schedules, not just current month's dateColumns
-    return currentMaterial.schedules
-      .filter(schedule => schedule.date <= targetDate)
-      .reduce((sum, schedule) => sum + (schedule.rencana || 0), 0)
+    // Use ALL scheduleplans, not just current month's dateColumns
+    return currentMaterial.scheduleplans
+      .filter(scheduleplan => scheduleplan.date <= targetDate)
+      .reduce((sum, scheduleplan) => sum + (scheduleplan.rencana || 0), 0)
   }
 
   const calculateRealisasiKumulatif = (targetDate: string) => {
-    if (!currentMaterial?.schedules) return 0
+    if (!currentMaterial?.scheduleplans) return 0
 
-    // Use ALL schedules, not just current month's dateColumns
-    return currentMaterial.schedules
-      .filter(schedule => schedule.date <= targetDate)
-      .reduce((sum, schedule) => sum + (schedule.realisasi || 0), 0)
+    // Use ALL scheduleplans, not just current month's dateColumns
+    return currentMaterial.scheduleplans
+      .filter(scheduleplan => scheduleplan.date <= targetDate)
+      .reduce((sum, scheduleplan) => sum + (scheduleplan.realisasi || 0), 0)
   }
 
   const handleDeleteMaterial = async (materialId: string) => {
@@ -199,7 +199,7 @@ export function MaterialFlowTable({
   }
 
   const handleCellSave = async (
-    scheduleId: string | undefined,
+    scheduleplanId: string | undefined,
     field: 'rencana' | 'realisasi' | 'rencanaKumulatif' | 'realisasiKumulatif',
     date: string,
     materialId: string
@@ -210,33 +210,33 @@ export function MaterialFlowTable({
     const cellId = `${field}-${date}`
     setLoadingCell(cellId)
 
-    console.log('Saving cell:', { scheduleId, field, date, materialId, value, editValue })
+    console.log('Saving cell:', { scheduleplanId, field, date, materialId, value, editValue })
 
     try {
       // Always use the create endpoint which now handles upsert
-      const existingSchedule = currentMaterial.schedules?.find(s => s.date === date)
+      const existingSchedulePlan = currentMaterial.scheduleplans?.find(s => s.date === date)
 
-      let scheduleData = {
+      let scheduleplanData = {
         materialId,
         date,
-        rencana: existingSchedule?.rencana || 0,
-        rencanaKumulatif: existingSchedule?.rencanaKumulatif || 0,
-        realisasi: existingSchedule?.realisasi || 0,
-        realisasiKumulatif: existingSchedule?.realisasiKumulatif || 0,
+        rencana: existingSchedulePlan?.rencana || 0,
+        rencanaKumulatif: existingSchedulePlan?.rencanaKumulatif || 0,
+        realisasi: existingSchedulePlan?.realisasi || 0,
+        realisasiKumulatif: existingSchedulePlan?.realisasiKumulatif || 0,
         // Override the specific field being updated
         [field]: value,
       }
 
       // Recalculate cumulative values based on the updated data
       if (field === 'rencana') {
-        // Update the schedule data temporarily to calculate cumulative
-        const tempSchedules = [...(currentMaterial.schedules || [])]
-        const existingIndex = tempSchedules.findIndex(s => s.date === date)
+        // Update the scheduleplan data temporarily to calculate cumulative
+        const tempSchedulePlans = [...(currentMaterial.scheduleplans || [])]
+        const existingIndex = tempSchedulePlans.findIndex(s => s.date === date)
         if (existingIndex >= 0) {
-          tempSchedules[existingIndex] = { ...tempSchedules[existingIndex], rencana: value }
+          tempSchedulePlans[existingIndex] = { ...tempSchedulePlans[existingIndex], rencana: value }
         } else {
-          // Create a temporary schedule object for calculation
-          tempSchedules.push({
+          // Create a temporary scheduleplan object for calculation
+          tempSchedulePlans.push({
             id: 'temp',
             materialId,
             date,
@@ -250,22 +250,22 @@ export function MaterialFlowTable({
           })
         }
 
-        // Sort schedules by date to ensure proper cumulative calculation
-        tempSchedules.sort((a, b) => a.date.localeCompare(b.date))
+        // Sort scheduleplans by date to ensure proper cumulative calculation
+        tempSchedulePlans.sort((a, b) => a.date.localeCompare(b.date))
 
-        // Calculate cumulative for this date using ALL schedules up to this date
-        scheduleData.rencanaKumulatif = tempSchedules
+        // Calculate cumulative for this date using ALL scheduleplans up to this date
+        scheduleplanData.rencanaKumulatif = tempSchedulePlans
           .filter(s => s.date <= date)
           .reduce((sum, s) => sum + (s.rencana || 0), 0)
       } else if (field === 'realisasi') {
         // Similar calculation for realisasi
-        const tempSchedules = [...(currentMaterial.schedules || [])]
-        const existingIndex = tempSchedules.findIndex(s => s.date === date)
+        const tempSchedulePlans = [...(currentMaterial.scheduleplans || [])]
+        const existingIndex = tempSchedulePlans.findIndex(s => s.date === date)
         if (existingIndex >= 0) {
-          tempSchedules[existingIndex] = { ...tempSchedules[existingIndex], realisasi: value }
+          tempSchedulePlans[existingIndex] = { ...tempSchedulePlans[existingIndex], realisasi: value }
         } else {
-          // Create a temporary schedule object for calculation
-          tempSchedules.push({
+          // Create a temporary scheduleplan object for calculation
+          tempSchedulePlans.push({
             id: 'temp',
             materialId,
             date,
@@ -279,23 +279,23 @@ export function MaterialFlowTable({
           })
         }
 
-        // Sort schedules by date to ensure proper cumulative calculation
-        tempSchedules.sort((a, b) => a.date.localeCompare(b.date))
+        // Sort scheduleplans by date to ensure proper cumulative calculation
+        tempSchedulePlans.sort((a, b) => a.date.localeCompare(b.date))
 
-        // Calculate cumulative for this date using ALL schedules up to this date
-        scheduleData.realisasiKumulatif = tempSchedules
+        // Calculate cumulative for this date using ALL scheduleplans up to this date
+        scheduleplanData.realisasiKumulatif = tempSchedulePlans
           .filter(s => s.date <= date)
           .reduce((sum, s) => sum + (s.realisasi || 0), 0)
       }
 
-      console.log('Schedule data to upsert:', scheduleData)
-      await createSchedule.mutateAsync(scheduleData)
+      console.log('SchedulePlan data to upsert:', scheduleplanData)
+      await createSchedulePlan.mutateAsync(scheduleplanData)
 
       setEditingCell(null)
       setEditValue('')
       console.log('Cell saved successfully')
     } catch (error) {
-      console.error('Error saving schedule:', error)
+      console.error('Error saving scheduleplan:', error)
       // Don't reset the cell if there was an error, let user try again
     } finally {
       setLoadingCell(null)
@@ -385,8 +385,8 @@ export function MaterialFlowTable({
                     Volume Realisasi
                   </label>
                   <div className="w-full border-b border-gray-200 bg-white px-2 py-1 text-[9px] text-gray-400 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs">
-                    {currentMaterial.schedules?.[
-                      currentMaterial.schedules.length - 1
+                    {currentMaterial.scheduleplans?.[
+                      currentMaterial.scheduleplans.length - 1
                     ]?.realisasiKumulatif?.toLocaleString() || '0'}{' '}
                     {currentMaterial.volumeSatuan === 'm3' ? 'm³' : currentMaterial.volumeSatuan}
                   </div>
@@ -566,9 +566,9 @@ export function MaterialFlowTable({
                       </span>
                     </td>
                     {dateColumns.map(col => {
-                      const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
+                      const scheduleplan = currentMaterial.scheduleplans?.find(s => s.date === col.date)
                       const cellId = `rencana-${col.date}`
-                      const value = schedule?.rencana || 0
+                      const value = scheduleplan?.rencana || 0
                       const isEditing = editingCell === cellId
                       const isLoading = loadingCell === cellId
 
@@ -584,7 +584,7 @@ export function MaterialFlowTable({
                                 onChange={e => setEditValue(e.target.value)}
                                 onBlur={() =>
                                   handleCellSave(
-                                    schedule?.id,
+                                    scheduleplan?.id,
                                     'rencana',
                                     col.date,
                                     currentMaterial.id
@@ -593,7 +593,7 @@ export function MaterialFlowTable({
                                 onKeyDown={e => {
                                   if (e.key === 'Enter') {
                                     handleCellSave(
-                                      schedule?.id,
+                                      scheduleplan?.id,
                                       'rencana',
                                       col.date,
                                       currentMaterial.id
@@ -657,9 +657,9 @@ export function MaterialFlowTable({
                       </span>
                     </td>
                     {dateColumns.map(col => {
-                      const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
+                      const scheduleplan = currentMaterial.scheduleplans?.find(s => s.date === col.date)
                       const cellId = `realisasi-${col.date}`
-                      const value = schedule?.realisasi || 0
+                      const value = scheduleplan?.realisasi || 0
                       const isEditing = editingCell === cellId
                       const isLoading = loadingCell === cellId
 
@@ -675,7 +675,7 @@ export function MaterialFlowTable({
                                 onChange={e => setEditValue(e.target.value)}
                                 onBlur={() =>
                                   handleCellSave(
-                                    schedule?.id,
+                                    scheduleplan?.id,
                                     'realisasi',
                                     col.date,
                                     currentMaterial.id
@@ -684,7 +684,7 @@ export function MaterialFlowTable({
                                 onKeyDown={e => {
                                   if (e.key === 'Enter') {
                                     handleCellSave(
-                                      schedule?.id,
+                                      scheduleplan?.id,
                                       'realisasi',
                                       col.date,
                                       currentMaterial.id
@@ -748,8 +748,8 @@ export function MaterialFlowTable({
                       </span>
                     </td>
                     {dateColumns.map(col => {
-                      const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
-                      const tercapai = schedule?.tercapai || 'Y'
+                      const scheduleplan = currentMaterial.scheduleplans?.find(s => s.date === col.date)
+                      const tercapai = scheduleplan?.tercapai || 'Y'
                       return (
                         <td
                           key={col.date}

@@ -25,7 +25,7 @@ CREATE TABLE "public"."sub_activities" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."activity_schedules" (
+CREATE TABLE "public"."activity_scheduleplans" (
     "id" TEXT NOT NULL,
     "activity_id" TEXT,
     "sub_activity_id" TEXT,
@@ -37,14 +37,14 @@ CREATE TABLE "public"."activity_schedules" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "activity_schedules_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "activity_scheduleplans_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "activity_schedules_activity_id_month_year_week_key" ON "public"."activity_schedules"("activity_id", "month", "year", "week");
+CREATE UNIQUE INDEX "activity_scheduleplans_activity_id_month_year_week_key" ON "public"."activity_scheduleplans"("activity_id", "month", "year", "week");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "activity_schedules_sub_activity_id_month_year_week_key" ON "public"."activity_schedules"("sub_activity_id", "month", "year", "week");
+CREATE UNIQUE INDEX "activity_scheduleplans_sub_activity_id_month_year_week_key" ON "public"."activity_scheduleplans"("sub_activity_id", "month", "year", "week");
 
 -- AddForeignKey
 ALTER TABLE "public"."activities" ADD CONSTRAINT "activities_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -53,7 +53,7 @@ ALTER TABLE "public"."activities" ADD CONSTRAINT "activities_project_id_fkey" FO
 ALTER TABLE "public"."sub_activities" ADD CONSTRAINT "sub_activities_activity_id_fkey" FOREIGN KEY ("activity_id") REFERENCES "public"."activities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."activity_schedules" ADD CONSTRAINT "activity_schedules_activity_id_fkey" FOREIGN KEY ("activity_id") REFERENCES "public"."activities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."activity_scheduleplans" ADD CONSTRAINT "activity_scheduleplans_activity_id_fkey" FOREIGN KEY ("activity_id") REFERENCES "public"."activities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."activity_schedules" ADD CONSTRAINT "activity_schedules_sub_activity_id_fkey" FOREIGN KEY ("sub_activity_id") REFERENCES "public"."sub_activities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."activity_scheduleplans" ADD CONSTRAINT "activity_scheduleplans_sub_activity_id_fkey" FOREIGN KEY ("sub_activity_id") REFERENCES "public"."sub_activities"("id") ON DELETE CASCADE ON UPDATE CASCADE;

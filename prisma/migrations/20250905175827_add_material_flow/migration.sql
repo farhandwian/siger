@@ -30,7 +30,7 @@ CREATE TABLE "public"."materials" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."material_schedules" (
+CREATE TABLE "public"."material_scheduleplans" (
     "id" TEXT NOT NULL,
     "material_id" TEXT NOT NULL,
     "date" TEXT NOT NULL,
@@ -42,14 +42,14 @@ CREATE TABLE "public"."material_schedules" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "material_schedules_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "material_scheduleplans_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "material_schedules_material_id_date_key" ON "public"."material_schedules"("material_id", "date");
+CREATE UNIQUE INDEX "material_scheduleplans_material_id_date_key" ON "public"."material_scheduleplans"("material_id", "date");
 
 -- AddForeignKey
 ALTER TABLE "public"."materials" ADD CONSTRAINT "materials_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."material_schedules" ADD CONSTRAINT "material_schedules_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "public"."materials"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."material_scheduleplans" ADD CONSTRAINT "material_scheduleplans_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "public"."materials"("id") ON DELETE CASCADE ON UPDATE CASCADE;
