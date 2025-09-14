@@ -66,13 +66,10 @@ export const ProjectAreaBaseLayer = ({
 
       if (response.ok) {
         const result = await response.json()
-        
 
         if (result.success && result.data?.coordinates) {
-          
           return result.data.coordinates
         } else {
-          
         }
       } else {
         console.log('loadPolygonData: Response not ok:', response.status)
@@ -384,7 +381,7 @@ export const ProjectAreaBaseLayer = ({
 
         // COMPLETE MAP RESET APPROACH - Clear everything and reinitialize
         console.log('Save: Starting complete map reset and data refresh')
-        
+
         // 1. Clear drawing manager and any drawing overlays
         if (drawingManager) {
           drawingManager.setDrawingMode(null)
@@ -403,7 +400,7 @@ export const ProjectAreaBaseLayer = ({
           featuresToRemove.forEach(feature => {
             dataLayer.remove(feature)
           })
-          
+
           // Remove the data layer from map
           dataLayer.setMap(null)
           console.log('Save: Removed old data layer')
@@ -484,7 +481,16 @@ export const ProjectAreaBaseLayer = ({
     } finally {
       setIsLoading(false)
     }
-  }, [currentPolygon, dataLayer, onPolygonSave, projectId, map, drawingManager, loadPolygonData, defaultCoordinates])
+  }, [
+    currentPolygon,
+    dataLayer,
+    onPolygonSave,
+    projectId,
+    map,
+    drawingManager,
+    loadPolygonData,
+    defaultCoordinates,
+  ])
 
   // Cancel changes
   const handleCancel = useCallback(async () => {
@@ -513,7 +519,7 @@ export const ProjectAreaBaseLayer = ({
       featuresToRemove.forEach(feature => {
         dataLayer.remove(feature)
       })
-      
+
       // Remove the data layer from map
       dataLayer.setMap(null)
       console.log('Cancel: Removed old data layer')
@@ -584,7 +590,15 @@ export const ProjectAreaBaseLayer = ({
 
     setIsEditMode(false)
     setHasUnsavedChanges(false)
-  }, [dataLayer, defaultCoordinates, hasUnsavedChanges, projectId, loadPolygonData, map, drawingManager])
+  }, [
+    dataLayer,
+    defaultCoordinates,
+    hasUnsavedChanges,
+    projectId,
+    loadPolygonData,
+    map,
+    drawingManager,
+  ])
 
   if (!editable) return null
 
