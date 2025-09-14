@@ -25,8 +25,8 @@ export const ActionPlanScheduleApiSchema = z.object({
   week: z.number().min(1).max(5),
   planPercentage: z.number().min(0).max(100).default(0),
   actualPercentage: z.number().min(0).max(100).default(0),
-  createdAt: z.string().transform((str) => new Date(str)),
-  updatedAt: z.string().transform((str) => new Date(str)),
+  createdAt: z.string().transform(str => new Date(str)),
+  updatedAt: z.string().transform(str => new Date(str)),
 })
 
 // Schema for Action Plan Schedule with related data (includes activity/subActivity details)
@@ -68,7 +68,9 @@ export const ActionPlanScheduleWithRelationsApiSchema = ActionPlanScheduleApiSch
 export type ActionPlanSchedule = z.infer<typeof ActionPlanScheduleSchema>
 export type ActionPlanScheduleWithRelations = z.infer<typeof ActionPlanScheduleWithRelationsSchema>
 export type ActionPlanScheduleApi = z.infer<typeof ActionPlanScheduleApiSchema>
-export type ActionPlanScheduleWithRelationsApi = z.infer<typeof ActionPlanScheduleWithRelationsApiSchema>
+export type ActionPlanScheduleWithRelationsApi = z.infer<
+  typeof ActionPlanScheduleWithRelationsApiSchema
+>
 
 export const CreateActionPlanScheduleSchema = ActionPlanScheduleSchema.omit({
   id: true,

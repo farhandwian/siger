@@ -3,10 +3,7 @@
 import React from 'react'
 import { UnifiedScheduleTable } from '@/components/shared/UnifiedScheduleTable'
 import { useActivities, useProject } from '@/hooks/useActivityQueries'
-import {
-  useActionPlanSchedules,
-  useUpsertActionPlanSchedule,
-} from '@/hooks/useActionPlanSchedules'
+import { useActionPlanSchedules, useUpsertActionPlanSchedule } from '@/hooks/useActionPlanSchedules'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 
 /**

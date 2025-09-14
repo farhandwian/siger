@@ -103,12 +103,12 @@ export function useCreateActionPlanSchedule() {
         if (contentType && contentType.includes('application/json')) {
           try {
             const errorData = await response.json()
-            
+
             // Handle the specific case of duplicate schedule creation
             if (response.status === 409 && errorData.error?.includes('already exists')) {
               throw new Error('DUPLICATE_SCHEDULE')
             }
-            
+
             throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
           } catch (jsonError) {
             // If JSON parsing fails, check for specific status codes
@@ -224,7 +224,10 @@ export function useUpdateActionPlanSchedule() {
 
       if (updatedSchedule.subActivity?.activityId) {
         queryClient.invalidateQueries({
-          queryKey: ['action-plan-schedules', { activityId: updatedSchedule.subActivity.activityId }],
+          queryKey: [
+            'action-plan-schedules',
+            { activityId: updatedSchedule.subActivity.activityId },
+          ],
         })
       }
     },
@@ -238,7 +241,9 @@ export function useUpsertActionPlanSchedule() {
   const updateMutation = useUpdateActionPlanSchedule()
 
   return useMutation({
-    mutationFn: async (data: z.infer<typeof CreateActionPlanScheduleSchema> & { existingId?: string }) => {
+    mutationFn: async (
+      data: z.infer<typeof CreateActionPlanScheduleSchema> & { existingId?: string }
+    ) => {
       const { existingId, ...createData } = data
 
       if (existingId) {
@@ -250,7 +255,7 @@ export function useUpsertActionPlanSchedule() {
         if (createData.actualPercentage !== undefined) {
           updateData.actualPercentage = createData.actualPercentage
         }
-        
+
         return updateMutation.mutateAsync({
           id: existingId,
           data: updateData,
@@ -267,24 +272,25 @@ export function useUpsertActionPlanSchedule() {
           if (error instanceof Error && error.message === 'DUPLICATE_SCHEDULE') {
             // If duplicate, fetch the existing schedule and update it instead
             console.log('Upsert: Duplicate detected, fetching existing schedule to update...')
-            
+
             // Directly fetch the conflicting schedule from the API
             const queryParams = new URLSearchParams()
             if (createData.activityId) queryParams.append('activityId', createData.activityId)
-            if (createData.subActivityId) queryParams.append('subActivityId', createData.subActivityId)
+            if (createData.subActivityId)
+              queryParams.append('subActivityId', createData.subActivityId)
             if (createData.year) queryParams.append('year', createData.year.toString())
             if (createData.month) queryParams.append('month', createData.month.toString())
-            
+
             console.log('Upsert: Fetching with params:', queryParams.toString())
-            const response = await fetch(`/api/action-plan-schedules?${queryParams.toString()}`, { 
-              cache: 'no-store' 
+            const response = await fetch(`/api/action-plan-schedules?${queryParams.toString()}`, {
+              cache: 'no-store',
             })
-            
+
             if (!response.ok) {
               console.error('Upsert: Failed to fetch existing schedules', response.status)
               throw error
             }
-            
+
             // Check if response has JSON content before parsing
             const contentType = response.headers.get('content-type')
             let schedules: any[] = []
@@ -296,7 +302,7 @@ export function useUpsertActionPlanSchedule() {
               console.error('Upsert: Expected JSON response but received empty content')
               throw error
             }
-            
+
             // Find the exact conflicting schedule
             const existingSchedule = schedules.find((s: any) => {
               if (createData.subActivityId) {
@@ -326,7 +332,7 @@ export function useUpsertActionPlanSchedule() {
               if (createData.actualPercentage !== undefined) {
                 updateData.actualPercentage = createData.actualPercentage
               }
-              
+
               const updateResult = await updateMutation.mutateAsync({
                 id: existingSchedule.id,
                 data: updateData,
@@ -415,7 +421,9 @@ export function useBulkCreateActionPlanSchedules() {
             if (contentType && contentType.includes('application/json')) {
               try {
                 const errorData = await response.json()
-                throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+                throw new Error(
+                  errorData.error || `HTTP ${response.status}: ${response.statusText}`
+                )
               } catch (jsonError) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`)
               }

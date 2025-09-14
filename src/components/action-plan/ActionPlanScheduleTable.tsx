@@ -5,10 +5,7 @@ import { Button } from '@/components/ui/button'
 import { AddActivityModal } from '@/components/activities/add-activity-modal'
 import { EditActivityModal } from '@/components/activities/edit-activity-modal'
 import { useActivities, useProject } from '@/hooks/useActivityQueries'
-import {
-  useActionPlanSchedules,
-  useUpsertActionPlanSchedule,
-} from '@/hooks/useActionPlanSchedules'
+import { useActionPlanSchedules, useUpsertActionPlanSchedule } from '@/hooks/useActionPlanSchedules'
 import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
 import { generateSequentialWeeks, type SequentialWeek } from '@/utils/dateUtils'
@@ -218,8 +215,16 @@ export function ActionPlanScheduleTable({ projectId }: ActionPlanScheduleTablePr
 
     try {
       // Use upsert mutation that handles both create and update cases gracefully
-      console.log('Action Plan - Upserting schedule:', { activityId, subActivityId, month, year: currentYear, week, type, value })
-      
+      console.log('Action Plan - Upserting schedule:', {
+        activityId,
+        subActivityId,
+        month,
+        year: currentYear,
+        week,
+        type,
+        value,
+      })
+
       // Prepare the data for upsert
       const upsertData = {
         ...(existingSchedule && { existingId: existingSchedule.id }),
@@ -229,9 +234,10 @@ export function ActionPlanScheduleTable({ projectId }: ActionPlanScheduleTablePr
         year: currentYear,
         week,
         planPercentage: type === 'plan' ? (value ?? 0) : (existingSchedule?.planPercentage ?? 0),
-        actualPercentage: type === 'actual' ? (value ?? 0) : (existingSchedule?.actualPercentage ?? 0),
+        actualPercentage:
+          type === 'actual' ? (value ?? 0) : (existingSchedule?.actualPercentage ?? 0),
       }
-      
+
       await upsertActionPlanMutation.mutateAsync(upsertData)
 
       console.log('Action Plan - Upsert completed successfully')

@@ -113,7 +113,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         week: data.week || existingSchedule.week,
         planPercentage: data.planPercentage || 0,
         actualPercentage: data.actualPercentage || 0,
-        ...(existingSchedule.activityId ? { activityId: existingSchedule.activityId } : { subActivityId: existingSchedule.subActivityId }),
+        ...(existingSchedule.activityId
+          ? { activityId: existingSchedule.activityId }
+          : { subActivityId: existingSchedule.subActivityId }),
       },
       include: {
         activity: {

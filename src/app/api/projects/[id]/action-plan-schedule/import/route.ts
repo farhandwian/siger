@@ -40,7 +40,10 @@ export async function POST(request: NextRequest) {
     } catch (validationError: any) {
       console.error('❌ Action Plan Validation failed:', validationError.message)
       if (validationError.errors) {
-        console.error('❌ Action Plan Validation errors:', JSON.stringify(validationError.errors, null, 2))
+        console.error(
+          '❌ Action Plan Validation errors:',
+          JSON.stringify(validationError.errors, null, 2)
+        )
       }
       console.error('❌ Received data structure:', {
         hasProjectId: !!body.projectId,
@@ -86,7 +89,7 @@ export async function POST(request: NextRequest) {
     // If replace mode, delete existing action plan schedules first
     if (importMode === 'replace') {
       console.log('🗑️ Replace mode: deleting existing action plan schedules...')
-      
+
       // Get all activities for this project to delete their action plan schedules
       const projectActivities = await prisma.activity.findMany({
         where: { projectId },
@@ -99,10 +102,7 @@ export async function POST(request: NextRequest) {
       // Delete existing action plan schedules
       await prisma.actionPlanSchedule.deleteMany({
         where: {
-          OR: [
-            { activityId: { in: activityIds } },
-            { subActivityId: { in: subActivityIds } },
-          ],
+          OR: [{ activityId: { in: activityIds } }, { subActivityId: { in: subActivityIds } }],
         },
       })
 
