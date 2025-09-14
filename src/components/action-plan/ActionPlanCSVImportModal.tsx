@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Upload, X, FileText, AlertCircle, CheckCircle, Calendar } from 'lucide-react'
 import { useProject } from '@/hooks/useActivityQueries'
-import { useBulkCreateActionPlanSchedules } from '@/hooks/useActionPlanSchedules'
 
 interface ActionPlanCSVImportModalProps {
   isOpen: boolean
@@ -50,7 +49,6 @@ export function ActionPlanCSVImportModal({
   // Use the project hook to get SPMK date
   const { data: project } = useProject(projectId)
   const spmkDate = project?.tanggalSpmk || null
-  const bulkCreateMutation = useBulkCreateActionPlanSchedules()
 
   useEffect(() => {
     if (project?.tanggalSpmk) {
@@ -494,17 +492,24 @@ export function ActionPlanCSVImportModal({
     return activities
   }
 
-  const parseActionPlanCSV = async (csvText: string): Promise<ParsedActionPlan[]> => {
+  const processCSV = async () => {
+    if (!file) return
+
+    // Check if SPMK date is available
+    if (!spmkDate) {
+      setError('SPMK date not found. Please ensure the project has a valid SPMK date.')
+      return
+    }
+
+    setIsProcessing(true)
+    setError(null)
+
     try {
-      const rows = parseCSV(csvText)
+      const text = await file.text()
+      const rows = parseCSV(text)
 
       if (rows.length < 4) {
         throw new Error('CSV file must have at least 4 rows (3 headers + data)')
-      }
-
-      // Check if SPMK date is available
-      if (!spmkDate) {
-        throw new Error('SPMK date not found. Please ensure the project has a valid SPMK date.')
       }
 
       // Skip first 3 header rows and parse the data
@@ -538,28 +543,6 @@ export function ActionPlanCSVImportModal({
         }
       })
 
-      return parsedData
-    } catch (error) {
-      console.error('❌ Error parsing action plan CSV:', error)
-      throw error
-    }
-  }
-
-  const handleProcessFile = async () => {
-    if (!file) return
-
-    // Check if SPMK date is available
-    if (!spmkDate) {
-      setError('SPMK date not found. Please ensure the project has a valid SPMK date.')
-      return
-    }
-
-    setIsProcessing(true)
-    setError(null)
-
-    try {
-      const text = await file.text()
-      const parsedData = await parseActionPlanCSV(text)
       setParseResult(parsedData)
     } catch (error: any) {
       setError(error.message || 'Failed to process CSV file')
@@ -568,41 +551,49 @@ export function ActionPlanCSVImportModal({
     }
   }
 
-  const handleImport = async () => {
+  const importToDatabase = async () => {
     if (!parseResult) return
 
     setIsImporting(true)
     setError(null)
 
     try {
-      // Convert parsed data to action plan schedules
-      const actionPlanSchedules = parseResult.flatMap(item =>
-        item.scheduleData.map(schedule => ({
-          activityId: item.type === 'activity' ? 'temp-activity-id' : null, // You'll need to map this properly
-          subActivityId: item.type === 'subActivity' ? 'temp-subactivity-id' : null, // You'll need to map this properly
-          month: schedule.month,
-          year: schedule.year,
-          week: schedule.week,
-          planPercentage: schedule.planPercentage,
-          actualPercentage: schedule.actualPercentage,
-        }))
-      )
+      // Use the new import API endpoint
+      const response = await fetch(`/api/projects/${projectId}/action-plan-schedule/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId,
+          activities: parseResult,
+          importMode,
+        }),
+      })
 
-      const result = await bulkCreateMutation.mutateAsync(actionPlanSchedules)
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to import action plan data')
+      }
 
       setImportResult(result)
+      console.log('=== ACTION PLAN IMPORT TO DATABASE SUCCESSFUL ===')
+      console.log('Result:', result)
 
-      if (result.successful.length > 0) {
-        onSuccess?.()
+      // Call onSuccess callback to refresh data
+      if (onSuccess) {
+        onSuccess()
       }
     } catch (error: any) {
+      console.error('Action plan import error:', error)
       setError(error.message || 'Failed to import action plan data')
     } finally {
       setIsImporting(false)
     }
   }
 
-  const handleReset = () => {
+  const resetModal = () => {
     setFile(null)
     setParseResult(null)
     setImportResult(null)
@@ -613,7 +604,7 @@ export function ActionPlanCSVImportModal({
   }
 
   const handleClose = () => {
-    handleReset()
+    resetModal()
     onClose()
   }
 
@@ -640,16 +631,6 @@ export function ActionPlanCSVImportModal({
                 <div className="text-sm text-blue-700">
                   <a
                     href="https://s3.keenos.id/public/action_plan_template.csv"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                    aria-label="Pratinjau template CSV"
-                  >
-                    Pratinjau
-                  </a>
-                  <span className="mx-2 text-gray-400">|</span>
-                  <a
-                    href="https://s3.keenos.id/public/action_plan_template.csv"
                     download
                     className="underline"
                     aria-label="Unduh template CSV"
@@ -664,152 +645,201 @@ export function ActionPlanCSVImportModal({
               </div>
             </div>
 
-            {/* Step 1: File Selection */}
-            {!parseResult && !importResult && (
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Upload Action Plan CSV File
-                  </label>
-                  <div
-                    className="cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition-colors hover:border-gray-400"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="mx-auto mb-2 h-8 w-8 text-gray-400" />
-                    <p className="text-sm text-gray-600">Click to select CSV file</p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      File harus berformat CSV dengan data action plan
-                    </p>
+            {/* File Upload Section */}
+            <div className="space-y-4">
+              <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  aria-label="Select CSV file for action plan import"
+                />
+
+                {!file ? (
+                  <div className="space-y-2">
+                    <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        Pilih file CSV yang berisi data action plan
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="mt-2"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Pilih File
+                      </Button>
+                    </div>
                   </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    aria-label="Select CSV file for action plan import"
-                  />
+                ) : (
+                  <div className="space-y-2">
+                    <CheckCircle className="mx-auto h-8 w-8 text-green-500" />
+                    <p className="text-sm font-medium">{file.name}</p>
+                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      size="sm"
+                    >
+                      Ganti File
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
+
+              {/* Process Button */}
+              <div className="flex gap-2">
+                <Button onClick={processCSV} disabled={!file || isProcessing} className="flex-1">
+                  {isProcessing ? 'Memproses...' : 'Parse & Pratinjau'}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    resetModal()
+                    onClose()
+                  }}
+                >
+                  Batal
+                </Button>
+              </div>
+            </div>
+
+            {/* Results Preview */}
+            {parseResult && !importResult && (
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="text-sm font-medium">Pratinjau Impor Action Plan</h3>
+                <div className="rounded bg-gray-50 p-3 text-sm text-gray-600">
+                  <p>✅ Berhasil mem-parse {parseResult.length} item</p>
+                  <p>📁 Pekerjaan: {parseResult.filter(item => item.type === 'activity').length}</p>
+                  <p>
+                    📋 Kegiatan: {parseResult.filter(item => item.type === 'subActivity').length}
+                  </p>
+                  <p className="mt-2 text-xs">
+                    Siap untuk diimpor ke database. Klik tombol di bawah untuk melanjutkan.
+                  </p>
                 </div>
 
-                {file && (
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-900">{file.name}</span>
-                      <span className="text-xs text-blue-700">
-                        ({(file.size / 1024).toFixed(1)} KB)
-                      </span>
-                    </div>
+                {/* Import Mode Selection */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium">Mode Impor</h4>
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        value="upsert"
+                        checked={importMode === 'upsert'}
+                        onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                        className="text-blue-600"
+                      />
+                      <div>
+                        <div className="text-sm font-medium">Upsert (Gabungkan)</div>
+                        <div className="text-xs text-gray-500">
+                          Perbarui data yang ada dan buat yang baru. Menjaga data yang sudah ada.
+                        </div>
+                      </div>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        value="replace"
+                        checked={importMode === 'replace'}
+                        onChange={e => setImportMode(e.target.value as 'upsert' | 'replace')}
+                        className="text-blue-600"
+                      />
+                      <div>
+                        <div className="text-sm font-medium">Ganti Semua</div>
+                        <div className="text-xs text-gray-500">
+                          Hapus semua data action plan yang ada dan ganti dengan data dari CSV. ⚠️
+                          Tidak dapat dikembalikan!
+                        </div>
+                      </div>
+                    </label>
                   </div>
-                )}
+                </div>
 
-                {error && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-red-600" />
-                      <span className="text-sm text-red-800">{error}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={handleClose}>
-                    Cancel
-                  </Button>
+                {/* Import to Database Button */}
+                <div className="flex gap-2">
                   <Button
-                    onClick={handleProcessFile}
-                    disabled={!file || isProcessing}
-                    className="bg-[#ffc928] text-[#364878] hover:bg-[#ffc928]/90"
+                    onClick={importToDatabase}
+                    disabled={isImporting}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
                   >
-                    {isProcessing ? 'Processing...' : 'Process File'}
+                    {isImporting ? 'Mengimpor...' : 'Impor ke Database'}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setParseResult(null)}
+                    disabled={isImporting}
+                  >
+                    Edit CSV
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Step 2: Preview and Import */}
-            {parseResult && !importResult && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="font-medium">File processed successfully!</span>
-                </div>
-
-                <div className="rounded-lg border bg-gray-50 p-4">
-                  <h4 className="mb-2 font-medium">Preview:</h4>
-                  <p className="text-sm text-gray-600">
-                    Found {parseResult.length} activities/sub-activities
-                  </p>
-                  <div className="mt-2 max-h-40 overflow-y-auto">
-                    {parseResult.slice(0, 5).map((item, index) => (
-                      <div key={index} className="py-1 text-xs text-gray-700">
-                        • {item.type === 'subActivity' ? '  ' : ''}
-                        {item.name} ({item.scheduleData.length} schedule entries)
-                      </div>
-                    ))}
-                    {parseResult.length > 5 && (
-                      <div className="text-xs text-gray-500">
-                        ... and {parseResult.length - 5} more
+            {/* Import Success */}
+            {importResult && (
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="text-sm font-medium text-green-700">Impor Action Plan Berhasil!</h3>
+                <div className="rounded border border-green-200 bg-green-50 p-3 text-sm">
+                  <p className="font-medium text-green-800">✅ {importResult.message}</p>
+                  <div className="mt-2 space-y-1 text-green-700">
+                    <div>
+                      <p className="font-semibold">📁 Pekerjaan:</p>
+                      <p className="ml-4 text-sm">
+                        Ditambahkan: {importResult.stats?.activitiesCreated || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">📋 Kegiatan:</p>
+                      <p className="ml-4 text-sm">
+                        Ditambahkan: {importResult.stats?.subActivitiesCreated || 0}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">📅 Action Plan Schedules:</p>
+                      <p className="ml-4 text-sm">
+                        Ditambahkan: {importResult.stats?.schedulesCreated || 0} | Diubah:{' '}
+                        {importResult.stats?.schedulesUpdated || 0}
+                      </p>
+                    </div>
+                    {importResult.stats?.errors?.length > 0 && (
+                      <div>
+                        <p className="font-semibold text-red-600">⚠️ Errors:</p>
+                        <div className="ml-4 text-sm text-red-600">
+                          {importResult.stats.errors.map((error: string, index: number) => (
+                            <p key={index}>• {error}</p>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={handleReset}>
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleImport}
-                    disabled={isImporting}
-                    className="bg-[#ffc928] text-[#364878] hover:bg-[#ffc928]/90"
-                  >
-                    {isImporting ? 'Importing...' : 'Import Action Plan'}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Import Results */}
-            {importResult && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="font-medium">Import completed!</span>
-                </div>
-
-                <div className="rounded-lg border bg-gray-50 p-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-green-600">Successful:</span>
-                      <span className="ml-2">{importResult.successful?.length || 0}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-red-600">Failed:</span>
-                      <span className="ml-2">{importResult.failed?.length || 0}</span>
-                    </div>
-                  </div>
-
-                  {importResult.failed?.length > 0 && (
-                    <div className="mt-4 max-h-32 overflow-y-auto">
-                      <h5 className="mb-2 font-medium text-red-600">Failed entries:</h5>
-                      {importResult.failed.map((failure: any, index: number) => (
-                        <div key={index} className="py-1 text-xs text-red-700">
-                          • {failure.error}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleClose}
-                    className="bg-[#ffc928] text-[#364878] hover:bg-[#ffc928]/90"
-                  >
-                    Close
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => {
+                    resetModal()
+                    onClose()
+                  }}
+                  className="w-full"
+                >
+                  Tutup
+                </Button>
               </div>
             )}
           </CardContent>

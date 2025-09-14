@@ -264,6 +264,8 @@ export default function ProjectDetailPage() {
 
   const refreshActivities = () => {
     queryClient.invalidateQueries({ queryKey: ['activities', 'list', projectId] })
+    queryClient.invalidateQueries({ queryKey: ['action-plan-schedules'] })
+    queryClient.invalidateQueries({ queryKey: ['schedules'] })
   }
 
   const tabs = [

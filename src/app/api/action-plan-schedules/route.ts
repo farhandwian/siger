@@ -18,10 +18,8 @@ const QuerySchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('=== ACTION PLAN SCHEDULES GET API ===')
     const { searchParams } = new URL(req.url)
     const query = QuerySchema.parse(Object.fromEntries(searchParams))
-    console.log('Query parameters:', query)
 
     // Build where clause based on query parameters
     const where: any = {}

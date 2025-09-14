@@ -3,11 +3,7 @@
 import React from 'react'
 import { UnifiedScheduleTable } from '@/components/shared/UnifiedScheduleTable'
 import { useActivities, useProject } from '@/hooks/useActivityQueries'
-import {
-  useActionPlanSchedules,
-  useUpdateActionPlanSchedule,
-  useCreateActionPlanSchedule,
-} from '@/hooks/useActionPlanSchedules'
+import { useActionPlanSchedules, useUpsertActionPlanSchedule } from '@/hooks/useActionPlanSchedules'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 
 /**
@@ -24,8 +20,7 @@ export function ActionPlanScheduleTableNew({ projectId }: ActionPlanScheduleTabl
   const { data: activities, isLoading } = useActivities(projectId)
   const { data: project } = useProject(projectId)
   const { data: actionPlanSchedules } = useActionPlanSchedules({ projectId })
-  const updateActionPlanMutation = useUpdateActionPlanSchedule()
-  const createActionPlanMutation = useCreateActionPlanSchedule()
+  const upsertActionPlanMutation = useUpsertActionPlanSchedule()
 
   const currentYear = new Date().getFullYear()
 
@@ -95,45 +90,23 @@ export function ActionPlanScheduleTableNew({ projectId }: ActionPlanScheduleTabl
     const month = sequentialWeek.month
     const week = sequentialWeek.weekInMonth
 
-    // Find existing action plan schedule
-    const existingSchedule = actionPlanSchedules?.find(s => {
-      if (subActivityId) {
-        return (
-          s.subActivityId === subActivityId &&
-          s.month === month &&
-          s.week === week &&
-          s.year === currentYear
-        )
-      } else {
-        return (
-          s.activityId === activityId &&
-          s.month === month &&
-          s.week === week &&
-          s.year === currentYear
-        )
-      }
-    })
-
-    if (existingSchedule) {
-      // Update existing schedule
-      await updateActionPlanMutation.mutateAsync({
-        id: existingSchedule.id,
-        data: {
-          [type === 'plan' ? 'planPercentage' : 'actualPercentage']: value,
-        },
-      })
-    } else {
-      // Create new schedule
-      await createActionPlanMutation.mutateAsync({
-        activityId: subActivityId ? null : activityId,
-        subActivityId: subActivityId || null,
-        month,
-        year: currentYear,
-        week,
-        planPercentage: type === 'plan' ? value || 0 : 0,
-        actualPercentage: type === 'actual' ? value || 0 : 0,
-      })
+    // Upsert approach - let backend handle duplicate detection
+    const upsertData: any = {
+      activityId: subActivityId ? null : activityId,
+      subActivityId: subActivityId || null,
+      month,
+      year: currentYear,
+      week,
     }
+
+    // Only include the percentage being updated to preserve existing value
+    if (type === 'plan') {
+      upsertData.planPercentage = value || 0
+    } else {
+      upsertData.actualPercentage = value || 0
+    }
+
+    await upsertActionPlanMutation.mutateAsync(upsertData)
   }
 
   // Function to calculate cumulative values for each week
