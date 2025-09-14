@@ -1,20 +1,22 @@
 import { PrismaClient } from '@prisma/client'
-import seedUsers from './seed-users'
+
 import seedActivities from './seed-activities'
+import { seedAuthUsers } from './seed-auth-users'
+import { seedAnalisaKebutuhan } from './seed-analisa-kebutuhan'
 
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Seeding database...')
 
-  // Seed users first
-  await seedUsers()
-
   // Clear existing data
   await prisma.materialSchedule.deleteMany({})
   await prisma.material.deleteMany({})
   await prisma.projectAuditLog.deleteMany({})
   await prisma.project.deleteMany({})
+  await prisma.user.deleteMany({})
+
+  await seedAuthUsers()
 
   // Create dummy projects
   const projects = await Promise.all([
@@ -345,6 +347,8 @@ async function main() {
   await seedActivities()
 
   console.log('🎉 Seeding completed!')
+
+  await seedAnalisaKebutuhan()
 }
 
 main()

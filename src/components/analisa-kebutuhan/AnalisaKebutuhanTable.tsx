@@ -9,26 +9,13 @@ import { CalendarIcon } from '@/components/ui/icons'
 import { Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
+import { useGroupedAnalisaKebutuhan } from '@/hooks/useGroupedAnalisaKebutuhan'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
-// Type definitions for the data structure
-interface TenagaKerja {
-  role: string
-  jumlah: string
-  stokHarian: string
-  terpasang: string
-  totalStokHariIni: string
-}
-
-interface Bahan {
-  item: string
-  jumlah: string
-  stokHarian: string
-  terpasang: string
-  totalStokHariIni: string
-}
-
-interface Alat {
-  item: string
+// Type definitions for the flexible data structure
+interface CategoryItem {
+  name: string // Unified naming (can be role, item, etc.)
   jumlah: string
   stokHarian: string
   terpasang: string
@@ -38,9 +25,8 @@ interface Alat {
 interface SubActivity {
   name: string
   Target: string
-  KebutuhanTenagaKerja?: TenagaKerja[]
-  KebutuhanBahan?: Bahan[]
-  KebutuhanAlat?: Alat[]
+  // Flexible categories - Record<categoryName, items[]>
+  categories?: Record<string, CategoryItem[]>
 }
 
 interface Activity {
@@ -52,7 +38,8 @@ interface TableData {
   Kegiatan: Activity[]
 }
 
-// Dummy data following the suggested structure
+// Dummy data following the flexible structure (commented out - now using real API)
+/*
 const dummyData: TableData = {
   Kegiatan: [
     {
@@ -61,47 +48,49 @@ const dummyData: TableData = {
         {
           name: 'Mobilisasi dan demobilisasi',
           Target: '648,77 m³/Minggu',
-          KebutuhanTenagaKerja: [
-            {
-              role: 'Pekerja',
-              jumlah: '1 Orang/Hari',
-              stokHarian: '100%',
-              terpasang: '100%',
-              totalStokHariIni: '0%',
-            },
-            {
-              role: 'Tukang',
-              jumlah: '1 Orang/Hari',
-              stokHarian: '97%',
-              terpasang: '95%',
-              totalStokHariIni: '-5%',
-            },
-            {
-              role: 'Mandor',
-              jumlah: '1 Orang/Hari',
-              stokHarian: '103%',
-              terpasang: '102%',
-              totalStokHariIni: '+3%',
-            },
-          ],
-          KebutuhanBahan: [
-            {
-              item: 'Batu',
-              jumlah: '847 m³/Hari',
-              stokHarian: '98%',
-              terpasang: '99%',
-              totalStokHariIni: '-2%',
-            },
-          ],
-          KebutuhanAlat: [
-            {
-              item: 'Stamper Smooth Drum 1,5 Ton',
-              jumlah: '0.09 Unit/Hari',
-              stokHarian: '105%',
-              terpasang: '104%',
-              totalStokHariIni: '+5%',
-            },
-          ],
+          categories: {
+            'Tenaga Kerja': [
+              {
+                name: 'Pekerja',
+                jumlah: '1 Orang/Hari',
+                stokHarian: '100%',
+                terpasang: '100%',
+                totalStokHariIni: '0%',
+              },
+              {
+                name: 'Tukang',
+                jumlah: '1 Orang/Hari',
+                stokHarian: '97%',
+                terpasang: '95%',
+                totalStokHariIni: '-5%',
+              },
+              {
+                name: 'Mandor',
+                jumlah: '1 Orang/Hari',
+                stokHarian: '103%',
+                terpasang: '102%',
+                totalStokHariIni: '+3%',
+              },
+            ],
+            'Bahan': [
+              {
+                name: 'Batu',
+                jumlah: '847 m³/Hari',
+                stokHarian: '98%',
+                terpasang: '99%',
+                totalStokHariIni: '-2%',
+              },
+            ],
+            'Alat': [
+              {
+                name: 'Stamper Smooth Drum 1,5 Ton',
+                jumlah: '0.09 Unit/Hari',
+                stokHarian: '105%',
+                terpasang: '104%',
+                totalStokHariIni: '+5%',
+              },
+            ],
+          },
         },
         {
           name: 'Stake out Trase Saluran',
@@ -119,27 +108,30 @@ const dummyData: TableData = {
         {
           name: 'Sistem Manajemen Keselamatan Konstruksi',
           Target: '500,77 m³/Minggu',
-          KebutuhanTenagaKerja: [
-            {
-              role: 'Pekerja',
-              jumlah: '6 Orang/Minggu',
-              stokHarian: '102%',
-              terpasang: '103%',
-              totalStokHariIni: '+3%',
-            },
-            {
-              role: 'Tukang',
-              jumlah: '3 Orang/Minggu',
-              stokHarian: '98%',
-              terpasang: '96%',
-              totalStokHariIni: '-4%',
-            },
-          ],
+          categories: {
+            'Tenaga Kerja': [
+              {
+                name: 'Pekerja',
+                jumlah: '6 Orang/Minggu',
+                stokHarian: '102%',
+                terpasang: '103%',
+                totalStokHariIni: '+3%',
+              },
+              {
+                name: 'Tukang',
+                jumlah: '3 Orang/Minggu',
+                stokHarian: '98%',
+                terpasang: '96%',
+                totalStokHariIni: '-4%',
+              },
+            ],
+          },
         },
       ],
     },
   ],
 }
+*/
 
 interface AnalisaKebutuhanTableProps {
   projectId: string
@@ -159,6 +151,59 @@ export default function AnalisaKebutuhanTable({ projectId }: AnalisaKebutuhanTab
       setSelectedDate(undefined)
     }
   }
+
+  // Format date for API call
+  const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined
+
+  // Fetch grouped data from API
+  const { data, isLoading, isError, error } = useGroupedAnalisaKebutuhan({
+    projectId,
+    tanggal: formattedDate,
+  })
+
+  // Render loading state
+  const renderLoadingState = () => (
+    <Card className="w-full rounded-2xl">
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-1/3" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  // Render error state
+  const renderErrorState = () => (
+    <Card className="w-full rounded-2xl">
+      <CardContent className="p-6">
+        <Alert variant="destructive">
+          <AlertTitle>Error Loading Data</AlertTitle>
+          <AlertDescription>
+            {(error as Error)?.message ||
+              'An unexpected error occurred while loading the analysis data.'}
+          </AlertDescription>
+        </Alert>
+      </CardContent>
+    </Card>
+  )
+
+  // Render empty state
+  const renderEmptyState = () => (
+    <Card className="w-full rounded-2xl">
+      <CardContent className="p-6">
+        <Alert>
+          <AlertTitle>No Data Available</AlertTitle>
+          <AlertDescription>
+            No analysis data found for the selected date. Try selecting a different date or create
+            new analysis entries.
+          </AlertDescription>
+        </Alert>
+      </CardContent>
+    </Card>
+  )
 
   return (
     <div className="w-full space-y-4">
@@ -197,214 +242,149 @@ export default function AnalisaKebutuhanTable({ projectId }: AnalisaKebutuhanTab
       </Card>
 
       {/* Table Section */}
-      <Card className="w-full rounded-2xl">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px] border-collapse text-xs">
-              {/* Table Header */}
-              <thead>
-                <tr>
-                  <th className="w-[225px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
-                    Kegiatan
-                  </th>
-                  <th className="w-[236px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
-                    Kebutuhan Kegiatan
-                  </th>
-                  <th className="w-[159px] border border-gray-200 bg-[#364878] p-3 text-center font-bold text-white">
-                    Analisa Kebutuhan
-                  </th>
-                  <th className="w-[175px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
-                    Stok Harian
-                  </th>
-                  <th className="w-[175px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
-                    Stok Terpasang
-                  </th>
-                  <th className="w-[175px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
-                    Total Stok Hari ini
-                  </th>
-                </tr>
-                <tr>
-                  <th className="border border-gray-200 bg-white"></th>
-                  <th className="border border-gray-200 bg-white"></th>
-                  <th className="border border-gray-200 bg-white p-2 text-center font-medium text-gray-800">
-                    1
-                  </th>
-                  <th className="border border-gray-200 bg-white p-2 text-center font-medium text-gray-800">
-                    1
-                  </th>
-                  <th className="border border-gray-200 bg-white p-2 text-center font-medium text-gray-800">
-                    2
-                  </th>
-                  <th className="border border-gray-200 bg-white p-2 text-center font-medium text-gray-800">
-                    3
-                  </th>
-                </tr>
-              </thead>
+      {isLoading && renderLoadingState()}
+      {isError && renderErrorState()}
+      {!isLoading && !isError && (!data || data.Kegiatan.length === 0) && renderEmptyState()}
 
-              {/* Table Body - Dynamic Rendering */}
-              <tbody>
-                {dummyData.Kegiatan.map((activity, activityIndex) => (
-                  <React.Fragment key={activityIndex}>
-                    {/* Activity Category Header */}
-                    <tr>
-                      <td className="border border-gray-200 p-2 text-xs font-semibold text-gray-900 underline">
-                        {activity.name}
-                      </td>
-                      <td className="border border-gray-200"></td>
-                      <td className="border border-gray-200"></td>
-                      <td className="border border-gray-200"></td>
-                      <td className="border border-gray-200"></td>
-                      <td className="border border-gray-200"></td>
-                    </tr>
+      {!isLoading && !isError && data && data.Kegiatan.length > 0 && (
+        <Card className="w-full rounded-2xl">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1200px] border-collapse text-xs">
+                {/* Table Header */}
+                <thead>
+                  <tr>
+                    <th className="w-[225px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
+                      Kegiatan
+                    </th>
+                    <th className="w-[236px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
+                      Kebutuhan Kegiatan
+                    </th>
+                    <th className="w-[159px] border border-gray-200 bg-[#364878] p-3 text-center font-bold text-white">
+                      Analisa Kebutuhan
+                    </th>
+                    <th className="w-[175px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
+                      Stok Harian
+                    </th>
+                    <th className="w-[175px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
+                      Stok Terpasang
+                    </th>
+                    <th className="w-[175px] border border-gray-200 bg-gray-50 p-3 text-center font-bold text-gray-900">
+                      Total Stok Hari ini
+                    </th>
+                  </tr>
+                  <tr>
+                    <th className="border border-gray-200 bg-white"></th>
+                    <th className="border border-gray-200 bg-white"></th>
+                    <th className="border border-gray-200 bg-white p-2 text-center font-medium text-gray-800">
+                      1
+                    </th>
+                    <th className="border border-gray-200 bg-white p-2 text-center font-medium text-gray-800">
+                      1
+                    </th>
+                    <th className="border border-gray-200 bg-white p-2 text-center font-medium text-gray-800">
+                      2
+                    </th>
+                    <th className="border border-gray-200 bg-white p-2 text-center font-medium text-gray-800">
+                      3
+                    </th>
+                  </tr>
+                </thead>
 
-                    {/* Sub Activities */}
-                    {activity.subActivities.map((subActivity, subIndex) => (
-                      <React.Fragment key={`${activityIndex}-${subIndex}`}>
-                        {/* Sub Activity Target Row */}
-                        <tr
-                          className={
-                            subIndex > 0 &&
-                            !subActivity.KebutuhanTenagaKerja &&
-                            !subActivity.KebutuhanBahan &&
-                            !subActivity.KebutuhanAlat
-                              ? 'bg-gray-50'
-                              : ''
-                          }
-                        >
-                          <td className="border border-gray-200 p-6 font-semibold text-gray-900">
-                            {subActivity.name}
-                          </td>
-                          <td className="border border-gray-200 p-2 pl-6 font-normal text-gray-800">
-                            Target
-                          </td>
-                          <td className="border border-gray-200 p-2 font-medium text-gray-800">
-                            {subActivity.Target}
-                          </td>
-                          <td className="border border-gray-200"></td>
-                          <td className="border border-gray-200"></td>
-                          <td className="border border-gray-200"></td>
-                        </tr>
+                {/* Table Body - Dynamic Rendering */}
+                <tbody>
+                  {data.Kegiatan.map((activity, activityIndex) => (
+                    <React.Fragment key={activityIndex}>
+                      {/* Activity Category Header */}
+                      <tr>
+                        <td className="border border-gray-200 p-2 text-xs font-semibold text-gray-900 underline">
+                          {activity.name}
+                        </td>
+                        <td className="border border-gray-200"></td>
+                        <td className="border border-gray-200"></td>
+                        <td className="border border-gray-200"></td>
+                        <td className="border border-gray-200"></td>
+                        <td className="border border-gray-200"></td>
+                      </tr>
 
-                        {/* Kebutuhan Tenaga Kerja Section */}
-                        {subActivity.KebutuhanTenagaKerja &&
-                          subActivity.KebutuhanTenagaKerja.length > 0 && (
-                            <>
-                              <tr>
-                                <td className="border border-gray-200"></td>
-                                <td className="border border-gray-200 p-2 pl-6 font-medium text-gray-800">
-                                  Kebutuhan Tenaga Kerja
-                                </td>
-                                <td className="border border-gray-200"></td>
-                                <td className="border border-gray-200"></td>
-                                <td className="border border-gray-200"></td>
-                                <td className="border border-gray-200"></td>
-                              </tr>
+                      {/* Sub Activities */}
+                      {activity.subActivities.map((subActivity, subIndex) => (
+                        <React.Fragment key={`${activityIndex}-${subIndex}`}>
+                          {/* Sub Activity Target Row */}
+                          <tr
+                            className={
+                              subIndex > 0 &&
+                              (!subActivity.categories ||
+                                Object.keys(subActivity.categories).length === 0)
+                                ? 'bg-gray-50'
+                                : ''
+                            }
+                          >
+                            <td className="border border-gray-200 p-6 font-semibold text-gray-900">
+                              {subActivity.name}
+                            </td>
+                            <td className="border border-gray-200 p-2 pl-6 font-normal text-gray-800">
+                              Target
+                            </td>
+                            <td className="border border-gray-200 p-2 font-medium text-gray-800">
+                              {subActivity.Target}
+                            </td>
+                            <td className="border border-gray-200"></td>
+                            <td className="border border-gray-200"></td>
+                            <td className="border border-gray-200"></td>
+                          </tr>
 
-                              {subActivity.KebutuhanTenagaKerja.map((tenaga, tenagaIndex) => (
-                                <tr key={`tenaga-${tenagaIndex}`}>
-                                  <td className="border border-gray-200"></td>
-                                  <td className="border border-gray-200 p-2 pl-6 font-normal text-gray-800">
-                                    {tenagaIndex + 1}. {tenaga.role}
-                                  </td>
-                                  <td className="border border-gray-200 p-2 font-medium text-gray-800">
-                                    {tenaga.jumlah}
-                                  </td>
-                                  <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
-                                    {tenaga.stokHarian}
-                                  </td>
-                                  <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
-                                    {tenaga.terpasang}
-                                  </td>
-                                  <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
-                                    {tenaga.totalStokHariIni}
-                                  </td>
-                                </tr>
-                              ))}
-                            </>
-                          )}
+                          {/* Dynamic Categories Section */}
+                          {subActivity.categories &&
+                            Object.entries(subActivity.categories).map(
+                              ([categoryName, categoryItems]) => (
+                                <React.Fragment key={categoryName}>
+                                  {/* Category Header Row */}
+                                  <tr>
+                                    <td className="border border-gray-200"></td>
+                                    <td className="border border-gray-200 p-2 pl-6 font-medium text-gray-800">
+                                      Kebutuhan {categoryName}
+                                    </td>
+                                    <td className="border border-gray-200"></td>
+                                    <td className="border border-gray-200"></td>
+                                    <td className="border border-gray-200"></td>
+                                    <td className="border border-gray-200"></td>
+                                  </tr>
 
-                        {/* Kebutuhan Bahan Section */}
-                        {subActivity.KebutuhanBahan && subActivity.KebutuhanBahan.length > 0 && (
-                          <>
-                            <tr>
-                              <td className="border border-gray-200"></td>
-                              <td className="border border-gray-200 p-2 pl-6 font-medium text-gray-800">
-                                Kebutuhan Bahan
-                              </td>
-                              <td className="border border-gray-200"></td>
-                              <td className="border border-gray-200"></td>
-                              <td className="border border-gray-200"></td>
-                              <td className="border border-gray-200"></td>
-                            </tr>
-
-                            {subActivity.KebutuhanBahan.map((bahan, bahanIndex) => (
-                              <tr key={`bahan-${bahanIndex}`}>
-                                <td className="border border-gray-200"></td>
-                                <td className="border border-gray-200 p-2 pl-6 font-normal text-gray-800">
-                                  {bahanIndex + 1}. {bahan.item}
-                                </td>
-                                <td className="border border-gray-200 p-2 font-medium text-gray-800">
-                                  {bahan.jumlah}
-                                </td>
-                                <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
-                                  {bahan.stokHarian}
-                                </td>
-                                <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
-                                  {bahan.terpasang}
-                                </td>
-                                <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
-                                  {bahan.totalStokHariIni}
-                                </td>
-                              </tr>
-                            ))}
-                          </>
-                        )}
-
-                        {/* Kebutuhan Alat Section */}
-                        {subActivity.KebutuhanAlat && subActivity.KebutuhanAlat.length > 0 && (
-                          <>
-                            <tr>
-                              <td className="border border-gray-200"></td>
-                              <td className="border border-gray-200 p-2 pl-6 font-medium text-gray-800">
-                                Kebutuhan Alat
-                              </td>
-                              <td className="border border-gray-200"></td>
-                              <td className="border border-gray-200"></td>
-                              <td className="border border-gray-200"></td>
-                              <td className="border border-gray-200"></td>
-                            </tr>
-
-                            {subActivity.KebutuhanAlat.map((alat, alatIndex) => (
-                              <tr key={`alat-${alatIndex}`}>
-                                <td className="border border-gray-200"></td>
-                                <td className="border border-gray-200 p-2 pl-6 font-normal text-gray-800">
-                                  {alatIndex + 1}. {alat.item}
-                                </td>
-                                <td className="border border-gray-200 p-2 font-medium text-gray-800">
-                                  {alat.jumlah}
-                                </td>
-                                <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
-                                  {alat.stokHarian}
-                                </td>
-                                <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
-                                  {alat.terpasang}
-                                </td>
-                                <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
-                                  {alat.totalStokHariIni}
-                                </td>
-                              </tr>
-                            ))}
-                          </>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                                  {/* Category Items */}
+                                  {categoryItems.map((item, itemIndex) => (
+                                    <tr key={`${categoryName}-${itemIndex}`}>
+                                      <td className="border border-gray-200"></td>
+                                      <td className="border border-gray-200 p-2 pl-6 font-normal text-gray-800">
+                                        {itemIndex + 1}. {item.name}
+                                      </td>
+                                      <td className="border border-gray-200 p-2 font-medium text-gray-800">
+                                        {item.jumlah}
+                                      </td>
+                                      <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
+                                        {item.stokHarian}
+                                      </td>
+                                      <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
+                                        {item.terpasang}
+                                      </td>
+                                      <td className="border border-gray-200 p-2 text-center font-medium text-gray-800">
+                                        {item.totalStokHariIni}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </React.Fragment>
+                              )
+                            )}
+                        </React.Fragment>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

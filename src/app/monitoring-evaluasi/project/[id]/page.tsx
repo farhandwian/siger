@@ -31,6 +31,7 @@ import { ChevronDown, Plus, RefreshCw, Wifi, WifiOff, Upload } from 'lucide-reac
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ActionPlanMetrics } from '@/components/monitoring/action-plan-metrics'
 import { ArrowLeft } from 'lucide-react'
+import AnalisaKebutuhanTable from '@/components/analisa-kebutuhan/AnalisaKebutuhanTable'
 
 interface TabProps {
   label: string
@@ -870,7 +871,7 @@ export default function ProjectDetailPage() {
 
               {activeTab === 'Analisa Kebutuhan' && (
                 <div className="space-y-6">
-                  {/* <AnalisaKebutuhanNew projectId={projectId} /> */}
+                  <AnalisaKebutuhanTable projectId={projectId} />
                 </div>
               )}
 
@@ -880,6 +881,12 @@ export default function ProjectDetailPage() {
                 activeTab !== 'Action Plan' &&
                 activeTab !== 'Material Flow' &&
                 activeTab !== 'Peta Pekerjaan' && (
+                  <div className="py-12 text-center">
+                    <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
+                    <p className="text-gray-600">Konten untuk tab ini sedang dalam pengembangan.</p>
+                  </div>
+                ) &&
+                activeTab !== 'Analisa Kebutuhan' && (
                   <div className="py-12 text-center">
                     <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
                     <p className="text-gray-600">Konten untuk tab ini sedang dalam pengembangan.</p>

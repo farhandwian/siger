@@ -49,16 +49,6 @@ for input Volume Target (Volume Satuan),Volume (Volume Satuan),Tanggal Mulai,Tan
 
 --------------------------------
 
-https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=195-10197&t=hMz3lzXHACOpeeTt-11
-
-i want you to implement that figma link. please create the be and fe and i want you to create the seeder based on the dummy data that shown on that figma.
-
-for the first time it will fetch all the data from be.
-
-when user click tambah material, it will trigger the modal form, with one input field which is input filed jenis material. if user click simpan, application will show the ui like on the figma but with empty data. only jenis material that filled. 
-
-
-for inputs Jenis material, volume satuan(consistf of 2 value:m3 and buah), Volume Target,Tanggal Mulai,Tanggal Selesai,Waktu Selesai (Hari) user can input and it will autosave on the db(please use  input field on  informasi umum proyek tab as referemce). the volume data is the latest data of realisasi kumulatif of the table progres pasir.
 
 the value of pelaksanaan column is statis, but on the right side of pelaksaan column is input form and it is automatically save to db like ActivityScheduleTable(use ActivityScheduleTable as reference). the time range is from Tanggal Mulai to Tanggal Selesai. rencana value is from volume target, so it will disabled. rencana kumulatif is sum of rencana each day,it also need to be disabled. tercapai consist 2 possibilty Y with green and T with red(Y if on that day realisasi < rencana) this also disabled. so user can only input the data on realisai and realisasi kumulatif row. when tanggal mulai changes or tanggal selesai changes the column time will also adjust the ranges corresponding to that changes. and also if volume target changes the rencana and rencana kumulatif will also changes, and the tercapai values will also adjust to it.
 
@@ -195,20 +185,130 @@ cumulative rencana juni(30–06):25
 
 
 ---------------------------------
-ok i want you to visualize cumulative rencana dan cumulative realisasi from material flow table in material chart, and on the chart dont forget to add filter by month like the table does
+
 ---------------------------------
 i want you to get the image from db, and then if user click the image it will show all the image preview
 ---------------------------------
+
+
+
+=======================
 ANALISIS KEBUTUHAN:
 please make activity schedule as reference.
 
-please implement this ui:
+please implement this ui, please create exactly same with the figma:
 
-
+https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=309-9517&m=dev
 
 detail sepecification on table
 -on analisis kebutuhan column the input is fillable, and it is autosave.
 -the values in column kegiatan is from db, user will input that data by clicking button atur pekerjaan, value on this colum doesnt fillable
 -the rest of column is also fillable
+
+------------------------
+tolong implement ui berikut fe dan be nya pada tab analisa kebutuhan
+
+modal tambah:
+https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=526-11518&m=draw&t=2OrDXDrSUDqCPs7f-11
+
+
+dengan tambahan catatan:
+buat di db beberapa table
+
+tabel analisa_kebutuhan
+-subactivity_id
+-kebutuhan_id
+-koefisien
+-stok harian
+-terpasang
+-total sisa stok hari ini
+
+tabel kategori_kebutuhan:
+-nama
+
+tabel kebutuhan
+-kategori_kebutuhan_id
+-nama
+
+jagnan lupa buatkan juga default kolomnya, id,creaetd_at, dan updated_at
+
+nilai kategori_kebutuhan itu hanya ada 3 seperti pada modal tambah kategori_kebutuhan -> dengan nilai tenaga_kerja_perhari, bahan_per_hari, alat_perhari. dengan nama kebutuhan sebagai berikut:
+
+tenaga_kerja_perhari -> pekerja, tukang, mandor
+
+bahan -> tanah, batu,Tanah didatngkan/Tanah biasa/liat berpasir,Geotekstil,Sirtu,Batu 50 kg - 100 kg,Batu 650 kg - 800 kg,Tetrapod (actual weight =0.46 ton), Semen tipe V,beton,Semen tipe V, Pasir beton, Kerikil, Air, Batu 200 kg - 300 kg
+
+
+alat_per_hari -> Excavator,Stamper Smooth Drum 1.5 Ton,Wheel Loader,Roller, Vibro,Crane di Lokasi Pemasangan,Crane di Lokasi Pemasangan
+
+
+
+catatan tabel:
+ok now change the dummy data, please integrate with exisiting api, if there is no api exist, please make one, keep in mind the data on response should be look like the current dummy data. you can change the exisisting api if the api still wrong
+
+catatan modal tambah:
+
+tolong buatkan tampilan modal seperti pada figma berikut:
+https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=526-11518&m=dev
+
+ketika tombol buat analisa kebutuhan diklik maka akan memicu modal tersebut. pada bagian sidebar kirinya itu merupakan data actiivity dan subactivitynya. lalu untuk card bagian kanannya nilai Volume nya diambil dari data volumeKontrak pada tabel subactivity, waktu pelaksanaan diambil dari nilai masaKontrak pada tabel projects. tolong buatkan 
+
+
+
+-------------------------
+the data from db should look like this
+{
+
+	{
+		kegiatan
+	}
+}
+
+----------------------------
+ok diatas table tersebut tolong tambahkan tampilan filter menggunakan tanggal, dan button, seperti pada ui berikut:
+https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=533-23325&m=dev
+
+
+==============================================
+
+MATERIALS FLOW
+
+https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=195-10197&t=hMz3lzXHACOpeeTt-11
+
+i want you to implement that figma link. please create the be and fe and i want you to create the seeder based on the dummy data that shown on that figma.
+
+for the first time it will fetch all the data from be.
+
+when user click tambah material, it will trigger the modal form, with one input field which is input filed jenis material. if user click simpan, application will show the ui like on the figma but with empty data. only jenis material that filled. 
+
+
+for inputs Jenis material, volume satuan(consistf of 2 value:m3 and buah), Volume Target,Tanggal Mulai,Tanggal Selesai,Waktu Selesai (Hari) user can input and it will autosave on the db(please use  input field on  informasi umum proyek tab as referemce). the volume data is the latest data of realisasi kumulatif of the table progres pasir.
+
+ok i want you to visualize cumulative rencana dan cumulative realisasi from material flow table in material chart, and on the chart dont forget to add filter by month like the table does
+
+------------------------
+tolong refactor materials flow, jadi datanya itu tidak akan materials/bahan saja sekarang ini 
+
+tabel analisa_kebutuhan
+-subactivity_id
+-kebutuhan_id
+-koefisien
+-stok harian
+-terpasang
+-total sisa stok hari ini
+
+tabel kategori_kebutuhan:
+-nama
+
+tabel kebutuhan
+-kategori_kebutuhan_id
+-nama
+
+tabel resource_flow_schedule
+
+
+==============================================
+
+
 
 
