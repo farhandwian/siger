@@ -20,7 +20,6 @@ export interface MonthData {
  */
 export function getActualPeriodsFromScheduleData(activities: any[]): MonthData[] | null {
   if (!activities || activities.length === 0) {
-    console.log('No activities provided to getActualPeriodsFromScheduleData')
     return null
   }
 
@@ -547,8 +546,6 @@ export interface SequentialWeek {
  * Parse Indonesian date format (e.g., "23 Mei 2025")
  */
 function parseIndonesianDate(dateStr: string): Date | null {
-  console.log('📅 Parsing Indonesian date:', dateStr)
-
   if (!dateStr) return null
 
   // Indonesian month mapping
@@ -578,14 +575,6 @@ function parseIndonesianDate(dateStr: string): Date | null {
       if (monthNum) {
         const formattedDate = `${year}-${monthNum}-${day.padStart(2, '0')}`
         const date = new Date(formattedDate)
-        console.log(
-          '📅 Parsed Indonesian date:',
-          dateStr,
-          '->',
-          formattedDate,
-          '->',
-          date.toISOString()
-        )
         return date
       }
     }
@@ -623,10 +612,7 @@ export function generateSequentialWeeks(
   spmkDate: string | null,
   totalWeeks: number = 20
 ): SequentialWeek[] {
-  console.log('📅 generateSequentialWeeks called with:', { spmkDate, totalWeeks })
-
   if (!spmkDate) {
-    console.log('⚠️ No SPMK date provided, using fallback start date: May 19, 2025')
     // Fallback to May 19, 2025 so that W2 aligns with CSV Period 1 (May 26-June 1)
     const fallbackStart = new Date('2025-05-19')
     return generateSequentialWeeksFromDate(fallbackStart, totalWeeks)
@@ -638,7 +624,6 @@ export function generateSequentialWeeks(
       throw new Error('Failed to parse SPMK date')
     }
 
-    console.log('📅 Parsed SPMK date successfully:', startDate.toISOString())
     return generateSequentialWeeksFromDate(startDate, totalWeeks)
   } catch (error) {
     console.error('❌ Error parsing SPMK date, using fallback:', error)
@@ -664,7 +649,6 @@ function generateSequentialWeeksFromDate(startDate: Date, totalWeeks: number): S
   }
 
   let currentMonday = getMonday(startDate)
-  console.log('📅 Starting sequential weeks from Monday:', currentMonday.toISOString().slice(0, 10))
 
   for (let i = 0; i < totalWeeks; i++) {
     const weekStart = new Date(currentMonday)

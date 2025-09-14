@@ -56,9 +56,9 @@ export async function GET(req: NextRequest) {
         ...whereClause.subActivity,
         name: {
           contains: search,
-          mode: 'insensitive',
+          mode: 'insensitive' as const,
         },
-      }
+      } as Prisma.SubActivityWhereInput
     }
 
     // Add date filter - prioritize tanggalProgres over startDate/endDate

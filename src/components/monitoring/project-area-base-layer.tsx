@@ -66,13 +66,13 @@ export const ProjectAreaBaseLayer = ({
 
       if (response.ok) {
         const result = await response.json()
-        console.log('loadPolygonData: API result:', result)
+        
 
         if (result.success && result.data?.coordinates) {
-          console.log('loadPolygonData: Found coordinates:', result.data.coordinates)
+          
           return result.data.coordinates
         } else {
-          console.log('loadPolygonData: No coordinates found in result')
+          
         }
       } else {
         console.log('loadPolygonData: Response not ok:', response.status)
@@ -382,14 +382,100 @@ export const ProjectAreaBaseLayer = ({
           await onPolygonSave(coordinates)
         }
 
-        // After saving successfully, simply exit edit mode
-        // The data layer styling will automatically change from blue to red
-        console.log('Save: Polygon saved successfully, switching to view mode')
+        // COMPLETE MAP RESET APPROACH - Clear everything and reinitialize
+        console.log('Save: Starting complete map reset and data refresh')
+        
+        // 1. Clear drawing manager and any drawing overlays
+        if (drawingManager) {
+          drawingManager.setDrawingMode(null)
+          drawingManager.setMap(null)
+          setDrawingManager(null)
+          console.log('Save: Cleared drawing manager')
+        }
 
+        // 2. Completely remove and recreate the data layer
+        if (dataLayer) {
+          // Clear all features
+          const featuresToRemove: google.maps.Data.Feature[] = []
+          dataLayer.forEach(feature => {
+            featuresToRemove.push(feature)
+          })
+          featuresToRemove.forEach(feature => {
+            dataLayer.remove(feature)
+          })
+          
+          // Remove the data layer from map
+          dataLayer.setMap(null)
+          console.log('Save: Removed old data layer')
+        }
+
+        // 3. Create a completely new data layer
+        const newDataLayer = new google.maps.Data({
+          map: map!,
+          style: feature => ({
+            fillOpacity: 0.1,
+            fillColor: '#EF4444',
+            strokeColor: '#EF4444',
+            strokeWeight: 2,
+            strokeOpacity: 0.8,
+            editable: false,
+            draggable: false,
+          }),
+        })
+        setDataLayer(newDataLayer)
+        console.log('Save: Created new data layer')
+
+        // 4. Load fresh polygon data from database
+        console.log('Save: Loading fresh data from database')
+        const freshCoordinates = await loadPolygonData()
+        let coordinatesToUse = defaultCoordinates
+
+        if (freshCoordinates && Array.isArray(freshCoordinates)) {
+          coordinatesToUse = freshCoordinates.map(coord => [coord.lng, coord.lat])
+          // Close the polygon if not already closed
+          if (
+            coordinatesToUse.length > 0 &&
+            (coordinatesToUse[0][0] !== coordinatesToUse[coordinatesToUse.length - 1][0] ||
+              coordinatesToUse[0][1] !== coordinatesToUse[coordinatesToUse.length - 1][1])
+          ) {
+            coordinatesToUse.push(coordinatesToUse[0])
+          }
+          console.log('Save: Using fresh coordinates from database')
+        } else {
+          console.log('Save: Using default coordinates as fallback')
+        }
+
+        // 5. Add fresh polygon to new data layer
+        const projectAreaGeoJSON = {
+          type: 'FeatureCollection' as const,
+          features: [
+            {
+              type: 'Feature' as const,
+              properties: {
+                name: 'Project Work Area',
+              },
+              geometry: {
+                type: 'Polygon' as const,
+                coordinates: [coordinatesToUse],
+              },
+            },
+          ],
+        }
+
+        newDataLayer.addGeoJson(projectAreaGeoJSON)
+
+        // Store reference to the new polygon feature
+        newDataLayer.forEach(feature => {
+          setCurrentPolygon(feature)
+        })
+
+        console.log('Save: Added fresh polygon to new data layer')
+
+        // 6. Finally, exit edit mode
         setHasUnsavedChanges(false)
-        setIsEditMode(false) // This triggers the styling change from blue to red
+        setIsEditMode(false)
 
-        console.log('Save: Edit mode disabled, polygon should now be red and non-editable')
+        console.log('Save: Map reset complete - fresh polygon loaded from database')
       }
     } catch (error) {
       console.error('Error saving polygon:', error)
@@ -398,7 +484,7 @@ export const ProjectAreaBaseLayer = ({
     } finally {
       setIsLoading(false)
     }
-  }, [currentPolygon, dataLayer, onPolygonSave, projectId, map, drawingManager])
+  }, [currentPolygon, dataLayer, onPolygonSave, projectId, map, drawingManager, loadPolygonData, defaultCoordinates])
 
   // Cancel changes
   const handleCancel = useCallback(async () => {
@@ -407,9 +493,19 @@ export const ProjectAreaBaseLayer = ({
       if (!confirmed) return
     }
 
-    // Reload original polygon from database or use default
+    console.log('Cancel: Starting complete map reset to original state')
+
+    // 1. Clear drawing manager and any drawing overlays
+    if (drawingManager) {
+      drawingManager.setDrawingMode(null)
+      drawingManager.setMap(null)
+      setDrawingManager(null)
+      console.log('Cancel: Cleared drawing manager')
+    }
+
+    // 2. Completely remove and recreate the data layer
     if (dataLayer) {
-      // Clear all existing features completely
+      // Clear all features
       const featuresToRemove: google.maps.Data.Feature[] = []
       dataLayer.forEach(feature => {
         featuresToRemove.push(feature)
@@ -417,39 +513,78 @@ export const ProjectAreaBaseLayer = ({
       featuresToRemove.forEach(feature => {
         dataLayer.remove(feature)
       })
-
-      // Try to load saved polygon from database
-      let coordinates = defaultCoordinates
-
-      if (projectId) {
-        const apiCoordinates = await loadPolygonData()
-        if (apiCoordinates && Array.isArray(apiCoordinates)) {
-          coordinates = apiCoordinates.map(coord => [coord.lng, coord.lat])
-          // Close the polygon if not already closed
-          if (
-            coordinates.length > 0 &&
-            (coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
-              coordinates[0][1] !== coordinates[coordinates.length - 1][1])
-          ) {
-            coordinates.push(coordinates[0])
-          }
-        }
-      }
-
-      // Create and add the restored polygon
-      const restoredFeature = new google.maps.Data.Feature({
-        geometry: new google.maps.Data.Polygon([
-          coordinates.map(coord => new google.maps.LatLng(coord[1], coord[0])),
-        ]),
-        properties: { name: 'Project Work Area' },
-      })
-
-      dataLayer.add(restoredFeature)
-      setCurrentPolygon(restoredFeature)
+      
+      // Remove the data layer from map
+      dataLayer.setMap(null)
+      console.log('Cancel: Removed old data layer')
     }
+
+    // 3. Create a completely new data layer
+    const newDataLayer = new google.maps.Data({
+      map: map!,
+      style: feature => ({
+        fillOpacity: 0.1,
+        fillColor: '#EF4444',
+        strokeColor: '#EF4444',
+        strokeWeight: 2,
+        strokeOpacity: 0.8,
+        editable: false,
+        draggable: false,
+      }),
+    })
+    setDataLayer(newDataLayer)
+    console.log('Cancel: Created new data layer')
+
+    // 4. Load original polygon data from database or use default
+    let coordinates = defaultCoordinates
+
+    if (projectId) {
+      const apiCoordinates = await loadPolygonData()
+      if (apiCoordinates && Array.isArray(apiCoordinates)) {
+        coordinates = apiCoordinates.map(coord => [coord.lng, coord.lat])
+        // Close the polygon if not already closed
+        if (
+          coordinates.length > 0 &&
+          (coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
+            coordinates[0][1] !== coordinates[coordinates.length - 1][1])
+        ) {
+          coordinates.push(coordinates[0])
+        }
+        console.log('Cancel: Using saved coordinates from database')
+      } else {
+        console.log('Cancel: Using default coordinates')
+      }
+    }
+
+    // 5. Add original polygon to new data layer
+    const projectAreaGeoJSON = {
+      type: 'FeatureCollection' as const,
+      features: [
+        {
+          type: 'Feature' as const,
+          properties: {
+            name: 'Project Work Area',
+          },
+          geometry: {
+            type: 'Polygon' as const,
+            coordinates: [coordinates],
+          },
+        },
+      ],
+    }
+
+    newDataLayer.addGeoJson(projectAreaGeoJSON)
+
+    // Store reference to the restored polygon feature
+    newDataLayer.forEach(feature => {
+      setCurrentPolygon(feature)
+    })
+
+    console.log('Cancel: Restored original polygon')
+
     setIsEditMode(false)
     setHasUnsavedChanges(false)
-  }, [dataLayer, defaultCoordinates, hasUnsavedChanges, projectId, loadPolygonData])
+  }, [dataLayer, defaultCoordinates, hasUnsavedChanges, projectId, loadPolygonData, map, drawingManager])
 
   if (!editable) return null
 

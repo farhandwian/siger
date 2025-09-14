@@ -93,7 +93,6 @@ export async function PUT(
       },
       data: {
         ...(validatedData.name && { name: validatedData.name }),
-        ...(validatedData.weight !== undefined && { weight: validatedData.weight }),
         ...(validatedData.order !== undefined && { order: validatedData.order }),
       },
       include: {

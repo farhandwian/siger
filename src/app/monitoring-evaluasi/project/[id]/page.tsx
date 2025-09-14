@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
+import { ActivityScheduleTableNew } from '@/components/activities/ActivityScheduleTableNew'
 import { CSVImportModal } from '@/components/activities/csv-import-modal'
 import { ActionPlanScheduleTable } from '@/components/action-plan/ActionPlanScheduleTable'
+import { ActionPlanScheduleTableNew } from '@/components/action-plan/ActionPlanScheduleTableNew'
 import { ActionPlanCSVImportModal } from '@/components/action-plan/ActionPlanCSVImportModal'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
@@ -14,7 +16,7 @@ import { MaterialFlowTable } from '@/components/materials/material-flow-table'
 import { MaterialChart } from '@/components/materials/material-chart'
 import { AIInsights } from '@/components/monitoring/ai-insights'
 import { MonitoringMetrics } from '@/components/monitoring/monitoring-metrics'
-import { SCurveChart } from '@/components/monitoring/s-curve-chart-activity-schedule-table'
+import { SCurveChart } from '@/components/monitoring/SCurveChartNew'
 import { ProjectWorkMap } from '@/components/monitoring/project-work-map'
 import { AutoSaveField } from '@/components/ui/auto-save-field'
 import { Button } from '@/components/ui/button'
@@ -682,7 +684,7 @@ export default function ProjectDetailPage() {
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="flex flex-col gap-6 xl:col-span-2">
                       <MonitoringMetrics projectId={projectId} />
-                      <SCurveChart projectId={projectId} />
+                      <SCurveChart projectId={projectId} type="activity" />
                     </div>
                     <div className="flex flex-col">
                       <AIInsights />
@@ -703,7 +705,7 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActivityScheduleTable projectId={projectId} />
+                    <ActivityScheduleTableNew projectId={projectId} />
                   </div>
                 </div>
               )}
@@ -765,7 +767,7 @@ export default function ProjectDetailPage() {
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="flex flex-col xl:col-span-2">
-                      <SCurveChart projectId={projectId} />
+                      <SCurveChart projectId={projectId} type="actionPlan" />
                     </div>
                     <div className="flex flex-col">
                       <AIInsights />
@@ -786,7 +788,7 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActionPlanScheduleTable projectId={projectId} />
+                    <ActionPlanScheduleTableNew projectId={projectId} />
                   </div>
                 </div>
               )}

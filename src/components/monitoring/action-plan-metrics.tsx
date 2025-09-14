@@ -103,7 +103,7 @@ export const ActionPlanMetrics: React.FC<ActionPlanMetricsProps> = ({
         {/* Right Side - Map Section with responsive dimensions */}
         <div className="w-full flex-shrink-0 lg:w-[372px] xl:w-[420px] 2xl:w-[480px]">
           <div className="relative h-[188px] w-full overflow-hidden rounded-xl bg-gray-100 lg:h-[188px] xl:h-[220px] 2xl:h-[240px]">
-            <ProjectWorkMap projectId={projectId} />
+            <ProjectWorkMap projectId={projectId} isEditable={false} />
             {/* "Buka Peta" Button */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 transform">
               <button

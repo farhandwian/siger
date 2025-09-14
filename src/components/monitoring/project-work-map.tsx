@@ -30,9 +30,10 @@ interface WorkLocation {
 
 interface ProjectWorkMapProps {
   projectId: string
+  isEditable?: boolean // New prop to control editability
 }
 
-export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
+export function ProjectWorkMap({ projectId, isEditable = true }: ProjectWorkMapProps) {
   const [selectedLocation, setSelectedLocation] = useState<WorkLocation | null>(null)
   const [imagePreview, setImagePreview] = useState<{
     isOpen: boolean
@@ -252,10 +253,17 @@ export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
           }}
           defaultZoom={PROJECT_WORK_MAP_OPTIONS.zoom}
           mapTypeId="satellite"
+          // Disable interactions when not editable
+          draggable={isEditable}
+          zoomControl={isEditable}
+          scrollwheel={isEditable}
+          disableDoubleClickZoom={!isEditable}
+          keyboardShortcuts={isEditable}
         >
           {/* Project Area Base Layer */}
           <ProjectAreaBaseLayer
             projectId={projectId}
+            editable={isEditable}
             onPolygonSave={async coordinates => {
               console.log('Polygon saved successfully:', coordinates)
             }}
@@ -266,12 +274,12 @@ export function ProjectWorkMap({ projectId }: ProjectWorkMapProps) {
             <Marker
               key={location.id}
               position={location.position}
-              onClick={() => setSelectedLocation(location)}
+              onClick={isEditable ? () => setSelectedLocation(location) : undefined}
             />
           ))}
 
-          {/* Info Window for selected location */}
-          {selectedLocation && (
+          {/* Info Window for selected location - only show when editable */}
+          {isEditable && selectedLocation && (
             <InfoWindow
               position={selectedLocation.position}
               onCloseClick={() => setSelectedLocation(null)}
