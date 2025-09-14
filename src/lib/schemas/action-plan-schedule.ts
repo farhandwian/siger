@@ -8,7 +8,7 @@ export const ActionPlanScheduleSchema = z.object({
   subActivityId: z.string().nullable(),
   month: z.number().min(1).max(12),
   year: z.number().min(2020),
-  week: z.number().min(1).max(5),
+  week: z.number().min(1).max(10), // Increased from 5 to 10 to support more weeks per month
   planPercentage: z.number().min(0).max(100).default(0),
   actualPercentage: z.number().min(0).max(100).default(0),
   createdAt: z.date(),
@@ -22,7 +22,7 @@ export const ActionPlanScheduleApiSchema = z.object({
   subActivityId: z.string().nullable(),
   month: z.number().min(1).max(12),
   year: z.number().min(2020),
-  week: z.number().min(1).max(5),
+  week: z.number().min(1).max(10), // Increased from 5 to 10 to support more weeks per month
   planPercentage: z.number().min(0).max(100).default(0),
   actualPercentage: z.number().min(0).max(100).default(0),
   createdAt: z.string().transform(str => new Date(str)),

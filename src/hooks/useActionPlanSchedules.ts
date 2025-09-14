@@ -45,7 +45,8 @@ export function useActionPlanSchedules(filters: ActionPlanScheduleFilters = {}) 
       const contentType = response.headers.get('content-type')
       if (contentType && contentType.includes('application/json')) {
         const json = await response.json()
-        return ActionPlanScheduleResponseSchema.parse(json).data
+        const result = ActionPlanScheduleResponseSchema.parse(json).data
+        return result
       } else {
         throw new Error('Expected JSON response but received empty content')
       }
