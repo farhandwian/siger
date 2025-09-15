@@ -315,9 +315,9 @@ Visual Hierarchy: Clear separation between different categories using cards
 -------------------------------------------
 
 ==============================================
+kode yang ada sekarang merupakan implementasi dari materials flow, sekarang ini saya ingin mengubah kode tersebut menjadi resource flow. saya ingin mempertahankan semua ui nya seperti pada materials flow dengan hanya ada perubahan ui sedikit dan perubahan pengambilan datanya. pada materials flow itu menggunakan tabel material sedangkan resource flow akan menggunakan data pada tabel AnalisaKebutuhan(sudah ada), lalu materials menggunakan tabel materials_schedule sedangkan resource flow akan menggunakan tabel resource_flow_schedule(belum dibuat). lalu tolong hgapus dropdown material selection nya, ganti dengan dropdown untuk memilih data analisa kebutuhannya dengan membuat dropdown untuk memilih kegiatannya(subactivity) dan dropdown untuk memilih analisis kebutuhannya.
 
-Resource Flow
-tolong buatkan tabel resource flow dengan:
+karena tabel resource flow schedule belum ada jadi tolong buatkan dengan attribute seperti ini:
 id
 analisa_kebutuhan_id
 file
@@ -326,6 +326,10 @@ rencana
 realisasi
 created_at
 updated_at
+
+
+tolong refactor material kode tersebut. tolong buat seeder datanya juga supaya saya bisa test end to end di websitenya.
+
 
 
 

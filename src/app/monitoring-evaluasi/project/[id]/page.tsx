@@ -275,6 +275,7 @@ export default function ProjectDetailPage() {
     'Action Plan',
     'Material Flow',
     'Analisa Kebutuhan',
+    'Resource Flow',
   ]
 
   // Use data from API or fallback to empty arrays
@@ -872,6 +873,13 @@ export default function ProjectDetailPage() {
               {activeTab === 'Analisa Kebutuhan' && (
                 <div className="space-y-6">
                   <AnalisaKebutuhanTable projectId={projectId} />
+                </div>
+              )}
+
+              {/* Peta Pekerjaan Tab Content */}
+              {activeTab === 'Resource Flow' && (
+                <div className="space-y-6">
+                  <div className="relative"></div>
                 </div>
               )}
 

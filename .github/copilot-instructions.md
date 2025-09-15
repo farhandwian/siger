@@ -492,4 +492,8 @@ NEXT_PUBLIC_MAPBOX_TOKEN=YOUR_TOKEN
 
 
 ## 19) Additional
-please create clear comment on the code so i can understand what each part does
+-please create clear comment on the code so i can understand what each part does
+mapping:
+-on the ui proyek but on the db is project
+- on the ui pekerjaan but on the db is activity
+- on the ui kegiatan but on the db is sub_activity
