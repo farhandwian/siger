@@ -253,14 +253,14 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     })
 
     try {
-      // Use upsert-based schedule creation
+      // Only send the field being updated - API will preserve other fields
       const scheduleData = {
         analisaKebutuhanId,
         tanggal: date,
-        [field]: value,
+        [field]: value, // Only send the field being updated
       }
 
-      console.log('Schedule data to upsert:', scheduleData)
+      console.log('Schedule data to upsert (field-specific):', scheduleData)
       await createSchedule.mutateAsync(scheduleData)
 
       setEditingCell(null)

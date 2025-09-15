@@ -12,8 +12,8 @@ import { prisma } from '@/lib/prisma'
 const CreateResourceFlowScheduleSchema = z.object({
   analisaKebutuhanId: z.string().min(1, 'Analisa kebutuhan ID is required'),
   tanggal: z.string().min(1, 'Tanggal is required'),
-  rencana: z.number().nullable().default(0),
-  realisasi: z.number().nullable().default(0),
+  rencana: z.number().optional(),
+  realisasi: z.number().optional(),
   file: z.any().nullable().optional(),
 })
 
@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = CreateResourceFlowScheduleSchema.parse(body)
 
+    console.log('API received data:', data)
+
     // Use upsert to create or update based on unique constraint
     const schedule = await prisma.resourceFlowSchedule.upsert({
       where: {
@@ -45,18 +47,21 @@ export async function POST(req: NextRequest) {
         },
       },
       update: {
-        rencana: data.rencana,
-        realisasi: data.realisasi,
-        file: data.file,
+        // Only update the fields that are explicitly provided
+        ...(data.rencana !== undefined && { rencana: data.rencana }),
+        ...(data.realisasi !== undefined && { realisasi: data.realisasi }),
+        ...(data.file !== undefined && { file: data.file }),
       },
       create: {
         analisaKebutuhanId: data.analisaKebutuhanId,
         tanggal: data.tanggal,
-        rencana: data.rencana,
-        realisasi: data.realisasi,
+        rencana: data.rencana ?? 0,
+        realisasi: data.realisasi ?? 0,
         file: data.file,
       },
     })
+
+    console.log('Upserted schedule:', schedule)
 
     return NextResponse.json({
       success: true,
