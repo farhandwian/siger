@@ -51,6 +51,7 @@ interface Category {
 }
 
 interface AnalisaKebutuhanEntry {
+  id?: string // Optional ID for existing entries (for updates)
   kategoriKebutuhanId: string
   kebutuhanId: string
   koefisien: number
@@ -64,6 +65,7 @@ const AnalisaKebutuhanFormSchema = z.object({
   entries: z
     .array(
       z.object({
+        id: z.string().optional(), // Optional ID for existing entries
         kategoriKebutuhanId: z.string().min(1, 'Kategori kebutuhan harus dipilih'),
         kebutuhanId: z.string().min(1, 'Kebutuhan harus dipilih'),
         koefisien: z.number().min(0, 'Koefisien harus ≥ 0'),
@@ -119,10 +121,8 @@ export function BuatAnalisaKebutuhanModal({
   const { data: categoriesData } = useQuery<{ success: boolean; data: Category[] }>({
     queryKey: ['categories'],
     queryFn: async () => {
-      console.log('🌐 DEBUG - Fetching categories from:', '/api/analisa-kebutuhan/categories')
       const response = await fetch('/api/analisa-kebutuhan/categories')
       const result = await response.json()
-      console.log('📦 DEBUG - Categories API response:', result)
       return result
     },
   })
@@ -130,32 +130,73 @@ export function BuatAnalisaKebutuhanModal({
   const { data: kebutuhanData } = useQuery<{ success: boolean; data: CategoryItem[] }>({
     queryKey: ['kebutuhan'],
     queryFn: async () => {
-      console.log('🌐 DEBUG - Fetching kebutuhan from:', '/api/analisa-kebutuhan/kebutuhan')
       const response = await fetch('/api/analisa-kebutuhan/kebutuhan')
       const result = await response.json()
-      console.log('📦 DEBUG - Kebutuhan API response:', result)
       return result
     },
   })
 
-  // Create mutation
-  const createMutation = useMutation({
-    mutationFn: async (entries: AnalisaKebutuhanEntry[]) => {
-      const promises = entries.map(entry =>
-        fetch('/api/analisa-kebutuhan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subActivityId: selectedSubActivityId,
-            kebutuhanId: entry.kebutuhanId,
-            koefisien: entry.koefisien,
-            stokHarian: 0,
-            terpasang: 0,
-            totalSisaStokHariIni: 0,
-            tanggal: currentDate,
-          }),
-        })
-      )
+  // Fetch existing analisa kebutuhan for selected sub-activity
+  const { data: existingAnalisaData, refetch: refetchExistingData } = useQuery<{
+    success: boolean
+    data: Array<{
+      id: string
+      subActivityId: string
+      kebutuhanId: string
+      koefisien: number
+      stokHarian: number
+      terpasang: number
+      totalSisaStokHariIni: number
+      tanggal: string
+      kebutuhan: {
+        id: string
+        nama: string
+        kategoriKebutuhanId: string
+        kategoriKebutuhan: {
+          id: string
+          nama: string
+        }
+      }
+    }>
+  }>({
+    queryKey: ['existing-analisa-kebutuhan', selectedSubActivityId],
+    queryFn: async () => {
+      const response = await fetch(`/api/analisa-kebutuhan?subActivityId=${selectedSubActivityId}`)
+      const result = await response.json()
+      return result
+    },
+    enabled: !!selectedSubActivityId,
+  })
+
+  // Create/Update mutation (Upsert)
+  const upsertMutation = useMutation({
+    mutationFn: async (entries: (AnalisaKebutuhanEntry & { id?: string })[]) => {
+      const promises = entries.map(entry => {
+        const payload = {
+          subActivityId: selectedSubActivityId,
+          kebutuhanId: entry.kebutuhanId,
+          koefisien: entry.koefisien,
+          stokHarian: 0,
+          terpasang: 0,
+          totalSisaStokHariIni: 0,
+          tanggal: currentDate,
+        }
+
+        // If entry has an ID, it's an update (PUT), otherwise it's a create (POST)
+        if (entry.id) {
+          return fetch(`/api/analisa-kebutuhan/${entry.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        } else {
+          return fetch('/api/analisa-kebutuhan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        }
+      })
 
       const responses = await Promise.all(promises)
       const results = await Promise.all(responses.map(r => r.json()))
@@ -163,6 +204,7 @@ export function BuatAnalisaKebutuhanModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['analisa-kebutuhan-grouped'] })
+      queryClient.invalidateQueries({ queryKey: ['existing-analisa-kebutuhan'] })
       onSuccess?.()
       onOpenChange(false)
       reset()
@@ -201,17 +243,43 @@ export function BuatAnalisaKebutuhanModal({
   const project = projectData?.data
   const categories = categoriesData?.data || []
   const kebutuhanItems = kebutuhanData?.data || []
+  const existingEntries = existingAnalisaData?.data || []
 
-  // Debug: Log fetched data
-  console.log('📊 DEBUG - Fetched Data:', {
-    activitiesData,
-    categoriesData,
-    kebutuhanData,
-    categories: categories.length,
-    kebutuhanItems: kebutuhanItems.length,
-    categoriesDetail: categories,
-    kebutuhanItemsDetail: kebutuhanItems,
-  })
+  // Effect to populate form with existing data when sub-activity changes
+  useEffect(() => {
+    if (selectedSubActivityId && existingEntries.length > 0) {
+      // Clear current entries by removing from end to avoid index issues
+      while (entriesFields.length > 0) {
+        removeEntry(entriesFields.length - 1)
+      }
+
+      // Add existing entries to form
+      existingEntries.forEach(entry => {
+        const categoryItem = kebutuhanItems.find(item => item.id === entry.kebutuhanId)
+        appendEntry({
+          id: entry.id, // Include the ID for updates
+          kategoriKebutuhanId: entry.kebutuhan.kategoriKebutuhanId,
+          kebutuhanId: entry.kebutuhanId,
+          koefisien: entry.koefisien,
+          categoryName: entry.kebutuhan.kategoriKebutuhan.nama,
+          itemName: entry.kebutuhan.nama,
+        })
+      })
+    } else if (
+      selectedSubActivityId &&
+      existingEntries.length === 0 &&
+      entriesFields.length === 0
+    ) {
+      // No existing data, add empty entry for new sub-activity
+      appendEntry({
+        kategoriKebutuhanId: '',
+        kebutuhanId: '',
+        koefisien: 0,
+        categoryName: '',
+        itemName: '',
+      })
+    }
+  }, [selectedSubActivityId, existingEntries, kebutuhanItems, categories])
 
   // Find selected sub-activity
   const selectedSubActivity = activities
@@ -265,16 +333,7 @@ export function BuatAnalisaKebutuhanModal({
   const selectSubActivity = (subActivity: SubActivity) => {
     setSelectedSubActivityId(subActivity.id)
     setValue('subActivityId', subActivity.id)
-    // Add initial entry when sub-activity is selected
-    if (entriesFields.length === 0) {
-      appendEntry({
-        kategoriKebutuhanId: '',
-        kebutuhanId: '',
-        koefisien: 0,
-        categoryName: '',
-        itemName: '',
-      })
-    }
+    // Note: Form population is now handled by useEffect when existing data is fetched
   }
 
   // Add new entry (for individual items within a category)
@@ -324,12 +383,6 @@ export function BuatAnalisaKebutuhanModal({
 
   // Get kebutuhan items for selected category
   const getKebutuhanForCategory = (categoryId: string) => {
-    console.log('🔍 DEBUG - getKebutuhanForCategory called with:', {
-      categoryId,
-      allKebutuhanItems: kebutuhanItems,
-      categoriesData: categories,
-      filteredItems: kebutuhanItems.filter(item => item.kategoriKebutuhanId === categoryId),
-    })
     return kebutuhanItems.filter(item => item.kategoriKebutuhanId === categoryId)
   }
 
@@ -337,7 +390,7 @@ export function BuatAnalisaKebutuhanModal({
   const onSubmit = async (data: AnalisaKebutuhanFormData) => {
     if (!selectedSubActivityId) return
 
-    await createMutation.mutateAsync(data.entries)
+    await upsertMutation.mutateAsync(data.entries)
   }
 
   // Handle modal close
@@ -349,7 +402,7 @@ export function BuatAnalisaKebutuhanModal({
     setExpandedActivities(new Set())
   }
 
-  const isLoading = createMutation.isPending
+  const isLoading = upsertMutation.isPending
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -507,24 +560,9 @@ export function BuatAnalisaKebutuhanModal({
                               <Select
                                 value={categoryId}
                                 onValueChange={value => {
-                                  console.log('🔧 DEBUG - Category selection changed:', {
-                                    newValue: value,
-                                    categoryEntries: categoryEntries.map(({ index }) => ({
-                                      index,
-                                      currentKategoriId: watch(
-                                        `entries.${index}.kategoriKebutuhanId`
-                                      ),
-                                    })),
-                                    allCategories: categories,
-                                  })
-
                                   const category = categories.find(cat => cat.id === value)
                                   // Update all entries in this category
                                   categoryEntries.forEach(({ index }) => {
-                                    console.log(
-                                      `📝 Setting entry ${index} kategoriKebutuhanId to:`,
-                                      value
-                                    )
                                     setValue(`entries.${index}.kategoriKebutuhanId`, value)
                                     setValue(`entries.${index}.categoryName`, category?.nama || '')
                                     setValue(`entries.${index}.kebutuhanId`, '')
@@ -564,13 +602,6 @@ export function BuatAnalisaKebutuhanModal({
                                           const currentCategoryId = watch(
                                             `entries.${index}.kategoriKebutuhanId`
                                           )
-                                          console.log('🛒 DEBUG - Kebutuhan selection:', {
-                                            entryIndex: index,
-                                            currentCategoryId,
-                                            newValue: value,
-                                            availableItems:
-                                              getKebutuhanForCategory(currentCategoryId),
-                                          })
 
                                           const item = getKebutuhanForCategory(
                                             currentCategoryId
@@ -589,15 +620,6 @@ export function BuatAnalisaKebutuhanModal({
                                               watch(`entries.${index}.kategoriKebutuhanId`) || ''
                                             const availableItems =
                                               getKebutuhanForCategory(currentCategoryId)
-
-                                            console.log(
-                                              `📋 DEBUG - Rendering SelectContent for entry ${index}:`,
-                                              {
-                                                currentCategoryId,
-                                                availableItems,
-                                                itemsCount: availableItems.length,
-                                              }
-                                            )
 
                                             return availableItems.map(item => (
                                               <SelectItem key={item.id} value={item.id}>
@@ -723,6 +745,18 @@ export function BuatAnalisaKebutuhanModal({
                                 </div>
                               ))}
                             </div>
+
+                            {/* Hidden fields for form data */}
+                            {categoryEntries.map(({ index }) => (
+                              <div key={`hidden-${index}`} style={{ display: 'none' }}>
+                                <input type="hidden" {...register(`entries.${index}.id`)} />
+                                <input
+                                  type="hidden"
+                                  {...register(`entries.${index}.categoryName`)}
+                                />
+                                <input type="hidden" {...register(`entries.${index}.itemName`)} />
+                              </div>
+                            ))}
                           </CardContent>
                         </Card>
                       )
@@ -748,7 +782,11 @@ export function BuatAnalisaKebutuhanModal({
                     className="bg-yellow-400 font-medium text-blue-900 hover:bg-yellow-500"
                   >
                     <Save className="mr-2 h-4 w-4" />
-                    {isLoading ? 'Menyimpan...' : 'Simpan'}
+                    {isLoading
+                      ? 'Menyimpan...'
+                      : existingEntries.length > 0
+                        ? 'Update Analisa Kebutuhan'
+                        : 'Simpan Analisa Kebutuhan'}
                   </Button>
                 </div>
 

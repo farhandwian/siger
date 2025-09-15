@@ -55,9 +55,9 @@ export async function GET(req: NextRequest) {
     // Build where clause for analisa kebutuhan
     const analisaWhere: any = {}
 
-    if (query.tanggal) {
-      analisaWhere.tanggal = query.tanggal
-    }
+    // if (query.tanggal) {
+    //   analisaWhere.tanggal = query.tanggal
+    // }
 
     // If projectId is provided, filter by activities belonging to that project
     let activityWhere: any = {}

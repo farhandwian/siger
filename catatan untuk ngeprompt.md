@@ -308,11 +308,26 @@ tabel resource_flow_schedule
 
 
 ==============================================
-
-
-
-
 Adding Categories: Click "Tambah Kategori Kebutuhan" to add a new category section
 Adding Items: Click the small plus button to add more items within the same category
 Category Management: Each card represents one category with multiple items
 Visual Hierarchy: Clear separation between different categories using cards
+-------------------------------------------
+
+==============================================
+
+Resource Flow
+tolong buatkan tabel resource flow dengan:
+id
+analisa_kebutuhan_id
+file
+tanggal
+rencana
+realisasi
+created_at
+updated_at
+
+
+
+
+==============================================
