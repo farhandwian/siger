@@ -2,95 +2,91 @@
 
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { Button } from '@/components/ui/button'
-import { AddActivityModal } from '@/components/activities/add-activity-modal'
-import { EditActivityModal } from '@/components/activities/edit-activity-modal'
+import { AddActivityModal } from '@/components/activity/add-activity-modal'
+import { EditActivityModal } from '@/components/activity/edit-activity-modal'
 import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
-import type { Activity } from '@/lib/schemas'
+import type { Activity, Schedule } from '@/lib/schemas'
+import { ScheduleValueType, useUpdateScheduleValue } from '@/hooks/useActivityQueries'
+
 
 /**
  * Generic Schedule Table Component
  *
- * This component can be used for both Activity Schedules and Action Plan Schedules
- * by passing different data sources and mutation functions as props.
+ * This component works with activities that include embedded schedule data.
+ * No need for getScheduleValue function - schedules are directly accessible.
  */
 interface UnifiedScheduleTableProps {
   projectId: string
   title?: string
   activities?: Activity[]
-  project?: any
+  project?: {
+    numberOfWeeks?: number | null
+    tanggalSpmk?: string | null
+  }
   isLoading?: boolean
-
-  // Functions to handle data retrieval and updates
-  getScheduleValue: (
-    activityId: string,
-    subActivityId: string | null,
-    weekNumber: number,
-    type: 'plan' | 'actual'
-  ) => number | null
-
-  saveScheduleValue: (
-    activityId: string,
-    subActivityId: string | null,
-    weekNumber: number,
-    type: 'plan' | 'actual',
-    value: number | null
-  ) => Promise<void>
+  isActionPlanTable?: boolean // New prop to show/hide action plan rows
 
   // Cumulative calculation function
-  getCumulativeValueForWeek: (
+  getCalculatedValueForWeek: (
     weekNumber: number,
-    type: 'plan' | 'actual' | 'deviation'
+    type: 'total-plan' | 'total-action-plan' | 'total-realization' | 'cumulative-plan' | 'cumulative-action-plan' | 'cumulative-realization' | 'deviation-plan' | 'deviation-action-plan'
   ) => number
 
   // Optional customization
   showAddButton?: boolean
   showTitle?: boolean
-  showCumulativeSection?: boolean
-  weekCount?: number
+  weekCount?: number // Fallback week count if project.numberOfWeeks is not available
 }
 
 // Memoized cell component for plan values
 const PlanCell = memo(function PlanCell({
-  subActivityId,
-  weekNumber,
-  value,
+  schedule,
+  cellId,
   isEditing,
   editValue,
-  isLastWeekInMonth,
+  isLastWeekOfMonth,
+  isActionPlanTable,
   onEdit,
   onSave,
   onCancel,
   onChange
 }: {
-  subActivityId: string;
-  weekNumber: number;
-  value: number | null;
+  schedule: Schedule | undefined
+  cellId: string;
   isEditing: boolean;
   editValue: string;
-  isLastWeekInMonth: boolean;
+  isLastWeekOfMonth: boolean;
+  isActionPlanTable: boolean;
   onEdit: (cellId: string, currentValue: number | null) => void;
-  onSave: (subActivityId: string, weekNumber: number, type: 'plan' | 'actual') => void;
+  onSave: (scheduleId: string, type: 'plan' | 'realization' | 'actionPlan') => void;
   onCancel: () => void;
   onChange: (value: string) => void;
 }) {
-  const cellId = `${subActivityId}-W${weekNumber}-plan`;
-  
+
+  const value = isActionPlanTable ? schedule?.actionPlan ?? null : schedule?.plan ?? null;
+  const mode = isActionPlanTable ? 'actionPlan' : 'plan';
   return (
     <td
       className={`progress-cell-plan ${value && value > 0 ? 'has-value' : ''} ${
-        isLastWeekInMonth ? 'month-separator' : ''
+        isLastWeekOfMonth ? 'month-separator' : ''
       }`}
     >
       {isEditing ? (
         <Input
           value={editValue}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-          onBlur={() => onSave(subActivityId, weekNumber, 'plan')}
+          onBlur={() => {
+            if (schedule?.id) {
+              onSave(schedule.id, mode);
+            }
+          }}
           onKeyDown={e => {
             if (e.key === 'Enter') {
-              onSave(subActivityId, weekNumber, 'plan');
+              if (schedule?.id) {
+                onSave(schedule.id, mode);
+              }
             } else if (e.key === 'Escape') {
               onCancel();
             }
@@ -116,44 +112,48 @@ const PlanCell = memo(function PlanCell({
 
 // Memoized cell component for actual values
 const ActualCell = memo(function ActualCell({
-  subActivityId,
-  weekNumber,
-  value,
+  schedule,
+  cellId,
   isEditing,
   editValue,
-  isLastWeekInMonth,
+  isLastWeekOfMonth,
   onEdit,
   onSave,
   onCancel,
   onChange
 }: {
-  subActivityId: string;
-  weekNumber: number;
-  value: number | null;
+  schedule: Schedule | undefined;
+  cellId: string;
   isEditing: boolean;
   editValue: string;
-  isLastWeekInMonth: boolean;
+  isLastWeekOfMonth: boolean;
   onEdit: (cellId: string, currentValue: number | null) => void;
-  onSave: (subActivityId: string, weekNumber: number, type: 'plan' | 'actual') => void;
+  onSave: (scheduleId: string, type: 'plan' | 'realization' | 'actionPlan') => void;
   onCancel: () => void;
   onChange: (value: string) => void;
 }) {
-  const cellId = `${subActivityId}-W${weekNumber}-actual`;
+  const value = schedule?.realization ?? null;
   
   return (
     <td
       className={`progress-cell-actual ${value && value > 0 ? 'has-value' : ''} ${
-        isLastWeekInMonth ? 'month-separator' : ''
+        isLastWeekOfMonth ? 'month-separator' : ''
       }`}
     >
       {isEditing ? (
         <Input
           value={editValue}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
-          onBlur={() => onSave(subActivityId, weekNumber, 'actual')}
+          onBlur={() => {
+            if (schedule?.id) {
+              onSave(schedule.id, 'realization');
+            }
+          }}
           onKeyDown={e => {
             if (e.key === 'Enter') {
-              onSave(subActivityId, weekNumber, 'actual');
+              if (schedule?.id) {
+                onSave(schedule.id, 'realization');
+              }
             } else if (e.key === 'Escape') {
               onCancel();
             }
@@ -183,13 +183,10 @@ export function UnifiedScheduleTable({
   activities,
   project,
   isLoading = false,
-  getScheduleValue,
-  saveScheduleValue,
-  getCumulativeValueForWeek,
+  isActionPlanTable = false, // New prop to indicate if this is an action plan table
+  getCalculatedValueForWeek,
   showAddButton = true,
   showTitle = true,
-  showCumulativeSection = true,
-  weekCount = 20,
 }: UnifiedScheduleTableProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -198,6 +195,30 @@ export function UnifiedScheduleTable({
   const [editValue, setEditValue] = useState('')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const customScrollbarRef = useRef<HTMLDivElement>(null)
+
+  // Use the update schedule value hook
+  const updateScheduleValue = useUpdateScheduleValue(projectId)
+
+  // Internal save function using the new single-value API
+  const saveScheduleValue = async (
+    scheduleId: string,
+    type: ScheduleValueType,
+    value: number | null
+  ): Promise<void> => {
+    if (!scheduleId) {
+      throw new Error('Schedule ID is required for schedule updates')
+    }
+
+    try {
+      await updateScheduleValue.mutateAsync({
+        scheduleId,
+        valueType: type,
+        value,
+      })
+    } catch (error) {
+      throw error
+    }
+  }
   const topScrollbarRef = useRef<HTMLDivElement>(null)
   const [scrollLeft, setScrollLeft] = useState(0)
   const [scrollWidth, setScrollWidth] = useState(0)
@@ -315,7 +336,8 @@ export function UnifiedScheduleTable({
   const showCustomScrollbar = scrollWidth > clientWidth
 
   // Generate sequential weeks for table headers based on SPMK date
-  const sequentialWeeks = generateSequentialWeeks(project?.tanggalSpmk || null, weekCount)
+  const effectiveWeekCount = project?.numberOfWeeks || 30
+  const sequentialWeeks = generateSequentialWeeks(project?.tanggalSpmk || null, effectiveWeekCount)
 
   // Group sequential weeks by month for two-row header
   const monthGroups = sequentialWeeks.reduce((groups, week) => {
@@ -343,16 +365,6 @@ export function UnifiedScheduleTable({
     return monthNames[month - 1] || 'UNKNOWN'
   }
 
-  // Helper function to determine if a week is at the end of a month (for month separators)
-  function isLastWeekOfMonth(week: typeof sequentialWeeks[0]): boolean {
-    const currentMonthKey = `${week.year}-${week.month}`
-    const monthGroup = monthGroups[currentMonthKey]
-    if (!monthGroup) return false
-    
-    const lastWeek = monthGroup.weeks[monthGroup.weeks.length - 1]
-    return lastWeek.weekNumber === week.weekNumber
-  }
-
   // Show simplified table if sequential weeks generation fails or is empty
   if (!sequentialWeeks || sequentialWeeks.length === 0) {
     return (
@@ -363,6 +375,12 @@ export function UnifiedScheduleTable({
             <strong>SPMK Date:</strong> {project?.tanggalSpmk || 'Not set'}
           </p>
           <p>
+            <strong>Project numberOfWeeks:</strong> {project?.numberOfWeeks || 'Not set'}
+          </p>
+          <p>
+            <strong>Effective Week Count:</strong> {effectiveWeekCount}
+          </p>
+          <p>
             <strong>Sequential Weeks Generated:</strong> {sequentialWeeks?.length || 0}
           </p>
           <p>
@@ -371,7 +389,7 @@ export function UnifiedScheduleTable({
           </p>
           <div className="mt-4 rounded border border-yellow-200 bg-yellow-50 p-3">
             <p className="text-sm text-yellow-800">
-              Expected SPMK date format: "23 Mei 2025" or "2025-05-23"
+              Expected SPMK date format: 23 Mei 2025 or 2025-05-23
             </p>
           </div>
         </div>
@@ -385,21 +403,19 @@ export function UnifiedScheduleTable({
   }
 
   const handleCellSave = async (
-    activityId: string,
-    subActivityId: string | null,
-    weekNumber: number,
-    type: 'plan' | 'actual'
+    scheduleId: string,
+    type: 'plan' | 'realization' | 'actionPlan'
   ) => {
     // Parse value - allow 0 as valid value
     const numericValue = editValue === '' ? null : parseFloat(editValue)
     const value = !isNaN(numericValue!) ? numericValue : null
 
     try {
-      await saveScheduleValue(activityId, subActivityId, weekNumber, type, value)
+      await saveScheduleValue(scheduleId, type, value)
       setEditingCell(null)
       setEditValue('')
     } catch (error) {
-      // Handle error appropriately - could show a toast notification or error state
+      // Handle error silently - error handling should be done in the saveScheduleValue function
       setEditingCell(null)
       setEditValue('')
     }
@@ -574,7 +590,7 @@ export function UnifiedScheduleTable({
             <tbody>
               {activities?.map(activity => (
                 <React.Fragment key={activity.id}>
-                  {/* Main Activity Row - No weight, clickable */}
+                  {/* Main Activity Row */}
                   <tr className="activity-main-row">
                     <td
                       className="activity-main-cell"
@@ -582,24 +598,21 @@ export function UnifiedScheduleTable({
                     >
                       <div className="activity-main-title">{activity.name}</div>
                     </td>
-                    <td className="bg-gray-100">{/* No weight for main activity */}</td>
+                    <td className="bg-gray-100"></td>
                     {sequentialWeeks.map((week) => {
-                      const isLastWeekInMonth = isLastWeekOfMonth(week)
                       return (
-                        <td 
-                          key={`${activity.id}-main-W${week.weekNumber}`} 
-                          className={`bg-gray-100 ${isLastWeekInMonth ? 'month-separator' : ''}`}
-                        >
-                          {/* Main activity cells are blocked/empty */}
-                        </td>
+                        <td
+                          key={`${activity.id}-main-W${week.weekNumber}`}
+                          className={`bg-gray-100 ${week.isLastWeekOfMonth ? 'month-separator' : ''}`}
+                        />
                       )
                     })}
                   </tr>
 
-                  {/* Sub Activities - Each has 2 rows */}
+                  {/* Sub Activities - Dynamic rows based on showActionPlan */}
                   {activity.subActivities?.map(subActivity => (
                     <React.Fragment key={subActivity.id}>
-                      {/* First Row - Blue background (#BFDBFE) - Plan values */}
+                      {/* Plan Row */}
                       <tr className="border-b border-gray-200">
                         <td rowSpan={2} className="sub-activity-name-cell">
                           <div className="sub-activity-name">{subActivity.name}</div>
@@ -607,30 +620,24 @@ export function UnifiedScheduleTable({
                         <td rowSpan={2} className="sub-activity-weight-cell">
                           {subActivity.weight}
                         </td>
-                        {sequentialWeeks.map((week) => {
-                          const cellId = `${subActivity.id}-W${week.weekNumber}-plan`
-                          const value = getScheduleValue(
-                            activity.id,
-                            subActivity.id,
-                            week.weekNumber,
-                            'plan'
-                          )
-                          const isEditing = editingCell === cellId
-                          const isLastWeekInMonth = isLastWeekOfMonth(week)
+                        {/* for each subActivity.schedules */}
 
+                        {sequentialWeeks.map((week) => {
+                          // find schedule for this week from subActivity.schedules
+                          const schedule = subActivity.schedules?.find(s => s.weekNumber === week.weekNumber)
+                          const cellId = `${subActivity.id}-W${week.weekNumber}-plan`
+                          const isEditing = editingCell === cellId
                           return (
                             <PlanCell
                               key={cellId}
-                              subActivityId={subActivity.id}
-                              weekNumber={week.weekNumber}
-                              value={value}
+                              schedule={schedule}
+                              isActionPlanTable={isActionPlanTable}
+                              cellId={cellId}
                               isEditing={isEditing}
                               editValue={editValue}
-                              isLastWeekInMonth={isLastWeekInMonth}
+                              isLastWeekOfMonth={week.isLastWeekOfMonth}
                               onEdit={handleCellEdit}
-                              onSave={(subId, weekNum, type) =>
-                                handleCellSave(activity.id, subId, weekNum, type)
-                              }
+                              onSave={handleCellSave}
                               onCancel={handleCellCancel}
                               onChange={setEditValue}
                             />
@@ -638,33 +645,24 @@ export function UnifiedScheduleTable({
                         })}
                       </tr>
 
-                      {/* Second Row - Yellow background (#FFC928) - Actual values */}
+                      {/* Actual Row */}
                       <tr className="border-b border-gray-200">
-                        {/* Name and weight cells are merged with rowspan above */}
                         {sequentialWeeks.map((week) => {
+                          // find schedule for this week from subActivity.schedules
+                          const schedule = subActivity.schedules?.find(s => s.weekNumber === week.weekNumber)
                           const cellId = `${subActivity.id}-W${week.weekNumber}-actual`
-                          const value = getScheduleValue(
-                            activity.id,
-                            subActivity.id,
-                            week.weekNumber,
-                            'actual'
-                          )
                           const isEditing = editingCell === cellId
-                          const isLastWeekInMonth = isLastWeekOfMonth(week)
 
                           return (
                             <ActualCell
                               key={cellId}
-                              subActivityId={subActivity.id}
-                              weekNumber={week.weekNumber}
-                              value={value}
+                              schedule={schedule}
+                              cellId={cellId}
                               isEditing={isEditing}
                               editValue={editValue}
-                              isLastWeekInMonth={isLastWeekInMonth}
+                              isLastWeekOfMonth={week.isLastWeekOfMonth}
                               onEdit={handleCellEdit}
-                              onSave={(subId, weekNum, type) =>
-                                handleCellSave(activity.id, subId, weekNum, type)
-                              }
+                              onSave={handleCellSave}
                               onCancel={handleCellCancel}
                               onChange={setEditValue}
                             />
@@ -676,45 +674,43 @@ export function UnifiedScheduleTable({
                 </React.Fragment>
               ))}
 
-              {/* Spacer row */}
-              <tr className="h-[27px] border-b border-gray-200">
-                <td colSpan={2 + sequentialWeeks.length} className="border-gray-200"></td>
-              </tr>
-
               {/* Total Weekly Values Section */}
-              {showCumulativeSection && (
+              {(
                 <>
+                  {/* Total Section Spacer */}
+                  <tr className="h-[27px] border-b border-gray-200">
+                    <td colSpan={2 + sequentialWeeks.length} className="border-gray-200"></td>
+                  </tr>
+
+                  {/* Total Header */}
+                  <tr>
+                    <td className="cumulative-header-cell">TOTAL</td>
+                    <td className="cumulative-sticky-weight"></td>
+                    {sequentialWeeks.map((week) => {
+                      return (
+                        <td
+                          key={`total-header-W${week.weekNumber}`}
+                          className={`border-b border-gray-200 ${
+                            week.isLastWeekOfMonth ? 'month-separator' : ''
+                          }`}
+                        ></td>
+                      )
+                    })}
+                  </tr>
+
                   {/* Total Rencana Row */}
                   <tr>
                     <td className="cumulative-label-cell">Rencana</td>
                     <td className="sticky border-b border-gray-200"></td>
                     {sequentialWeeks.map((week) => {
-                      // Calculate total for this week (plan)
-                      const weekTotal =
-                        activities?.reduce((total, activity) => {
-                          const subActivityTotal =
-                            activity.subActivities?.reduce((subTotal, subActivity) => {
-                              const value = getScheduleValue(
-                                activity.id,
-                                subActivity.id,
-                                week.weekNumber,
-                                'plan'
-                              )
-                              return subTotal + (value || 0)
-                            }, 0) || 0
-                          return total + subActivityTotal
-                        }, 0) || 0
-                      
-                      const isLastWeekInMonth = isLastWeekOfMonth(week)
-
                       return (
                         <td
-                          key={`total-plan-W${week.weekNumber}`}
-                          className={`progress-cell-plan ${weekTotal > 0 ? 'has-value' : ''} ${
-                            isLastWeekInMonth ? 'month-separator' : ''
+                          key={`rencana-W${week.weekNumber}`}
+                          className={`progress-cell-cumulative-plan ${
+                            week.isLastWeekOfMonth ? 'month-separator' : ''
                           }`}
                         >
-                          {weekTotal > 0 ? weekTotal.toFixed(3) : '-'}
+                          {getCalculatedValueForWeek(week.weekNumber, isActionPlanTable ? 'total-action-plan' : 'total-plan').toFixed(3)}
                         </td>
                       )
                     })}
@@ -725,32 +721,16 @@ export function UnifiedScheduleTable({
                     <td className="cumulative-label-cell">Realisasi</td>
                     <td className="sticky border-b border-gray-200"></td>
                     {sequentialWeeks.map((week) => {
-                      // Calculate total for this week (actual)
-                      const weekTotal =
-                        activities?.reduce((total, activity) => {
-                          const subActivityTotal =
-                            activity.subActivities?.reduce((subTotal, subActivity) => {
-                              const value = getScheduleValue(
-                                activity.id,
-                                subActivity.id,
-                                week.weekNumber,
-                                'actual'
-                              )
-                              return subTotal + (value || 0)
-                            }, 0) || 0
-                          return total + subActivityTotal
-                        }, 0) || 0
-                      
-                      const isLastWeekInMonth = isLastWeekOfMonth(week)
-
                       return (
                         <td
-                          key={`total-actual-W${week.weekNumber}`}
-                          className={`progress-cell-actual ${weekTotal > 0 ? 'has-value' : ''} ${
-                            isLastWeekInMonth ? 'month-separator' : ''
+                          key={`realisasi-W${week.weekNumber}`}
+                          className={`progress-cell-cumulative-actual ${
+                            week.isLastWeekOfMonth ? 'month-separator' : ''
                           }`}
                         >
-                          {weekTotal > 0 ? weekTotal.toFixed(3) : '-'}
+                          {getCalculatedValueForWeek(week.weekNumber, 'total-realization').toFixed(
+                            3
+                          )}
                         </td>
                       )
                     })}
@@ -766,12 +746,11 @@ export function UnifiedScheduleTable({
                     <td className="cumulative-header-cell">KUMULATIF</td>
                     <td className="cumulative-sticky-weight"></td>
                     {sequentialWeeks.map((week) => {
-                      const isLastWeekInMonth = isLastWeekOfMonth(week)
                       return (
                         <td
                           key={`kumulatif-header-W${week.weekNumber}`}
                           className={`border-b border-gray-200 ${
-                            isLastWeekInMonth ? 'month-separator' : ''
+                            week.isLastWeekOfMonth ? 'month-separator' : ''
                           }`}
                         ></td>
                       )
@@ -783,15 +762,14 @@ export function UnifiedScheduleTable({
                     <td className="cumulative-label-cell">Rencana</td>
                     <td className="sticky border-b border-gray-200"></td>
                     {sequentialWeeks.map((week) => {
-                      const isLastWeekInMonth = isLastWeekOfMonth(week)
                       return (
                         <td
                           key={`rencana-W${week.weekNumber}`}
                           className={`progress-cell-cumulative-plan ${
-                            isLastWeekInMonth ? 'month-separator' : ''
+                            week.isLastWeekOfMonth ? 'month-separator' : ''
                           }`}
                         >
-                          {getCumulativeValueForWeek(week.weekNumber, 'plan').toFixed(3)}
+                          {getCalculatedValueForWeek(week.weekNumber, isActionPlanTable ? 'cumulative-action-plan' : 'cumulative-plan').toFixed(3)}
                         </td>
                       )
                     })}
@@ -802,15 +780,14 @@ export function UnifiedScheduleTable({
                     <td className="cumulative-label-cell">Realisasi</td>
                     <td className="sticky border-b border-gray-200"></td>
                     {sequentialWeeks.map((week) => {
-                      const isLastWeekInMonth = isLastWeekOfMonth(week)
                       return (
                         <td
                           key={`realisasi-W${week.weekNumber}`}
                           className={`progress-cell-cumulative-actual ${
-                            isLastWeekInMonth ? 'month-separator' : ''
+                            week.isLastWeekOfMonth ? 'month-separator' : ''
                           }`}
                         >
-                          {getCumulativeValueForWeek(week.weekNumber, 'actual').toFixed(
+                          {getCalculatedValueForWeek(week.weekNumber, 'cumulative-realization').toFixed(
                             3
                           )}
                         </td>
@@ -823,17 +800,16 @@ export function UnifiedScheduleTable({
                     <td className="cumulative-label-cell">Deviasi</td>
                     <td className="sticky border-b border-gray-200"></td>
                     {sequentialWeeks.map((week) => {
-                      const isLastWeekInMonth = isLastWeekOfMonth(week)
                       return (
                         <td
                           key={`deviasi-W${week.weekNumber}`}
                           className={`progress-cell-cumulative-deviation ${
-                            isLastWeekInMonth ? 'month-separator' : ''
+                            week.isLastWeekOfMonth ? 'month-separator' : ''
                           }`}
                         >
-                          {getCumulativeValueForWeek(
+                          {getCalculatedValueForWeek(
                             week.weekNumber,
-                            'deviation'
+                            isActionPlanTable ? 'deviation-action-plan' : 'deviation-plan'
                           ).toFixed(3)}
                         </td>
                       )

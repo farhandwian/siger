@@ -1,6 +1,35 @@
 import { z } from 'zod'
 import { UserRole } from '@prisma/client'
 
+// Re-export schedule schemas
+export * from './schemas/schedule'
+
+// Legacy schema aliases for backward compatibility
+export {
+  ScheduleSchema as SchedulePlanSchema,
+  ScheduleSchema as ActionPlanSchema,
+  ScheduleSchema as RealizationSchema,
+  ScheduleWithRelationsSchema as SchedulePlanWithRelationsSchema,
+  ScheduleWithRelationsSchema as ActionPlanWithRelationsSchema,
+  ScheduleWithRelationsSchema as RealizationWithRelationsSchema,
+  CreateScheduleSchema as CreateSchedulePlanSchema,
+  CreateScheduleSchema as CreateActionPlanSchema,
+  CreateScheduleSchema as CreateRealizationSchema,
+  UpdateScheduleSchema as UpdateSchedulePlanSchema,
+  UpdateScheduleSchema as UpdateActionPlanSchema,
+  UpdateScheduleSchema as UpdateRealizationSchema
+} from './schemas/schedule'
+
+// Legacy type aliases for backward compatibility  
+export type {
+  Schedule as SchedulePlan,
+  Schedule as ActionPlan,
+  Schedule as Realization,
+  ScheduleWithRelations as SchedulePlanWithRelations,
+  ScheduleWithRelations as ActionPlanWithRelations,
+  ScheduleWithRelations as RealizationWithRelations
+} from './schemas/schedule'
+
 // Project schemas
 export const ProjectStatusSchema = z.enum(['on-track', 'at-risk', 'delayed'])
 
@@ -41,6 +70,7 @@ export const ProjectSchema = z.object({
     .min(1, 'Nomor kontrak wajib diisi')
     .max(100, 'Nomor kontrak maksimal 100 karakter')
     .nullable(),
+  numberOfWeeks: z.number().min(1, 'Number of weeks must be at least 1').nullable(),
   spmk: z.string().max(200, 'SPMK maksimal 200 karakter').nullable(),
   masaKontrak: z.string().max(100, 'Masa kontrak maksimal 100 karakter').nullable(),
   tanggalKontrak: z.string().max(50, 'Tanggal kontrak maksimal 50 karakter').nullable(),
@@ -166,6 +196,7 @@ export const UpdateProjectFieldSchema = z.object({
       'paguAnggaran',
       'nilaiKontrak',
       'nomorKontrak',
+      'numberOfWeeks',
       'spmk',
       'tanggalSpmk',
       'masaKontrak',
@@ -326,32 +357,14 @@ export const ChartDataSchema = z.object({
 
 // Activity schemas - Updated to match Prisma schema
 
-// Base schema for SchedulePlan
-export const SchedulePlanSchema = z.object({
+// Base schema for Schedule (merged SchedulePlan, ActionPlan, and Realization)
+export const ScheduleSchema = z.object({
   id: z.string(),
   subActivityId: z.string(),
   weekNumber: z.number().min(1, 'Week number must be at least 1'),
-  percentage: z.number().min(0).max(100).default(0),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-})
-
-// Base schema for ActionPlan
-export const ActionPlanSchema = z.object({
-  id: z.string(),
-  subActivityId: z.string(),
-  weekNumber: z.number().min(1, 'Week number must be at least 1'),
-  percentage: z.number().min(0).max(100).default(0),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-})
-
-// Base schema for Realization
-export const RealizationSchema = z.object({
-  id: z.string(),
-  subActivityId: z.string(),
-  weekNumber: z.number().min(1, 'Week number must be at least 1'),
-  percentage: z.number().min(0).max(100).default(0),
+  plan: z.number().min(0).max(100).default(0).nullable(),
+  actionPlan: z.number().min(0).max(100).default(0).nullable(),
+  realization: z.number().min(0).max(100).default(0).nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 })
@@ -401,9 +414,7 @@ export const SubActivitySchema = z.object({
   volume: z.number().min(0).nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  schedulePlans: z.array(SchedulePlanSchema).optional(),
-  actionPlans: z.array(ActionPlanSchema).optional(),
-  realization: z.array(RealizationSchema).optional(),
+  schedules: z.array(ScheduleSchema).optional(),
   realizationDaily: z.array(RealizationDailySchema).optional(),
 })
 
@@ -442,37 +453,13 @@ export const UpdateSubActivitySchema = z.object({
   order: z.number().min(0).optional(),
 })
 
-export const CreateSchedulePlanSchema = SchedulePlanSchema.omit({
+export const CreateScheduleSchema = ScheduleSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 })
 
-export const UpdateSchedulePlanSchema = SchedulePlanSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).partial()
-
-export const CreateActionPlanSchema = ActionPlanSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-})
-
-export const UpdateActionPlanSchema = ActionPlanSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).partial()
-
-export const CreateRealizationSchema = RealizationSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-})
-
-export const UpdateRealizationSchema = RealizationSchema.omit({
+export const UpdateScheduleSchema = ScheduleSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -505,23 +492,16 @@ export type Report = z.infer<typeof CreateReportSchema> & {
 }
 
 // Optimized response schemas for API endpoints
-// Note: SchedulePlanWithRelations now excludes subActivity to improve performance
+// Note: ScheduleWithRelations now excludes subActivity to improve performance
 // Use subActivityId to map relationships on the client side
-export const SchedulePlanWithRelationsSchema = SchedulePlanSchema
-
-// Note: RealizationWithRelations now excludes subActivity to improve performance
-// Use subActivityId to map relationships on the client side
-export const RealizationWithRelationsSchema = RealizationSchema
+export const ScheduleWithRelationsSchema = ScheduleSchema
 
 export type Activity = z.infer<typeof ActivitySchema>
 export type SubActivity = z.infer<typeof SubActivitySchema>
-export type SchedulePlan = z.infer<typeof SchedulePlanSchema>
-export type ActionPlan = z.infer<typeof ActionPlanSchema>
-export type Realization = z.infer<typeof RealizationSchema>
+export type Schedule = z.infer<typeof ScheduleSchema>
 export type RealizationDaily = z.infer<typeof RealizationDailySchema>
 export type Addendum = z.infer<typeof AddendumSchema>
-export type SchedulePlanWithRelations = z.infer<typeof SchedulePlanWithRelationsSchema>
-export type RealizationWithRelations = z.infer<typeof RealizationWithRelationsSchema>
+export type ScheduleWithRelations = z.infer<typeof ScheduleWithRelationsSchema>
 
 // Daily Sub Activity schemas for mobile API (DailyReport model)
 export const DailySubActivitySchema = z.object({

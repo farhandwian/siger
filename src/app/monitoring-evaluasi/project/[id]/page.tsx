@@ -3,26 +3,26 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { ScheduleTableNew } from '@/components/activities/ActivityScheduleTableNew'
-import { CSVImportModal } from '@/components/activities/csv-import-modal'
+import { ScheduleTable } from '@/components/schedule/schedule-table'
+import { CSVImportModal } from '@/components/schedule/csv-import-modal'
 import { ActionPlanCSVImportModal } from '@/components/action-plan/ActionPlanCSVImportModal'
-import { ActionPlanTableNew } from '@/components/action-plan/ActionPlanScheduleTableNew'
+import { ActionPlanTable } from '@/components/action-plan/action-plan-table'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
 import { AIInsights } from '@/components/monitoring/ai-insights'
 import { MonitoringMetrics } from '@/components/monitoring/monitoring-metrics'
-import { SCurveChart } from '@/components/monitoring/SCurveChartNew'
+import { SCurveChart } from '@/components/monitoring/s-curve-chart'
 import { ProjectWorkMap } from '@/components/monitoring/project-work-map'
 import { AutoSaveField } from '@/components/ui/auto-save-field'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { useProjectDetail } from '@/hooks/useProjectQueries'
+import { useCalculatedData } from '@/hooks/useCalculatedData'
 import { cn } from '@/lib/utils'
 import { formatDateForInput } from '@/utils/dateUtils'
 import { Upload } from 'lucide-react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { ActionPlanMetrics } from '@/components/monitoring/action-plan-metrics'
 import { ArrowLeft } from 'lucide-react'
 
 interface TabProps {
@@ -192,7 +192,8 @@ export default function ProjectDetailPage() {
   const projectId = (params?.id as string) || '1'
   const { data: project, isLoading, error } = useProjectDetail(projectId)
 
-  // Update activeTab when URL search params change
+  // Calculate cumulative data for the entire project - available immediately when page loads
+  const calculatedData = useCalculatedData(projectId)  // Update activeTab when URL search params change
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab')
     if (tabFromUrl) {
@@ -209,6 +210,7 @@ export default function ProjectDetailPage() {
     paguAnggaran: '',
     nilaiKontrak: '',
     nomorKontrak: '',
+    numberOfWeeks: '',
     spmk: '',
     masaKontrak: '',
     tanggalKontrak: '',
@@ -228,6 +230,7 @@ export default function ProjectDetailPage() {
         paguAnggaran: project.paguAnggaran || '',
         nilaiKontrak: project.nilaiKontrak || '',
         nomorKontrak: project.nomorKontrak || '',
+        numberOfWeeks: project.numberOfWeeks?.toString() || '',
         spmk: project.spmk || '',
         masaKontrak: project.masaKontrak || '',
         tanggalKontrak: formatDateForInput(project.tanggalKontrak),
@@ -507,6 +510,14 @@ export default function ProjectDetailPage() {
                           fieldName="nomorKontrak"
                         />
                         <AutoSaveField
+                          label="Jumlah Minggu"
+                          value={projectData.numberOfWeeks}
+                          onChange={(value: string) => updateField('numberOfWeeks', value)}
+                          projectId={projectId}
+                          fieldName="numberOfWeeks"
+                          type="number"
+                        />
+                        <AutoSaveField
                           label="SPMK"
                           value={projectData.spmk}
                           onChange={(value: string) => updateField('spmk', value)}
@@ -632,8 +643,8 @@ export default function ProjectDetailPage() {
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="flex flex-col gap-6 xl:col-span-2">
-                      <MonitoringMetrics projectId={projectId} />
-                      <SCurveChart projectId={projectId} type="activity" />
+                      <MonitoringMetrics projectId={projectId} isActionPlanTable={false} />
+                      <SCurveChart projectId={projectId} isActionPlanTable={false} />
                     </div>
                     <div className="flex flex-col">
                       <AIInsights />
@@ -643,7 +654,7 @@ export default function ProjectDetailPage() {
                   {/* Activity Schedule Table */}
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-gray-900">Activity Schedule</h2>
+                      <h2 className="text-sm font-medium text-gray-900">Jadwal Kontrak</h2>
                       <Button
                         onClick={() => setCsvImportModalOpen(true)}
                         variant="outline"
@@ -654,7 +665,10 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ScheduleTableNew projectId={projectId} />
+                    <ScheduleTable 
+                      projectId={projectId} 
+                      calculatedData={calculatedData}
+                    />
                   </div>
                 </div>
               )}
@@ -664,28 +678,25 @@ export default function ProjectDetailPage() {
                   {/* Metrics Cards */}
                   <div>
                     <h2 className="mb-4 text-sm font-medium text-gray-900">Progress Overview</h2>
-                    <ActionPlanMetrics
-                      projectId={projectId}
-                      onNavigateToMap={() => setActiveTab('Peta Pekerjaan')}
-                    />
                   </div>
 
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <div className="flex flex-col xl:col-span-2">
-                      <SCurveChart projectId={projectId} type="actionPlan" />
+                    <div className="flex flex-col gap-6 xl:col-span-2">
+                      <MonitoringMetrics projectId={projectId} />
+                      <SCurveChart projectId={projectId} isActionPlanTable={true} />
                     </div>
                     <div className="flex flex-col">
                       <AIInsights />
                     </div>
                   </div>
 
-                  {/* Action Plan Schedule Table */}
+                  {/* Activity Schedule Table */}
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-gray-900">Action Plan Schedule</h2>
+                      <h2 className="text-sm font-medium text-gray-900">Jadwal Action Plan</h2>
                       <Button
-                        onClick={() => setActionPlanCsvImportModalOpen(true)}
+                        onClick={() => setCsvImportModalOpen(true)}
                         variant="outline"
                         size="sm"
                         className="flex items-center gap-2"
@@ -694,7 +705,10 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActionPlanTableNew projectId={projectId} />
+                    <ActionPlanTable 
+                      projectId={projectId} 
+                      calculatedData={calculatedData}
+                    />
                   </div>
                 </div>
               )}

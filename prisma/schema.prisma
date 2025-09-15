@@ -59,6 +59,7 @@ model Project {
   materialData       Json?               @map("material_data")
   nilaiKontrak       String?             @map("nilai_kontrak")
   nomorKontrak       String?             @map("nomor_kontrak")
+  numberOfWeeks      Int?                @map("number_of_weeks")
   outputData         Json?               @map("output_data")
   paguAnggaran       String?             @map("pagu_anggaran")
   pembayaranTerakhir String?             @map("pembayaran_terakhir")
@@ -140,10 +141,7 @@ model SubActivity {
   satuan              String?              @map("satuan")
   volume              Float?               @map("volume")
   
-  schedulePlans       SchedulePlan[]
-  actionPlans         ActionPlan[]
-  realization         Realization[]
-  realizationDaily    RealizationDaily[]
+  schedules           Schedule[]
   dailyReports        DailyReport[]
 
   activity            Activity             @relation(fields: [activityId], references: [id], onDelete: Cascade)
@@ -151,66 +149,20 @@ model SubActivity {
   @@map("sub_activities")
 }
 
-model SchedulePlan {
+model Schedule {
   id                 String      @id @default(cuid())
   subActivityId      String      @map("sub_activity_id")
   weekNumber         Int         @map("week_number")
-  percentage         Float?      @default(0) @map("percentage")
+  plan               Float?      @default(0) @map("plan")
+  actionPlan         Float?      @default(0) @map("action_plan")
+  realization        Float?      @default(0) @map("realization")
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
   subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
 
   @@unique([subActivityId, weekNumber])
-  @@map("schedule_plans")
-}
-
-model ActionPlan {
-  id                 String      @id @default(cuid())
-  subActivityId      String      @map("sub_activity_id")
-  weekNumber         Int         @map("week_number")
-  percentage         Float?      @default(0) @map("percentage")
-  createdAt          DateTime    @default(now()) @map("created_at")
-  updatedAt          DateTime    @updatedAt @map("updated_at")
-
-  subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
-
-  @@unique([subActivityId, weekNumber])
-  @@map("action_plans")
-}
-
-model Realization {
-  id                 String      @id @default(cuid())
-  subActivityId      String      @map("sub_activity_id")
-  weekNumber         Int         @map("week_number")
-  percentage         Float?      @default(0) @map("percentage")
-  createdAt          DateTime    @default(now()) @map("created_at")
-  updatedAt          DateTime    @updatedAt @map("updated_at")
-
-  subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
-
-  @@unique([subActivityId, weekNumber])
-  @@map("realizations")
-}
-
-model RealizationDaily {
-  id                      String      @id @default(cuid())
-  subActivityId           String      @map("sub_activity_id")
-  userId                  String      @map("user_id")
-  date                    DateTime    @map("date")
-  dailyProgress           Float?      @default(0) @map("daily_progress")
-  cumulativeProgress      Float?      @default(0) @map("cumulative_progress")
-  notes                   String?     @map("notes")
-  koordinat               Json?       @map("koordinat")
-  attachments             Json?       @map("attachments")
-  createdAt               DateTime    @default(now()) @map("created_at")
-  updatedAt               DateTime    @updatedAt @map("updated_at")
-
-  subActivity             SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
-  user                    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([subActivityId, userId, date])
-  @@map("realization_daily")
+  @@map("schedules")
 }
 
 model User {
@@ -231,7 +183,6 @@ model User {
 
   accounts           Account[]
   dailyReport        DailyReport[]
-  realizationDaily   RealizationDaily[]
   projectAssignments ProjectAssignment[]
   sessions           Session[]
   balai              Balai?              @relation(fields: [balaiId], references: [id])

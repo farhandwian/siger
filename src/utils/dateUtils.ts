@@ -540,6 +540,7 @@ export interface SequentialWeek {
   month: number
   year: number
   weekInMonth: number
+  isLastWeekOfMonth: boolean
 }
 
 /**
@@ -610,12 +611,13 @@ function parseIndonesianDate(dateStr: string): Date | null {
  */
 export function generateSequentialWeeks(
   spmkDate: string | null,
-  totalWeeks: number = 20
+  totalWeeks: number = 30
 ): SequentialWeek[] {
   if (!spmkDate) {
     // Fallback to May 19, 2025 so that W2 aligns with CSV Period 1 (May 26-June 1)
     const fallbackStart = new Date('2025-05-19')
-    return generateSequentialWeeksFromDate(fallbackStart, totalWeeks)
+    const weeks = generateSequentialWeeksFromDate(fallbackStart, totalWeeks)
+    return addLastWeekOfMonthFlags(weeks)
   }
 
   try {
@@ -624,13 +626,43 @@ export function generateSequentialWeeks(
       throw new Error('Failed to parse SPMK date')
     }
 
-    return generateSequentialWeeksFromDate(startDate, totalWeeks)
+    const weeks = generateSequentialWeeksFromDate(startDate, totalWeeks)
+    return addLastWeekOfMonthFlags(weeks)
   } catch (error) {
     console.error('❌ Error parsing SPMK date, using fallback:', error)
     // Fallback to May 19, 2025 so that W2 aligns with CSV Period 1 (May 26-June 1)
     const fallbackStart = new Date('2025-05-19')
-    return generateSequentialWeeksFromDate(fallbackStart, totalWeeks)
+    const weeks = generateSequentialWeeksFromDate(fallbackStart, totalWeeks)
+    return addLastWeekOfMonthFlags(weeks)
   }
+}
+
+/**
+ * Helper function to determine if a week is at the end of a month (for month separators)
+ */
+function addLastWeekOfMonthFlags(weeks: SequentialWeek[]): SequentialWeek[] {
+  // Group weeks by month-year key
+  const monthGroups: { [key: string]: SequentialWeek[] } = {}
+  
+  weeks.forEach(week => {
+    const currentMonthKey = `${week.year}-${week.month}`
+    if (!monthGroups[currentMonthKey]) {
+      monthGroups[currentMonthKey] = []
+    }
+    monthGroups[currentMonthKey].push(week)
+  })
+  
+  // Mark the last week of each month
+  return weeks.map(week => {
+    const currentMonthKey = `${week.year}-${week.month}`
+    const monthGroup = monthGroups[currentMonthKey]
+    const lastWeek = monthGroup[monthGroup.length - 1]
+    
+    return {
+      ...week,
+      isLastWeekOfMonth: lastWeek.weekNumber === week.weekNumber
+    }
+  })
 }
 
 /**

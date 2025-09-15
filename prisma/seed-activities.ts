@@ -69,10 +69,7 @@ async function seedActivities() {
 
   // Clear existing activity data
   await prisma.dailyReport.deleteMany({})
-  await prisma.realizationDaily.deleteMany({})
-  await prisma.realization.deleteMany({})
-  await prisma.actionPlan.deleteMany({})
-  await prisma.schedulePlan.deleteMany({})
+  await prisma.schedule.deleteMany({})
   await prisma.subActivity.deleteMany({})
   await prisma.activity.deleteMany({})
 
@@ -380,33 +377,21 @@ async function seedActivities() {
           }
         }
 
-        // Create separate SchedulePlan and Realization records
-        const schedulePlans = scheduleData.map(data => ({
+        // Create Schedule records with plan and realization values
+        const schedules = scheduleData.map(data => ({
           subActivityId: data.subActivityId,
           weekNumber: data.weekNumber,
-          percentage: data.planPercentage,
+          plan: data.planPercentage,
+          realization: data.actualPercentage > 0 ? data.actualPercentage : null,
         }))
 
-        const realizations = scheduleData.filter(data => data.actualPercentage > 0).map(data => ({
-          subActivityId: data.subActivityId,
-          weekNumber: data.weekNumber,
-          percentage: data.actualPercentage,
-        }))
-
-        // Insert schedule plans
-        await prisma.schedulePlan.createMany({
-          data: schedulePlans,
+        // Insert schedules
+        await prisma.schedule.createMany({
+          data: schedules,
         })
 
-        // Insert realizations (only for completed periods)
-        if (realizations.length > 0) {
-          await prisma.realization.createMany({
-            data: realizations,
-          })
-        }
-
         // eslint-disable-next-line no-console
-        console.log(`    📅 Created ${schedulePlans.length} schedule plans and ${realizations.length} realizations for ${subActivity.name}`)
+        console.log(`    📅 Created ${schedules.length} schedules for ${subActivity.name}`)
       }
     }
   }

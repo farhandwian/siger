@@ -3,6 +3,7 @@ import { apiClient } from '@/lib/api-client'
 import type {
   Activity,
   SubActivity,
+  Schedule,
   UpdateActivitySchema,
 } from '@/lib/schemas'
 import { z } from 'zod'
@@ -19,6 +20,13 @@ type CreateSubActivityData = {
   volumeMC0?: number
   bobotMC0?: number
   weight: number
+}
+
+// Type for activities with schedules
+type ActivityWithSchedules = Activity & {
+  subActivities?: (SubActivity & {
+    schedules?: Schedule[]
+  })[]
 }
 
 // Query keys factory
@@ -47,6 +55,26 @@ export function useActivities(projectId: string) {
     enabled: !!projectId,
     // Removed automatic refetching to improve performance
     // Data will be refreshed only when user clicks refresh button
+  })
+}
+
+// Get activities with schedules for a project (returns all weeks)
+export function useActivitiesWithSchedules(projectId: string) {
+  return useQuery({
+    queryKey: [...activityKeys.list(projectId), 'schedules'],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        includeSchedules: 'true',
+      })
+      
+      const response = await fetch(`/api/projects/${projectId}/activities?${params}`)
+      if (!response.ok) throw new Error('Failed to fetch activities with schedules')
+      
+      const data = await response.json()
+      return data.data as Activity[]
+    },
+    staleTime: 30 * 1000, // 30 seconds for schedule data
+    enabled: !!projectId,
   })
 }
 
@@ -151,7 +179,7 @@ export function useUpdateSchedule() {
       planPercentage?: number | null
       actualPercentage?: number | null
     }) => {
-      const response = await apiClient.put<{ data: any }>('/activities/schedule', data)
+      const response = await apiClient.put<{ data: unknown }>('/activities/schedule', data)
       return response.data
     },
     onSuccess: () => {
@@ -169,5 +197,108 @@ export function useProject(projectId: string) {
       return response
     },
     enabled: !!projectId,
+  })
+}
+
+// Response schema for schedule update
+const ScheduleUpdateResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    id: z.string(),
+    weekNumber: z.number(),
+    plan: z.number().nullable(),
+    actionPlan: z.number().nullable(),
+    realization: z.number().nullable(),
+    subActivityId: z.string(),
+    updatedAt: z.string(),
+  }),
+})
+
+export type ScheduleValueType = 'plan' | 'actionPlan' | 'realization'
+
+// Hook for updating single schedule value with optimistic updates
+export function useUpdateScheduleValue(projectId: string) {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (payload: {
+      scheduleId: string
+      valueType: ScheduleValueType
+      value: number | null
+    }) => {
+      const { scheduleId, valueType, value } = payload
+      
+      const updateData = {
+        [valueType]: value
+      }
+
+      const response = await fetch(`/api/schedules/${scheduleId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update schedule value')
+      }
+      
+      const data = await response.json()
+      return ScheduleUpdateResponseSchema.parse(data)
+    },
+
+    // Optimistic update - immediately update cache without waiting for server response
+    onMutate: async (variables) => {
+      const { scheduleId, valueType, value } = variables
+
+      // Cancel outgoing refetches for activities with schedules
+      const activitiesQueryKey = [...activityKeys.list(projectId), 'schedules']
+      await queryClient.cancelQueries({ queryKey: activitiesQueryKey })
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(activitiesQueryKey)
+
+      // Optimistically update the specific schedule value in activities cache
+      queryClient.setQueryData(activitiesQueryKey, (oldData: ActivityWithSchedules[]) => {
+        if (!oldData) return oldData
+
+        return oldData.map((activity: ActivityWithSchedules) => ({
+          ...activity,
+          subActivities: activity.subActivities?.map((subActivity: SubActivity & { schedules?: Schedule[] }) => ({
+            ...subActivity,
+            schedules: subActivity.schedules?.map((schedule: Schedule) => {
+              if (schedule.id === scheduleId) {
+                return {
+                  ...schedule,
+                  [valueType]: value,
+                  updatedAt: new Date(),
+                }
+              }
+              return schedule
+            }),
+          })),
+        }))
+      })
+
+      // Return context with snapshot for potential rollback
+      return { previousData }
+    },
+
+    // Rollback on error
+    onError: (error, variables, context) => {
+      if (context?.previousData) {
+        const activitiesQueryKey = [...activityKeys.list(projectId), 'schedules']
+        queryClient.setQueryData(activitiesQueryKey, context.previousData)
+      }
+    },
+
+    // Optional: Refetch to ensure consistency (only if needed)
+    onSettled: () => {
+      // Only invalidate if you want to periodically sync with server
+      // This is much more targeted than invalidating all activities
+      // queryClient.invalidateQueries({ 
+      //   queryKey: [...activityKeys.list(projectId), 'schedules'] 
+      // })
+    },
   })
 }

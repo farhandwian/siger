@@ -14,10 +14,7 @@ async function cleanupDatabase() {
   // Delete records in correct order to avoid foreign key constraint issues
   // Delete child tables first
   await prisma.dailyReport.deleteMany({});
-  await prisma.realizationDaily.deleteMany({});
-  await prisma.realization.deleteMany({});
-  await prisma.actionPlan.deleteMany({});
-  await prisma.schedulePlan.deleteMany({});
+  await prisma.schedule.deleteMany({});
   await prisma.subActivity.deleteMany({});
   await prisma.activity.deleteMany({});
   await prisma.projectAssignment.deleteMany({});

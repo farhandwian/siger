@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useActivities, useProject } from '@/hooks/useActivityQueries'
+import { useActivitiesWithSchedules, useProject } from '@/hooks/useActivityQueries'
 import { calculateCumulativeData } from '@/lib/cumulativeCalculations'
 import { generateMonthsFromContract } from '@/utils/dateUtils'
 
@@ -20,7 +20,7 @@ export interface RealMonitoringData {
  * Hook to provide real monitoring metrics based on actual activity schedules
  */
 export function useRealMonitoringData(projectId: string) {
-  const { data: activities, isLoading: activitiesLoading } = useActivities(projectId)
+  const { data: activities, isLoading: activitiesLoading } = useActivitiesWithSchedules(projectId)
   const { data: project, isLoading: projectLoading } = useProject(projectId)
 
   const monitoringData = useMemo((): RealMonitoringData | null => {

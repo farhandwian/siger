@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { CreateSchedulePlanSchema } from '@/lib/schemas'
+import { CreateScheduleSchema } from '@/lib/schemas/schedule'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 
-// GET /api/schedule-plans - Fetch schedule plans with optional filters
+// GET /api/schedules - Fetch schedules with optional filters
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const weekNumber = searchParams.get('weekNumber')
 
     // Build where clause with proper typing
-    const where: Prisma.SchedulePlanWhereInput = {}
+    const where: Prisma.ScheduleWhereInput = {}
     
     if (subActivityId) {
       where.subActivityId = subActivityId
@@ -32,11 +32,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Optimize query based on filtering patterns
-    let schedulePlans
+    let schedules
 
     if (projectId && !subActivityId) {
       // For project-based queries, use a more efficient approach
-      // First get subActivityIds for the project, then query schedule plans
+      // First get subActivityIds for the project, then query schedules
       const subActivityIds = await prisma.subActivity.findMany({
         where: {
           activity: {
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Build optimized where clause
-      const optimizedWhere: Prisma.SchedulePlanWhereInput = {
+      const optimizedWhere: Prisma.ScheduleWhereInput = {
         subActivityId: {
           in: subActivityIdList
         }
@@ -66,13 +66,15 @@ export async function GET(request: NextRequest) {
 
       if (weekNumber) optimizedWhere.weekNumber = parseInt(weekNumber)
 
-      schedulePlans = await prisma.schedulePlan.findMany({
+      schedules = await prisma.schedule.findMany({
         where: optimizedWhere,
         select: {
           id: true,
           subActivityId: true,
           weekNumber: true,
-          percentage: true,
+          plan: true,
+          actionPlan: true,
+          realization: true,
           createdAt: true,
           updatedAt: true
         },
@@ -82,13 +84,15 @@ export async function GET(request: NextRequest) {
       })
     } else {
       // For other queries, use the standard approach
-      schedulePlans = await prisma.schedulePlan.findMany({
+      schedules = await prisma.schedule.findMany({
         where,
         select: {
           id: true,
           subActivityId: true,
           weekNumber: true,
-          percentage: true,
+          plan: true,
+          actionPlan: true,
+          realization: true,
           createdAt: true,
           updatedAt: true
         },
@@ -100,24 +104,25 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: schedulePlans
+      data: schedules
     })
   } catch (error) {
+    console.error('Error fetching schedules:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch schedule plans' },
+      { success: false, error: 'Failed to fetch schedules' },
       { status: 500 }
     )
   }
 }
 
-// POST /api/schedule-plans - Create a new schedule plan
+// POST /api/schedules - Create a new schedule
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const validatedData = CreateSchedulePlanSchema.parse(body)
+    const validatedData = CreateScheduleSchema.parse(body)
 
-    // Check for existing schedule plan with same constraints
-    const existing = await prisma.schedulePlan.findFirst({
+    // Check for existing schedule with same constraints
+    const existing = await prisma.schedule.findFirst({
       where: {
         subActivityId: validatedData.subActivityId,
         weekNumber: validatedData.weekNumber
@@ -126,18 +131,20 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       return NextResponse.json(
-        { success: false, error: 'Schedule plan already exists for this week' },
+        { success: false, error: 'Schedule already exists for this week' },
         { status: 409 }
       )
     }
 
-    const schedulePlan = await prisma.schedulePlan.create({
+    const schedule = await prisma.schedule.create({
       data: validatedData,
       select: {
         id: true,
         subActivityId: true,
         weekNumber: true,
-        percentage: true,
+        plan: true,
+        actionPlan: true,
+        realization: true,
         createdAt: true,
         updatedAt: true
       }
@@ -145,7 +152,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: schedulePlan
+      data: schedule
     }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -155,8 +162,60 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.error('Error creating schedule:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to create schedule plan' },
+      { success: false, error: 'Failed to create schedule' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT /api/schedules - Update existing schedule (upsert operation)
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const validatedData = CreateScheduleSchema.parse(body)
+
+    const schedule = await prisma.schedule.upsert({
+      where: {
+        subActivityId_weekNumber: {
+          subActivityId: validatedData.subActivityId,
+          weekNumber: validatedData.weekNumber
+        }
+      },
+      update: {
+        plan: validatedData.plan,
+        actionPlan: validatedData.actionPlan,
+        realization: validatedData.realization,
+      },
+      create: validatedData,
+      select: {
+        id: true,
+        subActivityId: true,
+        weekNumber: true,
+        plan: true,
+        actionPlan: true,
+        realization: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: schedule
+    })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid input data', details: error.errors },
+        { status: 400 }
+      )
+    }
+
+    console.error('Error updating schedule:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to update schedule' },
       { status: 500 }
     )
   }

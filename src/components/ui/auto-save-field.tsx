@@ -15,6 +15,7 @@ type AllowedFieldName =
   | 'paguAnggaran'
   | 'nilaiKontrak'
   | 'nomorKontrak'
+  | 'numberOfWeeks'
   | 'spmk'
   | 'tanggalSpmk'
   | 'masaKontrak'
@@ -32,7 +33,7 @@ interface AutoSaveFieldProps {
   className?: string
   disabled?: boolean
   maxLength?: number
-  type?: 'text' | 'textarea' | 'date'
+  type?: 'text' | 'textarea' | 'date' | 'number'
   rows?: number
 }
 
@@ -210,6 +211,15 @@ export const AutoSaveField: React.FC<AutoSaveFieldProps> = ({
       ) : type === 'date' ? (
         <input
           type="date"
+          value={localValue}
+          onChange={e => handleChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={inputClasses}
+        />
+      ) : type === 'number' ? (
+        <input
+          type="number"
           value={localValue}
           onChange={e => handleChange(e.target.value)}
           placeholder={placeholder}

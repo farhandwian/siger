@@ -24,24 +24,24 @@ const mockActivities: Activity[] = [
         volume: 100,
         createdAt: new Date(),
         updatedAt: new Date(),
-        schedulePlans: [
+        schedules: [
           { 
             id: 'sp1', 
             subActivityId: 'sub1',
-            month: 6, 
-            week: 1, 
-            year: 2025, 
-            percentage: 5,
+            weekNumber: 1,
+            plan: 5,
+            actionPlan: 5,
+            realization: 3,
             createdAt: new Date(),
             updatedAt: new Date()
           },
           { 
             id: 'sp2', 
             subActivityId: 'sub1',
-            month: 6, 
-            week: 2, 
-            year: 2025, 
-            percentage: 10,
+            weekNumber: 2,
+            plan: 10,
+            actionPlan: 8,
+            realization: 7,
             createdAt: new Date(),
             updatedAt: new Date()
           },
@@ -57,24 +57,24 @@ const mockActivities: Activity[] = [
         volume: 50,
         createdAt: new Date(),
         updatedAt: new Date(),
-        schedulePlans: [
+        schedules: [
           { 
             id: 'sp3', 
             subActivityId: 'sub2',
-            month: 6, 
-            week: 1, 
-            year: 2025, 
-            percentage: 3,
+            weekNumber: 1,
+            plan: 3,
+            actionPlan: 4,
+            realization: 2,
             createdAt: new Date(),
             updatedAt: new Date()
           },
           { 
             id: 'sp4', 
             subActivityId: 'sub2',
-            month: 6, 
-            week: 2, 
-            year: 2025, 
-            percentage: 7,
+            weekNumber: 2,
+            plan: 7,
+            actionPlan: 6,
+            realization: 5,
             createdAt: new Date(),
             updatedAt: new Date()
           },

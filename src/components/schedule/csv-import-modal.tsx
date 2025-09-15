@@ -48,7 +48,6 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
   // Use the project hook to get SPMK date
   const { data: project } = useProject(projectId)
-  console.log('📦 Project data from hook:', project)
   const spmkDate = project?.tanggalSpmk || null
 
   useEffect(() => {

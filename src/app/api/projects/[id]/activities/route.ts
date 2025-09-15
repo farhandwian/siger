@@ -1,47 +1,98 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { CreateActivitySchema, ActivitySchema } from '@/lib/schemas'
 import { z } from 'zod'
+
+/**
+ * Activities API for a specific project with optional schedule data
+ * 
+ * GET /api/projects/[id]/activities?includeSchedules={boolean}
+ * Returns activities with optional embedded schedule data (all weeks when enabled)
+ */
+
+const GetActivitiesQuerySchema = z.object({
+  includeSchedules: z.coerce.boolean().default(false),
+})
+
+const ScheduleSchema = z.object({
+  id: z.string(),
+  weekNumber: z.number(),
+  plan: z.number().nullable(),
+  actionPlan: z.number().nullable(),
+  realization: z.number().nullable(),
+})
+
+const SubActivitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  weight: z.number(),
+  order: z.number(),
+  satuan: z.string().nullable(),
+  volume: z.number().nullable(),
+  schedules: z.array(ScheduleSchema).optional(),
+})
+
+const ActivitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  order: z.number(),
+  subActivities: z.array(SubActivitySchema),
+})
+
+const ActivitiesResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(ActivitySchema),
+})
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-
+    const { searchParams } = new URL(request.url)
+    
     // Validate project ID format
     const projectIdSchema = z.string().min(1, 'Project ID is required')
     const projectId = projectIdSchema.parse(id)
+    
+    // Parse query parameters
+    const queryParams = GetActivitiesQuerySchema.parse(Object.fromEntries(searchParams))
 
-    // Get activities for project
+    // Get activities for project with new unified Schedule model
     const activities = await prisma.activity.findMany({
       where: {
         projectId,
       },
       include: {
         subActivities: {
-          orderBy: { order: 'asc' },
           include: {
-            schedulePlans: true,
-            actionPlans: true,
-            realization: true,
-            realizationDaily: true,
+            // Only include schedules if requested (all weeks)
+            schedules: queryParams.includeSchedules ? {
+              select: {
+                id: true,
+                weekNumber: true,
+                plan: true,
+                actionPlan: true,
+                realization: true,
+              },
+              orderBy: {
+                weekNumber: 'asc'
+              }
+            } : false
           },
-        },
+          orderBy: { order: 'asc' }
+        }
       },
       orderBy: { order: 'asc' },
     })
 
-    // Validate response data
-    const validatedActivities = z.array(ActivitySchema).parse(activities)
-
-    return Response.json({
+    // Validate response data with new schema
+    const validatedData = ActivitiesResponseSchema.parse({
       success: true,
-      data: validatedActivities,
+      data: activities,
     })
-  } catch (error) {
-    console.error('Error fetching activities:', error)
 
+    return NextResponse.json(validatedData)
+  } catch (error) {
     if (error instanceof z.ZodError) {
-      return Response.json(
+      return NextResponse.json(
         {
           success: false,
           error: 'Validation failed',
@@ -51,7 +102,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       )
     }
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch activities',
@@ -60,6 +111,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     )
   }
 }
+
+const CreateActivitySchema = z.object({
+  name: z.string().min(1, 'Activity name is required'),
+})
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -79,7 +134,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       orderBy: { order: 'desc' },
     })
 
-    // Create activity
+    // Create activity with new unified schema
     const activity = await prisma.activity.create({
       data: {
         name: validatedData.name,
@@ -88,21 +143,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
       include: {
         subActivities: {
-          orderBy: { order: 'asc' },
           include: {
-            schedulePlans: true,
-            actionPlans: true,
-            realization: true,
-            realizationDaily: true,
+            schedules: {
+              select: {
+                id: true,
+                weekNumber: true,
+                plan: true,
+                actionPlan: true,
+                realization: true,
+              },
+              orderBy: {
+                weekNumber: 'asc'
+              }
+            }
           },
-        },
+          orderBy: { order: 'asc' }
+        }
       },
     })
 
     // Validate response data
     const validatedActivity = ActivitySchema.parse(activity)
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: true,
         data: validatedActivity,
@@ -111,10 +174,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       { status: 201 }
     )
   } catch (error) {
-    console.error('Error creating activity:', error)
-
     if (error instanceof z.ZodError) {
-      return Response.json(
+      return NextResponse.json(
         {
           success: false,
           error: 'Validation failed',
@@ -124,7 +185,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       )
     }
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to create activity',
