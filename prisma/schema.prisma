@@ -345,18 +345,34 @@ model Kebutuhan {
 }
 
 model AnalisaKebutuhan {
-  id                   String      @id @default(cuid())
-  subActivityId        String      @map("sub_activity_id")
-  kebutuhanId          String      @map("kebutuhan_id")
-  koefisien            Float       @map("koefisien")
-  stokHarian           Float?      @default(0) @map("stok_harian")
-  terpasang            Float?      @default(0) @map("terpasang")
-  totalSisaStokHariIni Float?      @default(0) @map("total_sisa_stok_hari_ini")
-  createdAt            DateTime    @default(now()) @map("created_at")
-  updatedAt            DateTime    @updatedAt @map("updated_at")
-  subActivity          SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
-  kebutuhan            Kebutuhan   @relation(fields: [kebutuhanId], references: [id], onDelete: Cascade)
+  id                   String                  @id @default(cuid())
+  subActivityId        String                  @map("sub_activity_id")
+  kebutuhanId          String                  @map("kebutuhan_id")
+  koefisien            Float                   @map("koefisien")
+  stokHarian           Float?                  @default(0) @map("stok_harian")
+  terpasang            Float?                  @default(0) @map("terpasang")
+  totalSisaStokHariIni Float?                  @default(0) @map("total_sisa_stok_hari_ini")
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
+  subActivity          SubActivity             @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+  kebutuhan            Kebutuhan               @relation(fields: [kebutuhanId], references: [id], onDelete: Cascade)
+  resourceFlowSchedules ResourceFlowSchedule[]
 
   @@unique([subActivityId, kebutuhanId])
   @@map("analisa_kebutuhan")
+}
+
+model ResourceFlowSchedule {
+  id               String           @id @default(cuid())
+  analisaKebutuhanId String         @map("analisa_kebutuhan_id")
+  tanggal          String           @map("tanggal")
+  rencana          Float?           @default(0) @map("rencana")
+  realisasi        Float?           @default(0) @map("realisasi")
+  file             Json?            @map("file")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  analisaKebutuhan AnalisaKebutuhan @relation(fields: [analisaKebutuhanId], references: [id], onDelete: Cascade)
+
+  @@unique([analisaKebutuhanId, tanggal])
+  @@map("resource_flow_schedules")
 }

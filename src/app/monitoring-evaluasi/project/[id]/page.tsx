@@ -32,6 +32,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ActionPlanMetrics } from '@/components/monitoring/action-plan-metrics'
 import { ArrowLeft } from 'lucide-react'
 import AnalisaKebutuhanTable from '@/components/analisa-kebutuhan/AnalisaKebutuhanTable'
+import { ResourceFlowTable } from '@/components/resource-flow/resource-flow-table'
 
 interface TabProps {
   label: string
@@ -879,7 +880,9 @@ export default function ProjectDetailPage() {
               {/* Peta Pekerjaan Tab Content */}
               {activeTab === 'Resource Flow' && (
                 <div className="space-y-6">
-                  <div className="relative"></div>
+                  <div className="relative">
+                    <ResourceFlowTable projectId={projectId} />
+                  </div>
                 </div>
               )}
 

@@ -1,30 +1,52 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AutoSaveMaterialField } from '@/components/ui/auto-save-material-field'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Trash2, ChevronDown, Loader2 } from 'lucide-react'
+import { ChevronDown, Loader2 } from 'lucide-react'
 import {
-  useDeleteMaterial,
-  useUpdateMaterialSchedule,
-  useCreateMaterialSchedule,
-  Material,
-} from '@/hooks/useMaterialQueries'
+  useResourceFlowData,
+  useActivitiesForResourceFlow,
+  useCreateResourceFlowSchedule,
+  useUpdateResourceFlowSchedule,
+  AnalisaKebutuhan,
+} from '@/hooks/useResourceFlowQueries'
 import { cn } from '@/lib/utils'
 
-interface MaterialFlowTableProps {
-  materials: Material[]
-  selectedMaterial: string
-  onMaterialChange: (material: string) => void
+/**
+ * Props for ResourceFlowTable component
+ * Takes only a projectId since it manages its own selection state
+ */
+interface ResourceFlowTableProps {
+  projectId: string
 }
 
+/**
+ * Editable cell component for numeric input in the table
+ */
 interface EditableCellProps {
   value: number
   onChange: (value: number) => void
   isDisabled?: boolean
   className?: string
+}
+
+/**
+ * Activity interface for dropdown data structure
+ */
+interface Activity {
+  id: string
+  nama: string
+  sub_activities?: SubActivity[]
+}
+
+/**
+ * Sub Activity interface for dropdown data structure
+ */
+interface SubActivity {
+  id: string
+  nama: string
+  analisa_kebutuhan?: AnalisaKebutuhan[]
 }
 
 const EditableCell = ({ value, onChange, isDisabled = false, className }: EditableCellProps) => {
@@ -76,44 +98,84 @@ const EditableCell = ({ value, onChange, isDisabled = false, className }: Editab
   )
 }
 
-export function MaterialFlowTable({
-  materials,
-  selectedMaterial,
-  onMaterialChange,
-}: MaterialFlowTableProps) {
+export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
+  // State management for dropdown selections
+  const [selectedActivity, setSelectedActivity] = useState<string>('')
+  const [selectedSubActivity, setSelectedSubActivity] = useState<string>('')
+  const [selectedAnalisaKebutuhan, setSelectedAnalisaKebutuhan] = useState<string>('')
+
+  // State management for table interactions
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [editingCell, setEditingCell] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [loadingCell, setLoadingCell] = useState<string | null>(null)
 
-  const deleteMaterial = useDeleteMaterial()
-  const updateSchedule = useUpdateMaterialSchedule()
-  const createSchedule = useCreateMaterialSchedule()
+  // API Hooks
+  const { data: resourceFlowData, isLoading, error } = useResourceFlowData(projectId)
+  const {
+    data: activitiesData,
+    isLoading: activitiesLoading,
+    error: activitiesError,
+  } = useActivitiesForResourceFlow(projectId)
+  const updateSchedule = useUpdateResourceFlowSchedule()
+  const createSchedule = useCreateResourceFlowSchedule()
 
-  // Find the selected material
-  const currentMaterial = materials.find(m => m.jenisMaterial === selectedMaterial) || materials[0]
+  // Debug logging
+  console.log('Debug - Activities data:', activitiesData)
+  console.log('Debug - Activities loading:', activitiesLoading)
+  console.log('Debug - Activities error:', activitiesError)
+  console.log('Debug - Resource flow data:', resourceFlowData)
 
-  // Update parent component when material selection changes
+  // Data processing: Get the selected analisa kebutuhan and its schedules
+  const currentAnalisaKebutuhan = resourceFlowData?.find(
+    item => item.id === selectedAnalisaKebutuhan
+  )
+
+  // Auto-select first available items when data loads
   useEffect(() => {
-    if (materials.length > 0 && !selectedMaterial) {
-      onMaterialChange(materials[0].jenisMaterial)
-    }
-  }, [materials, selectedMaterial, onMaterialChange])
+    if (activitiesData?.length && !selectedActivity) {
+      const firstActivity = activitiesData[0]
+      setSelectedActivity(firstActivity.id)
 
-  // Initialize selected month based on current material's start date (only once when material first loads)
-  useEffect(() => {
-    if (
-      currentMaterial?.tanggalMulai &&
-      selectedMonth === new Date().getMonth() + 1 &&
-      selectedYear === new Date().getFullYear()
-    ) {
-      // Only set if we're still on the current month/year (initial state)
-      const startDate = new Date(currentMaterial.tanggalMulai)
-      setSelectedMonth(startDate.getMonth() + 1)
-      setSelectedYear(startDate.getFullYear())
+      if (firstActivity.sub_activities?.length && !selectedSubActivity) {
+        const firstSubActivity = firstActivity.sub_activities[0]
+        setSelectedSubActivity(firstSubActivity.id)
+
+        if (firstSubActivity.analisa_kebutuhan?.length && !selectedAnalisaKebutuhan) {
+          setSelectedAnalisaKebutuhan(firstSubActivity.analisa_kebutuhan[0].id)
+        }
+      }
     }
-  }, [currentMaterial?.id]) // Only trigger when material ID changes, not when material data changes
+  }, [activitiesData, selectedActivity, selectedSubActivity, selectedAnalisaKebutuhan])
+
+  // Auto-select first available sub activity when activity changes
+  useEffect(() => {
+    if (selectedActivity && activitiesData?.length) {
+      const activity = activitiesData.find((a: Activity) => a.id === selectedActivity)
+      if (activity?.sub_activities?.length) {
+        const firstSubActivity = activity.sub_activities[0]
+        setSelectedSubActivity(firstSubActivity.id)
+
+        if (firstSubActivity.analisa_kebutuhan?.length) {
+          setSelectedAnalisaKebutuhan(firstSubActivity.analisa_kebutuhan[0].id)
+        }
+      }
+    }
+  }, [selectedActivity, activitiesData])
+
+  // Auto-select first available analisa kebutuhan when sub activity changes
+  useEffect(() => {
+    if (selectedSubActivity && activitiesData?.length) {
+      const activity = activitiesData.find((a: Activity) => a.id === selectedActivity)
+      const subActivity = activity?.sub_activities?.find(
+        (sa: SubActivity) => sa.id === selectedSubActivity
+      )
+      if (subActivity?.analisa_kebutuhan?.length) {
+        setSelectedAnalisaKebutuhan(subActivity.analisa_kebutuhan[0].id)
+      }
+    }
+  }, [selectedSubActivity, selectedActivity, activitiesData])
 
   // Get current month for display based on selected month/year
   const currentMonth = new Date(selectedYear, selectedMonth - 1)
@@ -123,86 +185,57 @@ export function MaterialFlowTable({
     })
     .toUpperCase()
 
-  // Generate date range based on selected month and material date range
-  const generateDateColumns = (material: Material) => {
-    if (!material?.tanggalMulai || !material?.tanggalSelesai) return []
-
-    const materialStart = new Date(material.tanggalMulai)
-    const materialEnd = new Date(material.tanggalSelesai)
-
-    // Get first and last day of selected month
+  // Generate date range for the selected month
+  const generateDateColumns = () => {
     const monthStart = new Date(selectedYear, selectedMonth - 1, 1)
     const monthEnd = new Date(selectedYear, selectedMonth, 0) // Last day of month
 
-    // Use the overlapping period between material dates and selected month
-    const startDate = materialStart > monthStart ? materialStart : monthStart
-    const endDate = materialEnd < monthEnd ? materialEnd : monthEnd
-
     const dates = []
+    const currentDate = new Date(monthStart)
 
-    // Only generate dates if there's an overlap
-    if (startDate <= endDate) {
-      const currentDate = new Date(startDate)
-      while (currentDate <= endDate) {
-        dates.push({
-          date: currentDate.toISOString().split('T')[0],
-          display: currentDate.getDate().toString(),
-          fullDate: new Date(currentDate),
-        })
-        currentDate.setDate(currentDate.getDate() + 1)
-      }
+    while (currentDate <= monthEnd) {
+      dates.push({
+        date: currentDate.toISOString().split('T')[0],
+        display: currentDate.getDate().toString(),
+        fullDate: new Date(currentDate),
+      })
+      currentDate.setDate(currentDate.getDate() + 1)
     }
 
     return dates
   }
 
-  const dateColumns = currentMaterial ? generateDateColumns(currentMaterial) : []
+  const dateColumns = generateDateColumns()
 
-  // Calculate cumulative values for a specific date
+  // Calculate cumulative values for a specific date based on current analisa kebutuhan schedules
   const calculateRencanaKumulatif = (targetDate: string) => {
-    if (!currentMaterial?.schedules) return 0
+    if (!currentAnalisaKebutuhan?.resourceFlowSchedules) return 0
 
-    // Use ALL schedules, not just current month's dateColumns
-    return currentMaterial.schedules
-      .filter(schedule => schedule.date <= targetDate)
-      .reduce((sum, schedule) => sum + (schedule.rencana || 0), 0)
+    return currentAnalisaKebutuhan.resourceFlowSchedules
+      .filter((schedule: any) => schedule.tanggal <= targetDate)
+      .reduce((sum: number, schedule: any) => sum + (schedule.rencana || 0), 0)
   }
 
   const calculateRealisasiKumulatif = (targetDate: string) => {
-    if (!currentMaterial?.schedules) return 0
+    if (!currentAnalisaKebutuhan?.resourceFlowSchedules) return 0
 
-    // Use ALL schedules, not just current month's dateColumns
-    return currentMaterial.schedules
-      .filter(schedule => schedule.date <= targetDate)
-      .reduce((sum, schedule) => sum + (schedule.realisasi || 0), 0)
+    return currentAnalisaKebutuhan.resourceFlowSchedules
+      .filter((schedule: any) => schedule.tanggal <= targetDate)
+      .reduce((sum: number, schedule: any) => sum + (schedule.realisasi || 0), 0)
   }
 
-  const handleDeleteMaterial = async (materialId: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus material ini?')) {
-      try {
-        const materialToDelete = materials.find(m => m.id === materialId)
-        if (materialToDelete) {
-          await deleteMaterial.mutateAsync({
-            id: materialId,
-            projectId: materialToDelete.projectId,
-          })
-        }
-      } catch (error) {
-        console.error('Failed to delete material:', error)
-      }
-    }
-  }
-
+  // Handle cell editing
   const handleCellEdit = (cellId: string, currentValue: number | null) => {
     setEditingCell(cellId)
     setEditValue(currentValue !== null ? currentValue.toString() : '')
   }
 
+  // Handle saving schedule data
   const handleCellSave = async (
     scheduleId: string | undefined,
-    field: 'rencana' | 'realisasi' | 'rencanaKumulatif' | 'realisasiKumulatif',
+    field: 'rencana' | 'realisasi',
     date: string,
-    materialId: string
+    analisaKebutuhanId: string
   ) => {
     const numericValue = editValue === '' ? 0 : parseFloat(editValue)
     const value = !isNaN(numericValue) ? numericValue : 0
@@ -210,82 +243,21 @@ export function MaterialFlowTable({
     const cellId = `${field}-${date}`
     setLoadingCell(cellId)
 
-    console.log('Saving cell:', { scheduleId, field, date, materialId, value, editValue })
+    console.log('Saving resource flow schedule:', {
+      scheduleId,
+      field,
+      date,
+      analisaKebutuhanId,
+      value,
+      editValue,
+    })
 
     try {
-      // Always use the create endpoint which now handles upsert
-      const existingSchedule = currentMaterial.schedules?.find(s => s.date === date)
-
-      let scheduleData = {
-        materialId,
-        date,
-        rencana: existingSchedule?.rencana || 0,
-        rencanaKumulatif: existingSchedule?.rencanaKumulatif || 0,
-        realisasi: existingSchedule?.realisasi || 0,
-        realisasiKumulatif: existingSchedule?.realisasiKumulatif || 0,
-        // Override the specific field being updated
+      // Use upsert-based schedule creation
+      const scheduleData = {
+        analisaKebutuhanId,
+        tanggal: date,
         [field]: value,
-      }
-
-      // Recalculate cumulative values based on the updated data
-      if (field === 'rencana') {
-        // Update the schedule data temporarily to calculate cumulative
-        const tempSchedules = [...(currentMaterial.schedules || [])]
-        const existingIndex = tempSchedules.findIndex(s => s.date === date)
-        if (existingIndex >= 0) {
-          tempSchedules[existingIndex] = { ...tempSchedules[existingIndex], rencana: value }
-        } else {
-          // Create a temporary schedule object for calculation
-          tempSchedules.push({
-            id: 'temp',
-            materialId,
-            date,
-            rencana: value,
-            rencanaKumulatif: 0,
-            realisasi: 0,
-            realisasiKumulatif: 0,
-            tercapai: 'T',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          })
-        }
-
-        // Sort schedules by date to ensure proper cumulative calculation
-        tempSchedules.sort((a, b) => a.date.localeCompare(b.date))
-
-        // Calculate cumulative for this date using ALL schedules up to this date
-        scheduleData.rencanaKumulatif = tempSchedules
-          .filter(s => s.date <= date)
-          .reduce((sum, s) => sum + (s.rencana || 0), 0)
-      } else if (field === 'realisasi') {
-        // Similar calculation for realisasi
-        const tempSchedules = [...(currentMaterial.schedules || [])]
-        const existingIndex = tempSchedules.findIndex(s => s.date === date)
-        if (existingIndex >= 0) {
-          tempSchedules[existingIndex] = { ...tempSchedules[existingIndex], realisasi: value }
-        } else {
-          // Create a temporary schedule object for calculation
-          tempSchedules.push({
-            id: 'temp',
-            materialId,
-            date,
-            rencana: 0,
-            rencanaKumulatif: 0,
-            realisasi: value,
-            realisasiKumulatif: 0,
-            tercapai: 'T',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          })
-        }
-
-        // Sort schedules by date to ensure proper cumulative calculation
-        tempSchedules.sort((a, b) => a.date.localeCompare(b.date))
-
-        // Calculate cumulative for this date using ALL schedules up to this date
-        scheduleData.realisasiKumulatif = tempSchedules
-          .filter(s => s.date <= date)
-          .reduce((sum, s) => sum + (s.realisasi || 0), 0)
       }
 
       console.log('Schedule data to upsert:', scheduleData)
@@ -293,9 +265,9 @@ export function MaterialFlowTable({
 
       setEditingCell(null)
       setEditValue('')
-      console.log('Cell saved successfully')
+      console.log('Resource flow schedule saved successfully')
     } catch (error) {
-      console.error('Error saving schedule:', error)
+      console.error('Error saving resource flow schedule:', error)
       // Don't reset the cell if there was an error, let user try again
     } finally {
       setLoadingCell(null)
@@ -307,11 +279,51 @@ export function MaterialFlowTable({
     setEditValue('')
   }
 
-  if (!materials || materials.length === 0) {
+  // Get dropdown options
+  const getActivityOptions = (): Activity[] => activitiesData || []
+
+  const getSubActivityOptions = (): SubActivity[] => {
+    const activity = activitiesData?.find((a: Activity) => a.id === selectedActivity)
+    return activity?.sub_activities || []
+  }
+
+  const getAnalisaKebutuhanOptions = (): AnalisaKebutuhan[] => {
+    const activity = activitiesData?.find((a: Activity) => a.id === selectedActivity)
+    const subActivity = activity?.sub_activities?.find(
+      (sa: SubActivity) => sa.id === selectedSubActivity
+    )
+    return subActivity?.analisa_kebutuhan || []
+  }
+
+  // Loading state
+  if (isLoading || activitiesLoading) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <p className="text-gray-500">Loading resource flow data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error || activitiesError) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
+        <p className="text-red-600">
+          Error loading data: {error?.message || activitiesError?.message}
+        </p>
+      </div>
+    )
+  }
+
+  // No data state
+  if (!activitiesData?.length) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
         <p className="text-gray-500">
-          Belum ada data material. Silakan tambah material terlebih dahulu.
+          Belum ada data kegiatan. Silakan tambah kegiatan terlebih dahulu.
         </p>
       </div>
     )
@@ -319,130 +331,123 @@ export function MaterialFlowTable({
 
   return (
     <div className="space-y-2 lg:space-y-3 xl:space-y-4">
-      {/* Material Information Form */}
-      {currentMaterial && (
-        <Card className="border border-gray-200 shadow-sm">
-          <CardContent className="p-2 lg:p-3 xl:p-4">
-            <div className="space-y-3 lg:space-y-4 xl:space-y-6">
-              {/* Material Basic Info */}
-              <div className="flex items-start gap-2 lg:gap-3">
-                <div className="grid flex-1 grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4 xl:gap-6">
-                  <div className="space-y-0.5 lg:space-y-1">
-                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
-                      Jenis Material
-                    </label>
-                    <AutoSaveMaterialField
-                      value={currentMaterial.jenisMaterial}
-                      onChange={value => {}}
-                      materialId={currentMaterial.id}
-                      fieldName="jenisMaterial"
-                    />
-                  </div>
-
-                  <div className="space-y-0.5 lg:space-y-1">
-                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
-                      Volume Satuan
-                    </label>
-                    <select
-                      className="w-full border-b border-gray-200 bg-white px-2 py-1 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
-                      defaultValue={currentMaterial.volumeSatuan}
-                    >
-                      <option value="m3">m3</option>
-                      <option value="buah">buah</option>
-                    </select>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={() => handleDeleteMaterial(currentMaterial.id)}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-500 bg-red-500 px-2 py-1 text-[9px] text-white hover:bg-red-600 lg:px-3 lg:py-1.5 lg:text-[10px] xl:text-xs"
-                >
-                  <Trash2 className="mr-1 h-3 w-3 lg:mr-2 lg:h-4 lg:w-4" />
-                  Hapus Material
-                </Button>
-              </div>
-
-              {/* Volume and Dates */}
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4 xl:gap-6">
-                <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
-                    Volume Target (
-                    {currentMaterial.volumeSatuan === 'm3' ? 'm³' : currentMaterial.volumeSatuan})
-                  </label>
-                  <AutoSaveMaterialField
-                    value={currentMaterial.volumeTarget?.toString() || '0'}
-                    onChange={() => {}}
-                    materialId={currentMaterial.id}
-                    fieldName="volumeTarget"
-                    type="number"
-                  />
-                </div>
-
-                <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
-                    Volume Realisasi
-                  </label>
-                  <div className="w-full border-b border-gray-200 bg-white px-2 py-1 text-[9px] text-gray-400 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs">
-                    {currentMaterial.schedules?.[
-                      currentMaterial.schedules.length - 1
-                    ]?.realisasiKumulatif?.toLocaleString() || '0'}{' '}
-                    {currentMaterial.volumeSatuan === 'm3' ? 'm³' : currentMaterial.volumeSatuan}
-                  </div>
+      {/* Resource Flow Selection Dropdowns */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardContent className="p-2 lg:p-3 xl:p-4">
+          <div className="space-y-3 lg:space-y-4 xl:space-y-6">
+            {/* Selection Controls */}
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4 xl:gap-6">
+              {/* Activity Selector */}
+              <div className="space-y-0.5 lg:space-y-1">
+                <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
+                  Pilih Pekerjaan
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedActivity}
+                    onChange={e => setSelectedActivity(e.target.value)}
+                    className="w-full appearance-none border-b border-gray-200 bg-white px-2 py-1 pr-8 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
+                  >
+                    <option value="">-- Pilih Pekerjaan --</option>
+                    {getActivityOptions().map((activity: Activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.nama}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400 lg:h-4 lg:w-4" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4 xl:gap-6">
-                <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
-                    Tanggal Mulai
-                  </label>
-                  <AutoSaveMaterialField
-                    value={currentMaterial.tanggalMulai || ''}
-                    onChange={() => {}}
-                    materialId={currentMaterial.id}
-                    fieldName="tanggalMulai"
-                    type="date"
-                  />
+              {/* Sub Activity Selector */}
+              <div className="space-y-0.5 lg:space-y-1">
+                <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
+                  Pilih Kegiatan
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedSubActivity}
+                    onChange={e => setSelectedSubActivity(e.target.value)}
+                    disabled={!selectedActivity}
+                    className="w-full appearance-none border-b border-gray-200 bg-white px-2 py-1 pr-8 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
+                  >
+                    <option value="">-- Pilih Kegiatan --</option>
+                    {getSubActivityOptions().map((subActivity: SubActivity) => (
+                      <option key={subActivity.id} value={subActivity.id}>
+                        {subActivity.nama}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400 lg:h-4 lg:w-4" />
                 </div>
+              </div>
 
-                <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
-                    Tanggal Selesai
-                  </label>
-                  <AutoSaveMaterialField
-                    value={currentMaterial.tanggalSelesai || ''}
-                    onChange={() => {}}
-                    materialId={currentMaterial.id}
-                    fieldName="tanggalSelesai"
-                    type="date"
-                  />
-                </div>
-
-                <div className="space-y-0.5 lg:space-y-1">
-                  <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
-                    Waktu Selesai (Hari)
-                  </label>
-                  <AutoSaveMaterialField
-                    value={currentMaterial.waktuSelesai?.toString() || '0'}
-                    onChange={() => {}}
-                    materialId={currentMaterial.id}
-                    fieldName="waktuSelesai"
-                    type="number"
-                  />
+              {/* Analisa Kebutuhan Selector */}
+              <div className="space-y-0.5 lg:space-y-1">
+                <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
+                  Pilih Analisa Kebutuhan
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedAnalisaKebutuhan}
+                    onChange={e => setSelectedAnalisaKebutuhan(e.target.value)}
+                    disabled={!selectedSubActivity}
+                    className="w-full appearance-none border-b border-gray-200 bg-white px-2 py-1 pr-8 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
+                  >
+                    <option value="">-- Pilih Analisa Kebutuhan --</option>
+                    {getAnalisaKebutuhanOptions().map((analisa: any) => (
+                      <option key={analisa.id} value={analisa.id}>
+                        {analisa.kebutuhan.nama} - {analisa.kebutuhan.kategoriKebutuhan.nama}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400 lg:h-4 lg:w-4" />
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+
+            {/* Resource Information Display */}
+            {currentAnalisaKebutuhan && (
+              <div className="border-t border-gray-100 pt-3 lg:pt-4 xl:pt-6">
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4 xl:gap-6">
+                  <div className="space-y-0.5 lg:space-y-1">
+                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
+                      Jenis Kebutuhan
+                    </label>
+                    <div className="w-full border-b border-gray-200 bg-gray-50 px-2 py-1 text-[9px] text-gray-600 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs">
+                      {currentAnalisaKebutuhan.kebutuhan.nama}
+                    </div>
+                  </div>
+
+                  <div className="space-y-0.5 lg:space-y-1">
+                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
+                      Kategori
+                    </label>
+                    <div className="w-full border-b border-gray-200 bg-gray-50 px-2 py-1 text-[9px] text-gray-600 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs">
+                      {currentAnalisaKebutuhan.kebutuhan.kategoriKebutuhan.nama}
+                    </div>
+                  </div>
+
+                  <div className="space-y-0.5 lg:space-y-1">
+                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
+                      Koefisien
+                    </label>
+                    <div className="w-full border-b border-gray-200 bg-gray-50 px-2 py-1 text-[9px] text-gray-600 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs">
+                      {currentAnalisaKebutuhan.koefisien.toLocaleString()} unit
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Progress Table */}
-      {currentMaterial && (
+      {currentAnalisaKebutuhan && (
         <div className="space-y-2 lg:space-y-3 xl:space-y-4">
           <h3 className="text-[10px] font-medium text-gray-700 lg:text-xs xl:text-base">
-            Tabel Progress {currentMaterial.jenisMaterial}
+            Tabel Progress {currentAnalisaKebutuhan.kebutuhan.nama}
           </h3>
 
           {/* Month Picker */}
@@ -566,7 +571,9 @@ export function MaterialFlowTable({
                       </span>
                     </td>
                     {dateColumns.map(col => {
-                      const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
+                      const schedule = currentAnalisaKebutuhan.resourceFlowSchedules?.find(
+                        s => s.tanggal === col.date
+                      )
                       const cellId = `rencana-${col.date}`
                       const value = schedule?.rencana || 0
                       const isEditing = editingCell === cellId
@@ -587,7 +594,7 @@ export function MaterialFlowTable({
                                     schedule?.id,
                                     'rencana',
                                     col.date,
-                                    currentMaterial.id
+                                    currentAnalisaKebutuhan.id
                                   )
                                 }
                                 onKeyDown={e => {
@@ -596,7 +603,7 @@ export function MaterialFlowTable({
                                       schedule?.id,
                                       'rencana',
                                       col.date,
-                                      currentMaterial.id
+                                      currentAnalisaKebutuhan.id
                                     )
                                   } else if (e.key === 'Escape') {
                                     handleCellCancel()
@@ -657,7 +664,9 @@ export function MaterialFlowTable({
                       </span>
                     </td>
                     {dateColumns.map(col => {
-                      const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
+                      const schedule = currentAnalisaKebutuhan.resourceFlowSchedules?.find(
+                        s => s.tanggal === col.date
+                      )
                       const cellId = `realisasi-${col.date}`
                       const value = schedule?.realisasi || 0
                       const isEditing = editingCell === cellId
@@ -678,7 +687,7 @@ export function MaterialFlowTable({
                                     schedule?.id,
                                     'realisasi',
                                     col.date,
-                                    currentMaterial.id
+                                    currentAnalisaKebutuhan.id
                                   )
                                 }
                                 onKeyDown={e => {
@@ -687,7 +696,7 @@ export function MaterialFlowTable({
                                       schedule?.id,
                                       'realisasi',
                                       col.date,
-                                      currentMaterial.id
+                                      currentAnalisaKebutuhan.id
                                     )
                                   } else if (e.key === 'Escape') {
                                     handleCellCancel()
@@ -748,8 +757,14 @@ export function MaterialFlowTable({
                       </span>
                     </td>
                     {dateColumns.map(col => {
-                      const schedule = currentMaterial.schedules?.find(s => s.date === col.date)
-                      const tercapai = schedule?.tercapai || 'Y'
+                      const schedule = currentAnalisaKebutuhan.resourceFlowSchedules?.find(
+                        s => s.tanggal === col.date
+                      )
+                      // For resource flow, we'll calculate if targets are met based on rencana vs realisasi
+                      const rencana = schedule?.rencana || 0
+                      const realisasi = schedule?.realisasi || 0
+                      const tercapai = realisasi >= rencana ? 'Y' : 'N'
+
                       return (
                         <td
                           key={col.date}

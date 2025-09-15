@@ -315,7 +315,7 @@ Visual Hierarchy: Clear separation between different categories using cards
 -------------------------------------------
 
 ==============================================
-kode yang ada sekarang merupakan implementasi dari materials flow, sekarang ini saya ingin mengubah kode tersebut menjadi resource flow. saya ingin mempertahankan semua ui nya seperti pada materials flow dengan hanya ada perubahan ui sedikit dan perubahan pengambilan datanya. pada materials flow itu menggunakan tabel material sedangkan resource flow akan menggunakan data pada tabel AnalisaKebutuhan(sudah ada), lalu materials menggunakan tabel materials_schedule sedangkan resource flow akan menggunakan tabel resource_flow_schedule(belum dibuat). lalu tolong hgapus dropdown material selection nya, ganti dengan dropdown untuk memilih data analisa kebutuhannya dengan membuat dropdown untuk memilih kegiatannya(subactivity) dan dropdown untuk memilih analisis kebutuhannya.
+keenos123: kode yang ada sekarang ini masih merupakan implementasi dari materials flow walaupun nama file nya sudah resource-flow-table, sekarang ini saya ingin mengubah kode tersebut menjadi resource flow. saya ingin mempertahankan semua ui nya seperti pada materials flow dengan hanya ada perubahan ui sedikit dan perubahan pengambilan datanya. pada materials flow itu menggunakan tabel material sedangkan saya ingin pada resource flow ini menggunakan data pada tabel AnalisaKebutuhan(sudah ada). lalu pada materials flow juga menggunakan tabel materials_schedule untuk tablenya sedangkan untuk resource flow saya ingin menggunakan tabel resource_flow_schedule(belum dibuat). lalu tolong hgapus dropdown material selection nya, ganti dengan dropdown untuk memilih data analisa kebutuhannya dengan membuat dropdown untuk memilih kegiatannya(subactivity) dan dropdown untuk memilih analisis kebutuhannya.
 
 karena tabel resource flow schedule belum ada jadi tolong buatkan dengan attribute seperti ini:
 id
@@ -328,10 +328,11 @@ created_at
 updated_at
 
 
-tolong refactor material kode tersebut. tolong buat seeder datanya juga supaya saya bisa test end to end di websitenya.
-
+tolong ubah kode tersebut dan tolong juga buat seeder datanya juga supaya saya bisa test end to end di websitenya. jangan mengubah kode materials yang sudah ada seperti schema nya dan file material kerena itu masih digunakan, saya hanya ingin membuat tab baru resource flow yang memiliki tampilan yang mirip dengan material namun ada perbedaan
 
 
 
 
 ==============================================
+
+i got network issue, please continue the procces
