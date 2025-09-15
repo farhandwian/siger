@@ -8,6 +8,7 @@ import { AIInsights } from '@/components/monitoring/ai-insights'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertTriangle, Wifi, Cloud, BadgeCheck, Info } from 'lucide-react'
+import { ProgressBar } from './ProgressBar'
 
 /**
  * Summary card with exact Figma design - colored backgrounds with left border indicators
@@ -61,12 +62,12 @@ function SummaryCard({
 }
 
 /**
- * Progress Pekerjaan section with S-curve chart
+ * Progress Pekerjaan section with S-curve chart showing aggregated data from all projects
  */
 function ProgressPekerjaanSection() {
   return (
     <div className="h-full">
-      <SCurveChart projectId="1" type="activity" />
+      <SCurveChart projectId="1" type="activity" aggregateAllProjects={true} />
     </div>
   )
 }
@@ -129,7 +130,7 @@ function ProgressSeluruhPekerjaan() {
               <span className="text-sm text-gray-500">Realisasi</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-blue-200" />
+              <div className="h-2.5 w-2.5 rounded-full bg-[#FFC928]" />
               <span className="text-sm text-gray-500">Rencana</span>
             </div>
           </div>
@@ -166,18 +167,7 @@ function ProgressSeluruhPekerjaan() {
               </div>
 
               {/* Progress bar */}
-              <div className="relative h-2 w-full rounded bg-gray-100">
-                {/* Planned progress (lighter) */}
-                <div
-                  className="absolute left-0 top-0 h-2 rounded bg-blue-200 transition-all duration-300"
-                  style={{ width: `${Math.min(project.plannedProgress, 100)}%` }}
-                />
-                {/* Actual progress (darker) */}
-                <div
-                  className="absolute left-0 top-0 h-2 rounded bg-blue-500 transition-all duration-300"
-                  style={{ width: `${Math.min(project.progress, 100)}%` }}
-                />
-              </div>
+              <ProgressBar planned={project.plannedProgress} actual={project.progress} />
             </div>
           ))}
         </div>

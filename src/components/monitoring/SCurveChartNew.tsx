@@ -13,23 +13,30 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSCurveData } from '@/hooks/useSCurveData'
 import { useActionPlanSCurveData } from '@/hooks/useActionPlanSCurveData'
+import { useAllProjectsSCurveData } from '@/hooks/useAllProjectsSCurveData'
 
 interface SCurveChartProps {
   projectId?: string
   type?: 'activity' | 'actionPlan'
+  aggregateAllProjects?: boolean // New prop to enable aggregated data
 }
 
-export function SCurveChart({ projectId = '1', type = 'activity' }: SCurveChartProps) {
-  // Use different data hooks based on type
+export function SCurveChart({
+  projectId = '1',
+  type = 'activity',
+  aggregateAllProjects = false,
+}: SCurveChartProps) {
+  // Use different data hooks based on type and aggregation preference
   const activityData = useSCurveData(projectId)
   const actionPlanData = useActionPlanSCurveData(projectId)
+  const allProjectsData = useAllProjectsSCurveData(type)
 
   // Select the appropriate data source
   const {
     data: sCurveData,
     isLoading,
     isEmpty,
-  } = type === 'actionPlan' ? actionPlanData : activityData
+  } = aggregateAllProjects ? allProjectsData : type === 'actionPlan' ? actionPlanData : activityData
 
   const chartData = useMemo(() => {
     if (!sCurveData || sCurveData.length === 0) return []
@@ -93,13 +100,18 @@ export function SCurveChart({ projectId = '1', type = 'activity' }: SCurveChartP
       <Card className="border border-gray-200 bg-transparent">
         <CardHeader className="space-y-0">
           <CardTitle className="text-lg">
-            Kurva-S {type === 'actionPlan' ? '(Action Plan)' : '(Jadwal Aktivitas)'}
+            Kurva-S{' '}
+            {aggregateAllProjects
+              ? `Semua Proyek (${type === 'actionPlan' ? 'Action Plan' : 'Jadwal Aktivitas'})`
+              : `(${type === 'actionPlan' ? 'Action Plan' : 'Jadwal Aktivitas'})`}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex h-80 items-center justify-center rounded border border-gray-200 bg-gray-50">
             <p className="text-gray-500">
-              Belum ada data {type === 'actionPlan' ? 'action plan' : 'jadwal'} untuk ditampilkan
+              Belum ada data{' '}
+              {aggregateAllProjects ? 'proyek' : type === 'actionPlan' ? 'action plan' : 'jadwal'}{' '}
+              untuk ditampilkan
             </p>
           </div>
         </CardContent>
@@ -113,13 +125,23 @@ export function SCurveChart({ projectId = '1', type = 'activity' }: SCurveChartP
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg text-gray-700">
             Kurva-S (Kumulatif Progress) -{' '}
-            {type === 'actionPlan' ? 'Action Plan' : 'Jadwal Aktivitas'}
+            {aggregateAllProjects
+              ? `Semua Proyek (${type === 'actionPlan' ? 'Action Plan' : 'Jadwal Aktivitas'})`
+              : `${type === 'actionPlan' ? 'Action Plan' : 'Jadwal Aktivitas'}`}
           </CardTitle>
           <div className="flex items-center gap-4">
-            <div className="text-xs text-gray-400">Data: {chartData.length} minggu</div>
+            <div className="text-xs text-gray-400">
+              Data: {chartData.length} minggu
+              {aggregateAllProjects &&
+                sCurveData.length > 0 &&
+                'projectCount' in sCurveData[0] &&
+                ` • ${sCurveData[0].projectCount} proyek`}
+            </div>
             <div className="flex items-center gap-1">
               <div className="h-2 w-2 rounded-full bg-blue-500" />
-              <span className="text-xs text-gray-500">Real-time</span>
+              <span className="text-xs text-gray-500">
+                {aggregateAllProjects ? 'Agregat' : 'Real-time'}
+              </span>
             </div>
           </div>
         </div>
@@ -128,11 +150,11 @@ export function SCurveChart({ projectId = '1', type = 'activity' }: SCurveChartP
         {/* Legend */}
         <div className="mb-4 flex items-center justify-end gap-6">
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#BFDBFE' }} />
+            <div className="h-3 w-3 rounded-full bg-[#BFDBFE]" />
             <span className="text-sm font-medium text-gray-500">Rencana</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#FFC928' }} />
+            <div className="h-3 w-3 rounded-full bg-[#FFC928]" />
             <span className="text-sm font-medium text-gray-500">Realisasi</span>
           </div>
         </div>
@@ -188,11 +210,15 @@ export function SCurveChart({ projectId = '1', type = 'activity' }: SCurveChartP
                   return (
                     <div className="rounded-lg border bg-white p-3 shadow-lg">
                       <p className="font-medium text-gray-900">{label}</p>
-                      {payload.map(entry => (
-                        <p key={entry.dataKey} className="text-sm" style={{ color: entry.color }}>
-                          {entry.name}: {entry.value}%
-                        </p>
-                      ))}
+                      {payload.map(entry => {
+                        const color =
+                          entry.color === '#BFDBFE' ? 'text-blue-300' : 'text-yellow-500'
+                        return (
+                          <p key={entry.dataKey} className={`text-sm ${color}`}>
+                            {entry.name}: {entry.value}%
+                          </p>
+                        )
+                      })}
                       {dataPoint && (
                         <p className="mt-2 border-t pt-2 text-sm text-gray-600">
                           Deviasi: {dataPoint.deviation > 0 ? '+' : ''}

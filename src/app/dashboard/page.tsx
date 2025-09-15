@@ -89,15 +89,8 @@ export default function DashboardPage() {
             <div className="space-y-6 lg:space-y-8">
               {/* Map Section */}
               <section className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Map className="h-5 w-5 text-gray-600" />
-                  <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">
-                    Peta Usulan dan Pelaksanaan
-                  </h2>
-                </div>
-
                 <Card className="rounded-2xl">
-                  <CardContent className="p-0">
+                  <CardContent className="min-w-[400px] p-0">
                     <Suspense fallback={<MapSkeleton />}>
                       <PelaksanaanMap className="w-full" />
                     </Suspense>

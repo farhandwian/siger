@@ -1,157 +1,368 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
-import { APIProvider, Map, Marker, InfoWindow } from '@vis.gl/react-google-maps'
-import { useQuery } from '@tanstack/react-query'
-import { Loader2, MapPin, Building2 } from 'lucide-react'
-import { GOOGLE_MAPS_OPTIONS } from '@/constants/map-config'
-import { ProjectSummaryResponseSchema } from '@/lib/schemas/usulan'
+import { useMemo, useState } from 'react'
+import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps'
+import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { MapPin, Loader2, Eye, EyeOff, Triangle } from 'lucide-react'
 
-// Types for project location data
-interface ProjectLocation {
-  id: string
-  name: string
-  coordinates: [number, number] // [lng, lat]
-  progress: number
-  deviation: number
-  contractValue: string | null
-  status: 'on-track' | 'at-risk' | 'delayed'
+// Constants for map configuration
+const GOOGLE_MAPS_OPTIONS = {
+  mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
+  gestureHandling: 'greedy',
+  disableDefaultUI: false,
+  zoomControl: true,
+  mapTypeControl: false,
+  scaleControl: false,
+  streetViewControl: false,
+  rotateControl: false,
+  fullscreenControl: false,
 }
 
-interface PelaksanaanMapProps {
-  className?: string
-  height?: number
+const PROJECT_MAP_CENTER = {
+  lat: -5.4,
+  lng: 105.3, // Lampung area
+  zoom: 11,
 }
 
-// Hook to fetch project summary data
-function useProjectSummary() {
-  return useQuery({
-    queryKey: ['project-summary'],
-    queryFn: async () => {
-      const response = await fetch('/api/projects/summary?includeProgress=true')
-      if (!response.ok) {
-        throw new Error('Failed to fetch project summary')
-      }
-      const data = await response.json()
-      return ProjectSummaryResponseSchema.parse(data)
-    },
-    staleTime: 30_000, // 30 seconds
-  })
+// Static dummy data for map markers with realistic Lampung coordinates
+const MAP_MARKERS = [
+  // Progress markers (circles with percentages) - using real Lampung coordinates
+  {
+    id: 1,
+    type: 'progress',
+    percentage: 60,
+    status: 'medium',
+    position: { lat: -5.385, lng: 105.285 },
+    name: 'Bandar Lampung Utara',
+  },
+  {
+    id: 2,
+    type: 'progress',
+    percentage: 89,
+    status: 'good',
+    position: { lat: -5.395, lng: 105.315 },
+    name: 'Tanjung Karang',
+  },
+  {
+    id: 3,
+    type: 'progress',
+    percentage: 60,
+    status: 'medium',
+    position: { lat: -5.375, lng: 105.295 },
+    name: 'Sukamerindu',
+  },
+  {
+    id: 4,
+    type: 'progress',
+    percentage: 35,
+    status: 'poor',
+    position: { lat: -5.405, lng: 105.305 },
+    name: 'Rajabasa',
+  },
+  {
+    id: 5,
+    type: 'progress',
+    percentage: 90,
+    status: 'good',
+    position: { lat: -5.365, lng: 105.275 },
+    name: 'Kemiling',
+  },
+  {
+    id: 6,
+    type: 'progress',
+    percentage: 15,
+    status: 'poor',
+    position: { lat: -5.415, lng: 105.325 },
+    name: 'Langkapura',
+  },
+  {
+    id: 7,
+    type: 'progress',
+    percentage: 95,
+    status: 'good',
+    position: { lat: -5.355, lng: 105.335 },
+    name: 'Sukarame',
+  },
+  {
+    id: 8,
+    type: 'progress',
+    percentage: 85,
+    status: 'good',
+    position: { lat: -5.425, lng: 105.345 },
+    name: 'Teluk Betung',
+  },
+  {
+    id: 9,
+    type: 'progress',
+    percentage: 33,
+    status: 'poor',
+    position: { lat: -5.435, lng: 105.255 },
+    name: 'Panjang',
+  },
+  {
+    id: 10,
+    type: 'progress',
+    percentage: 60,
+    status: 'medium',
+    position: { lat: -5.345, lng: 105.265 },
+    name: 'Taman Asri',
+  },
+  {
+    id: 11,
+    type: 'progress',
+    percentage: 25,
+    status: 'poor',
+    position: { lat: -5.445, lng: 105.275 },
+    name: 'Way Halim',
+  },
+
+  // Proposal markers (triangles - different colors)
+  {
+    id: 12,
+    type: 'proposal',
+    status: 'verified',
+    position: { lat: -5.355, lng: 105.285 },
+    name: 'Usulan Infrastruktur A',
+  },
+  {
+    id: 13,
+    type: 'proposal',
+    status: 'verified',
+    position: { lat: -5.365, lng: 105.295 },
+    name: 'Usulan Jalan B',
+  },
+  {
+    id: 14,
+    type: 'proposal',
+    status: 'verified',
+    position: { lat: -5.375, lng: 105.305 },
+    name: 'Usulan Drainase C',
+  },
+  {
+    id: 15,
+    type: 'proposal',
+    status: 'verified',
+    position: { lat: -5.385, lng: 105.315 },
+    name: 'Usulan Jembatan D',
+  },
+  {
+    id: 16,
+    type: 'proposal',
+    status: 'verified',
+    position: { lat: -5.395, lng: 105.325 },
+    name: 'Usulan Sanitasi E',
+  },
+  {
+    id: 17,
+    type: 'proposal',
+    status: 'pending',
+    position: { lat: -5.405, lng: 105.335 },
+    name: 'Usulan Pending F',
+  },
+  {
+    id: 18,
+    type: 'proposal',
+    status: 'pending',
+    position: { lat: -5.415, lng: 105.255 },
+    name: 'Usulan Pending G',
+  },
+  {
+    id: 19,
+    type: 'proposal',
+    status: 'pending',
+    position: { lat: -5.425, lng: 105.265 },
+    name: 'Usulan Pending H',
+  },
+  {
+    id: 20,
+    type: 'proposal',
+    status: 'rejected',
+    position: { lat: -5.435, lng: 105.275 },
+    name: 'Usulan Rejected I',
+  },
+  {
+    id: 21,
+    type: 'proposal',
+    status: 'rejected',
+    position: { lat: -5.445, lng: 105.285 },
+    name: 'Usulan Rejected J',
+  },
+]
+
+interface MapMarkerProps {
+  marker: (typeof MAP_MARKERS)[0]
 }
 
-// Generate dummy coordinates for projects in Indonesian region (around Lampung/Sumatra)
-function generateProjectLocations(projects: any[]): ProjectLocation[] {
-  const baseCoordinates = [
-    [105.285, -5.385], // Lampung area
-    [105.315, -5.395],
-    [105.295, -5.375],
-    [105.305, -5.405],
-    [105.275, -5.365],
-    [105.325, -5.385],
-    [105.265, -5.395],
-    [105.335, -5.375],
-    [105.255, -5.405],
-    [105.345, -5.365],
-  ]
-
-  return projects.map((project, index) => {
-    const coordinates = baseCoordinates[index % baseCoordinates.length] as [number, number]
-    
-    // Determine status based on progress and deviation
-    let status: 'on-track' | 'at-risk' | 'delayed' = 'on-track'
-    if (project.deviation <= -10) {
-      status = 'delayed'
-    } else if (project.deviation <= -5 || project.progress < 30) {
-      status = 'at-risk'
-    }
-
-    return {
-      id: project.id,
-      name: project.name || `Project ${index + 1}`,
-      coordinates,
-      progress: Math.round(project.progress),
-      deviation: Math.round(project.deviation * 100) / 100,
-      contractValue: project.contractValue,
-      status,
-    }
-  })
+// Add Google Maps types
+declare global {
+  interface Window {
+    google: typeof google
+  }
 }
 
-// Component for rendering progress markers using AdvancedMarker
-function ProgressMarker({ 
-  project, 
-  isSelected, 
-  onClick 
-}: { 
-  project: ProjectLocation
-  isSelected: boolean
-  onClick: () => void 
-}) {
-  const statusColors = {
-    'on-track': 'bg-emerald-500 border-emerald-600',
-    'at-risk': 'bg-amber-500 border-amber-600', 
-    'delayed': 'bg-red-500 border-red-600',
+declare const google: any
+
+// Progress marker component (standard marker with custom icon) for Google Maps
+function ProgressMarker({ marker }: MapMarkerProps) {
+  // Create a custom marker icon based on status
+  const getMarkerIcon = (status: string, percentage: number) => {
+    const color = status === 'good' ? '#10b981' : status === 'medium' ? '#f59e0b' : '#ef4444'
+
+    // Create SVG icon with percentage
+    const svgIcon = `
+      <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="12" fill="${color}" stroke="white" stroke-width="2"/>
+        <text x="16" y="20" text-anchor="middle" fill="white" font-size="10" font-weight="bold">${percentage}</text>
+      </svg>
+    `
+
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgIcon)}`
   }
 
   return (
     <Marker
-      position={{ lat: project.coordinates[1], lng: project.coordinates[0] }}
-      onClick={onClick}
-      title={`${project.name} - ${project.progress}%`}
+      position={marker.position}
+      clickable={false}
+      icon={{
+        url: getMarkerIcon(marker.status, marker.percentage!),
+        scaledSize: new google.maps.Size(32, 32),
+        anchor: new google.maps.Point(16, 16),
+      }}
+      title={`${marker.name}: ${marker.percentage}%`}
     />
   )
 }
 
-// Component for info window content
-function ProjectInfoWindow({ project }: { project: ProjectLocation }) {
-  const formatCurrency = (value: string | null) => {
-    if (!value) return 'N/A'
-    return value
-  }
+// Proposal marker component (triangle marker) for Google Maps
+function ProposalMarker({ marker }: MapMarkerProps) {
+  // Create a custom triangle marker icon based on status
+  const getTriangleIcon = (status: string) => {
+    const color = status === 'verified' ? '#10b981' : status === 'pending' ? '#f59e0b' : '#ef4444'
 
-  const statusLabels = {
-    'on-track': 'Sesuai Jadwal',
-    'at-risk': 'Berpotensi Terlambat',
-    'delayed': 'Terlambat',
-  }
+    // Create SVG triangle icon
+    const svgIcon = `
+      <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="8,2 14,14 2,14" fill="${color}" stroke="white" stroke-width="1"/>
+      </svg>
+    `
 
-  const statusColors = {
-    'on-track': 'text-emerald-600 bg-emerald-50',
-    'at-risk': 'text-amber-600 bg-amber-50',
-    'delayed': 'text-red-600 bg-red-50',
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgIcon)}`
   }
 
   return (
-    <div className="p-3 max-w-xs">
-      <div className="space-y-2">
-        {/* Project Name */}
-        <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 leading-tight">
-          {project.name}
-        </h3>
-        
-        {/* Status Badge */}
-        <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColors[project.status]}`}>
-          {statusLabels[project.status]}
-        </div>
-        
-        {/* Progress Info */}
-        <div className="space-y-1 text-xs">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Progress:</span>
-            <span className="font-semibold text-gray-900">{project.progress}%</span>
+    <Marker
+      position={marker.position}
+      clickable={false}
+      icon={{
+        url: getTriangleIcon(marker.status),
+        scaledSize: new google.maps.Size(16, 16),
+        anchor: new google.maps.Point(8, 14),
+      }}
+      title={marker.name}
+    />
+  )
+}
+
+// Legend component with toggle functionality
+function MapLegend({
+  showProgress,
+  showProposals,
+  onToggleProgress,
+  onToggleProposals,
+}: {
+  showProgress: boolean
+  showProposals: boolean
+  onToggleProgress: () => void
+  onToggleProposals: () => void
+}) {
+  return (
+    <div className="absolute left-6 top-6 z-20 space-y-2">
+      {/* Moved legend to left to avoid Google Maps zoom controls */}
+      {/* Progress Legend */}
+      <div
+        className={`rounded-lg bg-black/45 p-2  transition-opacity ${!showProgress ? 'opacity-60' : ''}`}
+      >
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-normal text-white">Progress Pekerjaan</span>
           </div>
-          
-          <div className="flex justify-between">
-            <span className="text-gray-600">Deviasi:</span>
-            <span className={`font-semibold ${project.deviation < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-              {project.deviation > 0 ? '+' : ''}{project.deviation}%
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleProgress}
+            className="h-4 w-4 p-0 hover:bg-white/10"
+            title={showProgress ? 'Sembunyikan progress markers' : 'Tampilkan progress markers'}
+          >
+            {showProgress ? (
+              <Eye className="h-3 w-3 text-white" />
+            ) : (
+              <EyeOff className="h-3 w-3 text-white/60" />
+            )}
+          </Button>
+        </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="whitespace-nowrap text-[10px] font-normal text-white">
+              Progress &gt;80%
             </span>
           </div>
-          
-          <div className="flex justify-between">
-            <span className="text-gray-600">Nilai Kontrak:</span>
-            <span className="font-semibold text-gray-900 text-xs">
-              {formatCurrency(project.contractValue)}
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-2 rounded-full bg-amber-500" />
+            <span className="whitespace-nowrap text-[10px] font-normal text-white">
+              Progress 50-79%
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-2 rounded-full bg-red-500" />
+            <span className="whitespace-nowrap text-[10px] font-normal text-white">
+              Progress &lt;50%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Proposal Legend */}
+      <div
+        className={`rounded-lg bg-black/45 p-2  transition-opacity ${!showProposals ? 'opacity-60' : ''}`}
+      >
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-normal text-white">Usulan</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleProposals}
+            className="h-4 w-4 p-0 hover:bg-white/10"
+            title={showProposals ? 'Sembunyikan proposal markers' : 'Tampilkan proposal markers'}
+          >
+            {showProposals ? (
+              <Eye className="h-3 w-3 text-white" />
+            ) : (
+              <EyeOff className="h-3 w-3 text-white/60" />
+            )}
+          </Button>
+        </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-1.5">
+            <Triangle className="h-2 w-2 fill-emerald-500 text-emerald-500" />
+            <span className="whitespace-nowrap text-[10px] font-normal text-white">
+              Diverifikasi (5)
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Triangle className="h-2 w-2 fill-amber-500 text-amber-500" />
+            <span className="whitespace-nowrap text-[10px] font-normal text-white">
+              Menunggu Verifikasi (3)
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Triangle className="h-2 w-2 fill-red-500 text-red-500" />
+            <span className="whitespace-nowrap text-[10px] font-normal text-white">
+              Ditolak (2)
             </span>
           </div>
         </div>
@@ -160,161 +371,91 @@ function ProjectInfoWindow({ project }: { project: ProjectLocation }) {
   )
 }
 
-export function PelaksanaanMap({ className, height = 400 }: PelaksanaanMapProps) {
-  const [selectedProject, setSelectedProject] = useState<ProjectLocation | null>(null)
-  const { data, isLoading, isError, error } = useProjectSummary()
+interface PelaksanaanMapProps {
+  className?: string
+  height?: number
+  isLoading?: boolean
+}
 
-  // Transform project data to locations with coordinates
-  const projectLocations = useMemo(() => {
-    if (!data?.data.progressDetails) return []
-    return generateProjectLocations(data.data.progressDetails)
-  }, [data])
+export function PelaksanaanMap({
+  className,
+  height = 600, // Increased default height
+  isLoading = false,
+}: PelaksanaanMapProps) {
+  // State for toggling marker visibility
+  const [showProgress, setShowProgress] = useState(true)
+  const [showProposals, setShowProposals] = useState(true)
 
-  // Calculate map center based on project locations
-  const mapCenter = useMemo(() => {
-    if (projectLocations.length === 0) {
-      return { lat: -5.4, lng: 105.3 } // Default center (Lampung area)
-    }
-    
-    const avgLat = projectLocations.reduce((sum, p) => sum + p.coordinates[1], 0) / projectLocations.length
-    const avgLng = projectLocations.reduce((sum, p) => sum + p.coordinates[0], 0) / projectLocations.length
-    
-    return { lat: avgLat, lng: avgLng }
-  }, [projectLocations])
+  // Filter markers based on toggle states
+  const visibleMarkers = useMemo(() => {
+    return MAP_MARKERS.filter(marker => {
+      if (marker.type === 'progress' && !showProgress) return false
+      if (marker.type === 'proposal' && !showProposals) return false
+      return true
+    })
+  }, [showProgress, showProposals])
 
-  // Loading state
   if (isLoading) {
     return (
-      <div 
-        className={`relative overflow-hidden rounded-2xl bg-gray-100 h-96 ${className}`}
-      >
-        <div className="flex h-full w-full items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-500" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Memuat peta pelaksanaan...</h3>
-            <p className="mt-1 text-xs text-gray-500">Mengambil data proyek</p>
+      <Card className="rounded-2xl border border-gray-200">
+        <CardContent className="p-0">
+          <div className="p-6 pb-4">
+            <Skeleton className="mb-2 h-6 w-48" />
           </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Error state
-  if (isError || !data) {
-    return (
-      <div 
-        className={`relative overflow-hidden rounded-2xl bg-gray-100 h-96 ${className}`}
-      >
-        <div className="flex h-full w-full items-center justify-center">
-          <div className="text-center">
-            <MapPin className="mx-auto h-8 w-8 text-red-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Gagal memuat peta</h3>
-            <p className="mt-1 text-xs text-gray-500">
-              {error instanceof Error ? error.message : 'Terjadi kesalahan saat memuat data'}
-            </p>
+          <div className="px-6 pb-6">
+            <Skeleton
+              className={`w-full rounded-xl ${className}`}
+              style={{ height: `${height}px` }}
+            />
           </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Check if Google Maps API key is available
-  if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
-    return (
-      <div 
-        className={`relative overflow-hidden rounded-2xl bg-gray-100 h-96 ${className}`}
-      >
-        <div className="flex h-full w-full items-center justify-center">
-          <div className="text-center">
-            <MapPin className="mx-auto h-8 w-8 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Google Maps tidak tersedia</h3>
-            <p className="mt-1 text-xs text-gray-500">API key diperlukan untuk menampilkan peta</p>
-          </div>
-        </div>
-        
-        {/* Fallback: Show project list */}
-        <div className="absolute left-4 top-4 z-10 max-h-80 w-80 overflow-y-auto rounded-lg bg-white p-4 shadow-lg">
-          <h4 className="mb-3 text-sm font-semibold text-gray-900">
-            Proyek Pelaksanaan ({projectLocations.length})
-          </h4>
-          <div className="space-y-2">
-            {projectLocations.map((project) => (
-              <div key={project.id} className="border-b border-gray-100 pb-2 last:border-b-0">
-                <div className="text-xs font-medium text-gray-900">{project.name}</div>
-                <div className="mt-1 text-xs text-gray-600">
-                  Progress: {project.progress}% • Deviasi: {project.deviation}%
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
-      <div 
-        className={`relative overflow-hidden rounded-2xl h-96 ${className}`}
-      >
-        <Map
-          className="h-full w-full"
-          {...GOOGLE_MAPS_OPTIONS}
-          defaultCenter={mapCenter}
-          defaultZoom={12}
-          mapTypeId="roadmap"
-        >
-          {/* Render project markers */}
-          {projectLocations.map((project) => (
-            <ProgressMarker
-              key={project.id}
-              project={project}
-              isSelected={selectedProject?.id === project.id}
-              onClick={() => setSelectedProject(project)}
+    <Card className="rounded-2xl border border-gray-200 bg-white">
+      <CardContent className="p-0">
+        {/* Header */}
+        <div className="p-6 pb-4">
+          <h2 className="text-lg font-semibold text-gray-700">Peta Usulan dan Pelaksanaan</h2>
+        </div>
+
+        {/* Google Maps Container - fixed to not overlap card boundaries */}
+        <div className="px-6 pb-6">
+          <div className={`relative w-full overflow-hidden rounded-xl ${className}`}>
+            <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}>
+              <Map
+                defaultCenter={PROJECT_MAP_CENTER}
+                defaultZoom={12}
+                style={{ width: '100%', height: height || '600px' }}
+                {...GOOGLE_MAPS_OPTIONS}
+                mapTypeId="satellite"
+                zoomControl={true}
+                keyboardShortcuts={false}
+                scrollwheel={false}
+              >
+                {/* Render filtered markers based on toggle states */}
+                {visibleMarkers.map(marker =>
+                  marker.type === 'progress' ? (
+                    <ProgressMarker key={marker.id} marker={marker} />
+                  ) : (
+                    <ProposalMarker key={marker.id} marker={marker} />
+                  )
+                )}
+              </Map>
+            </APIProvider>
+
+            {/* Map Legend with toggle functionality */}
+            <MapLegend
+              showProgress={showProgress}
+              showProposals={showProposals}
+              onToggleProgress={() => setShowProgress(!showProgress)}
+              onToggleProposals={() => setShowProposals(!showProposals)}
             />
-          ))}
-
-          {/* Info window for selected project */}
-          {selectedProject && (
-            <InfoWindow
-              position={{
-                lat: selectedProject.coordinates[1],
-                lng: selectedProject.coordinates[0],
-              }}
-              onCloseClick={() => setSelectedProject(null)}
-            >
-              <ProjectInfoWindow project={selectedProject} />
-            </InfoWindow>
-          )}
-        </Map>
-
-        {/* Legend */}
-        <div className="absolute right-4 top-4 z-10 rounded-lg bg-white/95 p-3 shadow-lg backdrop-blur-sm">
-          <h4 className="mb-2 text-xs font-semibold text-gray-900">Status Proyek</h4>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-emerald-500 border border-emerald-600"></div>
-              <span className="text-gray-700">Sesuai Jadwal</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-amber-500 border border-amber-600"></div>
-              <span className="text-gray-700">Berpotensi Terlambat</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-red-500 border border-red-600"></div>
-              <span className="text-gray-700">Terlambat</span>
-            </div>
           </div>
         </div>
-
-        {/* Project count indicator */}
-        <div className="absolute left-4 bottom-4 z-10 rounded-lg bg-white/95 px-3 py-2 shadow-lg backdrop-blur-sm">
-          <div className="flex items-center gap-2 text-xs">
-            <Building2 className="w-4 h-4 text-gray-600" />
-            <span className="font-medium text-gray-900">{projectLocations.length} Proyek Aktif</span>
-          </div>
-        </div>
-      </div>
-    </APIProvider>
+      </CardContent>
+    </Card>
   )
 }
