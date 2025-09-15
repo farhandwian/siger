@@ -5,10 +5,6 @@ import { prisma } from '@/lib/prisma'
 // Query schema for grouped data
 const GroupedAnalisaKebutuhanQuerySchema = z.object({
   projectId: z.string().optional(),
-  tanggal: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
 })
 
 // Response schema for grouped data
@@ -54,10 +50,6 @@ export async function GET(req: NextRequest) {
 
     // Build where clause for analisa kebutuhan
     const analisaWhere: any = {}
-
-    // if (query.tanggal) {
-    //   analisaWhere.tanggal = query.tanggal
-    // }
 
     // If projectId is provided, filter by activities belonging to that project
     let activityWhere: any = {}

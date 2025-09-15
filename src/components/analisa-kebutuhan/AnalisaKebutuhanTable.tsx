@@ -3,12 +3,7 @@
 import React, { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
-import { CalendarIcon } from '@/components/ui/icons'
 import { Settings2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { format } from 'date-fns'
 import { useGroupedAnalisaKebutuhan } from '@/hooks/useGroupedAnalisaKebutuhan'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -139,30 +134,12 @@ interface AnalisaKebutuhanTableProps {
 }
 
 export default function AnalisaKebutuhanTable({ projectId }: AnalisaKebutuhanTableProps) {
-  // State for date filter
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
-
   // State for modal
   const [isModalOpen, setIsModalOpen] = useState(false)
-
-  // Handler for date selection
-  const handleDateSelect = (date: Date | { from?: Date; to?: Date } | undefined) => {
-    if (date instanceof Date) {
-      setSelectedDate(date)
-    } else if (date && 'from' in date && date.from) {
-      setSelectedDate(date.from)
-    } else {
-      setSelectedDate(undefined)
-    }
-  }
-
-  // Format date for API call
-  const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined
 
   // Fetch grouped data from API
   const { data, isLoading, isError, error, refetch } = useGroupedAnalisaKebutuhan({
     projectId,
-    tanggal: formattedDate,
   })
 
   // Render loading state
@@ -223,27 +200,6 @@ export default function AnalisaKebutuhanTable({ projectId }: AnalisaKebutuhanTab
               <Settings2 className="h-5 w-5" />
               Buat Analisa Kebutuhan
             </Button>
-
-            {/* Date Picker */}
-            <div className="w-[447px]">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start border-gray-200 bg-white text-left font-normal shadow-sm',
-                      !selectedDate && 'text-gray-500'
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-5 w-5 text-gray-400" />
-                    {selectedDate ? format(selectedDate, 'dd MMMM yyyy') : 'Select'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} />
-                </PopoverContent>
-              </Popover>
-            </div>
           </div>
         </CardContent>
       </Card>

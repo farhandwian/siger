@@ -95,7 +95,6 @@ export function BuatAnalisaKebutuhanModal({
   const [selectedSubActivityId, setSelectedSubActivityId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set())
-  const [currentDate] = useState(new Date().toISOString().split('T')[0])
 
   const queryClient = useQueryClient()
 
@@ -147,7 +146,6 @@ export function BuatAnalisaKebutuhanModal({
       stokHarian: number
       terpasang: number
       totalSisaStokHariIni: number
-      tanggal: string
       kebutuhan: {
         id: string
         nama: string
@@ -179,7 +177,6 @@ export function BuatAnalisaKebutuhanModal({
           stokHarian: 0,
           terpasang: 0,
           totalSisaStokHariIni: 0,
-          tanggal: currentDate,
         }
 
         // If entry has an ID, it's an update (PUT), otherwise it's a create (POST)

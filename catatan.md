@@ -3,3 +3,8 @@
 -npm run dev -- -H 0.0.0.0 -p 3000
 -npx tsx prisma/seed-auth-users.ts
 -npx tsx prisma/seed-analisa-kebutuhan.ts
+
+running migration
+npx prisma migrate reset --force
+npx prisma db push --force-reset
+npm run db:seed

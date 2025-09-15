@@ -14,11 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
 import {
   useKategoriKebutuhanList,
   useKebutuhanList,
@@ -30,7 +26,7 @@ import {
   AnalisaKebutuhanFormSchema,
   AnalisaKebutuhanFormData,
 } from '@/lib/schemas/analisa-kebutuhan'
-import { CalendarIcon, SpinnerIcon } from '@/components/ui/icons'
+import { SpinnerIcon } from '@/components/ui/icons'
 
 interface AnalisaKebutuhanModalProps {
   isOpen: boolean
@@ -49,7 +45,6 @@ export function AnalisaKebutuhanModal({
 }: AnalisaKebutuhanModalProps) {
   // State
   const [selectedKategoriId, setSelectedKategoriId] = useState<string>('')
-  const [selectedDate, setSelectedDate] = useState<Date>()
 
   // Mutations
   const createMutation = useCreateAnalisaKebutuhan()
@@ -76,7 +71,6 @@ export function AnalisaKebutuhanModal({
       stokHarian: 0,
       terpasang: 0,
       totalSisaStokHariIni: 0,
-      tanggal: '',
     },
   })
 
@@ -99,16 +93,13 @@ export function AnalisaKebutuhanModal({
       setValue('stokHarian', editItem.stokHarian ?? 0)
       setValue('terpasang', editItem.terpasang ?? 0)
       setValue('totalSisaStokHariIni', editItem.totalSisaStokHariIni ?? 0)
-      setValue('tanggal', editItem.tanggal)
 
-      // Set category and date
+      // Set category
       setSelectedKategoriId(editItem.kebutuhan.kategoriKebutuhanId)
-      setSelectedDate(new Date(editItem.tanggal))
     } else {
       // Reset form for new entry
       reset()
       setSelectedKategoriId('')
-      setSelectedDate(undefined)
     }
   }, [editItem, setValue, reset])
 
@@ -118,17 +109,6 @@ export function AnalisaKebutuhanModal({
       setSelectedKategoriId(selectedKebutuhan.kategoriKebutuhanId)
     }
   }, [selectedKebutuhan, selectedKategoriId])
-
-  // Handle date selection
-  const handleDateSelect = (date: Date | { from?: Date; to?: Date } | undefined) => {
-    // Handle single date selection
-    const selectedDate = date instanceof Date ? date : undefined
-    setSelectedDate(selectedDate)
-    if (selectedDate) {
-      setValue('tanggal', format(selectedDate, 'yyyy-MM-dd'))
-      clearErrors('tanggal')
-    }
-  }
 
   // Handle category change
   const handleKategoriChange = (kategoriId: string) => {
@@ -169,7 +149,6 @@ export function AnalisaKebutuhanModal({
       // Reset form
       reset()
       setSelectedKategoriId('')
-      setSelectedDate(undefined)
     } catch (error) {
       console.error('Form submission error:', error)
     }
@@ -180,7 +159,6 @@ export function AnalisaKebutuhanModal({
     onOpenChange(false)
     reset()
     setSelectedKategoriId('')
-    setSelectedDate(undefined)
   }
 
   const isLoading = createMutation.isPending || updateMutation.isPending
@@ -250,31 +228,6 @@ export function AnalisaKebutuhanModal({
             {errors.kebutuhanId && (
               <p className="text-sm text-red-600">{errors.kebutuhanId.message}</p>
             )}
-          </div>
-
-          {/* Date Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="tanggal">Tanggal *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !selectedDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate
-                    ? format(selectedDate, 'dd MMMM yyyy', { locale: undefined })
-                    : 'Pilih tanggal'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={selectedDate} onSelect={handleDateSelect} />
-              </PopoverContent>
-            </Popover>
-            {errors.tanggal && <p className="text-sm text-red-600">{errors.tanggal.message}</p>}
           </div>
 
           {/* Numeric Fields */}

@@ -24,7 +24,6 @@ export const AnalisaKebutuhanSchema = z.object({
   stokHarian: z.number().nullable().default(0),
   terpasang: z.number().nullable().default(0),
   totalSisaStokHariIni: z.number().nullable().default(0),
-  tanggal: z.string(), // Format: YYYY-MM-DD
   createdAt: z.date(),
   updatedAt: z.date(),
 })
@@ -50,7 +49,6 @@ export const CreateAnalisaKebutuhanSchema = z.object({
   stokHarian: z.number().min(0, 'Stok harian must be non-negative').default(0),
   terpasang: z.number().min(0, 'Terpasang must be non-negative').default(0),
   totalSisaStokHariIni: z.number().min(0, 'Total sisa stok must be non-negative').default(0),
-  tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
 })
 
 export const UpdateAnalisaKebutuhanSchema = CreateAnalisaKebutuhanSchema.partial().extend({
@@ -63,18 +61,6 @@ export const AnalisaKebutuhanQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),
   subActivityId: z.string().optional(),
   kategoriId: z.string().optional(),
-  tanggal: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  tanggalMulai: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  tanggalSelesai: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
   search: z.string().optional(),
 })
 
@@ -145,7 +131,6 @@ export const AnalisaKebutuhanFormSchema = z.object({
   totalSisaStokHariIni: z.coerce
     .number()
     .min(0, 'Total sisa stok harus lebih dari atau sama dengan 0'),
-  tanggal: z.string().min(1, 'Tanggal harus diisi'),
 })
 
 export type AnalisaKebutuhanFormData = z.infer<typeof AnalisaKebutuhanFormSchema>
@@ -153,9 +138,6 @@ export type AnalisaKebutuhanFormData = z.infer<typeof AnalisaKebutuhanFormSchema
 // Filter form schema for the table
 export const AnalisaKebutuhanFilterSchema = z.object({
   kategoriId: z.string().optional(),
-  tanggal: z.string().optional(),
-  tanggalMulai: z.string().optional(),
-  tanggalSelesai: z.string().optional(),
   search: z.string().optional(),
 })
 

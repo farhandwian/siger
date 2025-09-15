@@ -38,7 +38,6 @@ export type GroupedAnalisaKebutuhanData = z.infer<typeof GroupedAnalisaKebutuhan
 
 interface UseGroupedAnalisaKebutuhanOptions {
   projectId?: string
-  tanggal?: string // Format: YYYY-MM-DD
   enabled?: boolean
 }
 
@@ -47,16 +46,14 @@ interface UseGroupedAnalisaKebutuhanOptions {
  */
 export function useGroupedAnalisaKebutuhan({
   projectId,
-  tanggal,
   enabled = true,
 }: UseGroupedAnalisaKebutuhanOptions = {}) {
   return useQuery({
-    queryKey: ['analisa-kebutuhan-grouped', { projectId, tanggal }],
+    queryKey: ['analisa-kebutuhan-grouped', { projectId }],
     queryFn: async (): Promise<GroupedAnalisaKebutuhanData> => {
       // Build query parameters
       const params = new URLSearchParams()
       if (projectId) params.set('projectId', projectId)
-      if (tanggal) params.set('tanggal', tanggal)
 
       const url = `/api/analisa-kebutuhan/grouped?${params.toString()}`
 

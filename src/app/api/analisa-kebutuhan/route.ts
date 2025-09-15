@@ -30,18 +30,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (query.tanggal) {
-      where.tanggal = query.tanggal
-    } else if (query.tanggalMulai || query.tanggalSelesai) {
-      where.tanggal = {}
-      if (query.tanggalMulai) {
-        where.tanggal.gte = query.tanggalMulai
-      }
-      if (query.tanggalSelesai) {
-        where.tanggal.lte = query.tanggalSelesai
-      }
-    }
-
     if (query.search) {
       where.OR = [
         {
@@ -80,7 +68,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        orderBy: [{ tanggal: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [{ createdAt: 'desc' }],
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
@@ -147,13 +135,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Kebutuhan not found' }, { status: 404 })
     }
 
-    // Check for duplicate entry (unique constraint: subActivityId + kebutuhanId + tanggal)
+    // Check for duplicate entry (unique constraint: subActivityId + kebutuhanId)
     const existingEntry = await prisma.analisaKebutuhan.findUnique({
       where: {
-        subActivityId_kebutuhanId_tanggal: {
+        subActivityId_kebutuhanId: {
           subActivityId: validatedData.subActivityId,
           kebutuhanId: validatedData.kebutuhanId,
-          tanggal: validatedData.tanggal,
         },
       },
     })
@@ -162,7 +149,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Entry already exists for this sub activity, kebutuhan, and date',
+          error: 'Entry already exists for this sub activity and kebutuhan',
         },
         { status: 409 }
       )

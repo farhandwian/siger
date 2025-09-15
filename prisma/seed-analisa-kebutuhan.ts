@@ -403,7 +403,6 @@ export async function seedAnalisaKebutuhan() {
 
     // Create analisa kebutuhan data
     let createdCount = 0
-    const today = new Date().toISOString().split('T')[0] // Format: YYYY-MM-DD
 
     for (const sample of analisaKebutuhanSamples) {
       // Find matching sub-activity
@@ -434,7 +433,6 @@ export async function seedAnalisaKebutuhan() {
               stokHarian: req.stokHarian,
               terpasang: req.terpasang,
               totalSisaStokHariIni: req.totalSisaStokHariIni,
-              tanggal: today,
             },
           })
           createdCount++

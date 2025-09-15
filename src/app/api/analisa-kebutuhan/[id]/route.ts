@@ -105,16 +105,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     // Check for duplicate if key fields are being changed
-    if (validatedData.subActivityId || validatedData.kebutuhanId || validatedData.tanggal) {
+    if (validatedData.subActivityId || validatedData.kebutuhanId) {
       const checkData = {
         subActivityId: validatedData.subActivityId || existingEntry.subActivityId,
         kebutuhanId: validatedData.kebutuhanId || existingEntry.kebutuhanId,
-        tanggal: validatedData.tanggal || existingEntry.tanggal,
       }
 
       const duplicateEntry = await prisma.analisaKebutuhan.findUnique({
         where: {
-          subActivityId_kebutuhanId_tanggal: checkData,
+          subActivityId_kebutuhanId: checkData,
         },
       })
 
