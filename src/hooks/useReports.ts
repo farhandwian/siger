@@ -1,13 +1,13 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  WeeklyReportsResponse, 
-  ReportQuery, 
+import {
+  WeeklyReportsResponse,
+  ReportQuery,
   ProjectOptionsResponse,
   CreateWeeklyReport,
   WeeklyReport,
-  ErrorResponse 
+  ErrorResponse,
 } from '@/lib/schemas/reports'
 
 /**
@@ -24,23 +24,23 @@ export function useReports(params: Partial<ReportQuery> = {}) {
     queryKey: ['reports', queryParams],
     queryFn: async (): Promise<WeeklyReportsResponse> => {
       const searchParams = new URLSearchParams()
-      
+
       // Add all non-undefined parameters to search params
       Object.entries(queryParams).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
           searchParams.append(key, value.toString())
         }
       })
-      
+
       const response = await fetch(`/api/reports?${searchParams.toString()}`, {
         cache: 'no-store',
       })
-      
+
       if (!response.ok) {
         const errorData: ErrorResponse = await response.json()
         throw new Error(errorData.error || 'Failed to fetch reports')
       }
-      
+
       return response.json()
     },
     staleTime: 30_000, // Consider data fresh for 30 seconds
@@ -58,12 +58,12 @@ export function useProjectOptions() {
       const response = await fetch('/api/reports/projects', {
         cache: 'no-store',
       })
-      
+
       if (!response.ok) {
         const errorData: ErrorResponse = await response.json()
         throw new Error(errorData.error || 'Failed to fetch project options')
       }
-      
+
       return response.json()
     },
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
@@ -76,9 +76,11 @@ export function useProjectOptions() {
  */
 export function useCreateReport() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: async (data: CreateWeeklyReport): Promise<{ success: true; data: WeeklyReport }> => {
+    mutationFn: async (
+      data: CreateWeeklyReport
+    ): Promise<{ success: true; data: WeeklyReport }> => {
       const response = await fetch('/api/reports', {
         method: 'POST',
         headers: {
@@ -86,12 +88,12 @@ export function useCreateReport() {
         },
         body: JSON.stringify(data),
       })
-      
+
       if (!response.ok) {
         const errorData: ErrorResponse = await response.json()
         throw new Error(errorData.error || 'Failed to create report')
       }
-      
+
       return response.json()
     },
     onSuccess: () => {
@@ -110,29 +112,29 @@ export function useDownloadReport() {
       const response = await fetch(`/api/reports/${reportId}/download`, {
         method: 'GET',
       })
-      
+
       if (!response.ok) {
         const errorData: ErrorResponse = await response.json()
         throw new Error(errorData.error || 'Failed to download report')
       }
-      
+
       // Create blob from response
       const blob = await response.blob()
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
       link.download = fileName || `report-${reportId}.pdf`
-      
+
       // Trigger download
       document.body.appendChild(link)
       link.click()
-      
+
       // Cleanup
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-      
+
       return { success: true }
     },
   })
@@ -141,17 +143,21 @@ export function useDownloadReport() {
 /**
  * Custom hook for optimistic search with debouncing
  */
-export function useDebouncedReports(baseParams: Partial<Omit<ReportQuery, 'search'>>, searchTerm: string, delay: number = 300) {
+export function useDebouncedReports(
+  baseParams: Partial<Omit<ReportQuery, 'search'>>,
+  searchTerm: string,
+  delay: number = 300
+) {
   const [debouncedSearch, setDebouncedSearch] = React.useState(searchTerm)
-  
+
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm)
     }, delay)
-    
+
     return () => clearTimeout(timer)
   }, [searchTerm, delay])
-  
+
   return useReports({
     ...baseParams,
     search: debouncedSearch,
@@ -163,11 +169,12 @@ export function useDebouncedReports(baseParams: Partial<Omit<ReportQuery, 'searc
  */
 export function useReportsLoadingState() {
   const queryClient = useQueryClient()
-  
+
   const isFetching = queryClient.isFetching({ queryKey: ['reports'] }) > 0
-  const isLoading = queryClient.getQueriesData({ queryKey: ['reports'] })
+  const isLoading = queryClient
+    .getQueriesData({ queryKey: ['reports'] })
     .some(([, data]) => data === undefined)
-  
+
   return {
     isLoading,
     isFetching,

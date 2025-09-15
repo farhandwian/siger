@@ -47,9 +47,9 @@ export function ReportFilters({ filters, onFilterChange }: ReportFiltersProps) {
     <div className="space-y-4">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-start">
         {/* Search Input */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <Search className="h-4 w-4 text-gray-400" />
             </div>
             <Input
@@ -57,13 +57,13 @@ export function ReportFilters({ filters, onFilterChange }: ReportFiltersProps) {
               placeholder="Search..."
               value={filters.search || ''}
               onChange={handleSearchChange}
-              className="pl-9 rounded-lg border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="rounded-lg border-gray-200 pl-9 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
         </div>
 
         {/* Filter Dropdowns */}
-        <div className="flex gap-2 shrink-0">
+        <div className="flex shrink-0 gap-2">
           {/* Project Filter */}
           <div className="w-[219px]">
             <Select
@@ -77,7 +77,7 @@ export function ReportFilters({ filters, onFilterChange }: ReportFiltersProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Proyek</SelectItem>
-                {projectOptions?.data?.map((project) => (
+                {projectOptions?.data?.map(project => (
                   <SelectItem key={project.id} value={project.id}>
                     <div className="flex flex-col">
                       <span className="font-medium">{project.name}</span>

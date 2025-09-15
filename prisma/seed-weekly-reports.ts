@@ -32,7 +32,7 @@ export async function seedWeeklyReports() {
       for (let week = 1; week <= 8; week++) {
         const startDate = new Date('2025-08-10')
         startDate.setDate(startDate.getDate() + (week - 1) * 7)
-        
+
         const endDate = new Date(startDate)
         endDate.setDate(endDate.getDate() + 6)
 
@@ -55,7 +55,7 @@ export async function seedWeeklyReports() {
     })
 
     console.log(`✅ Created ${created.count} weekly reports`)
-    
+
     return created
   } catch (error) {
     console.error('❌ Error seeding weekly reports:', error)
@@ -73,7 +73,7 @@ const __dirname = dirname(__filename)
 // Check if this script was called directly
 if (process.argv[1] === __filename) {
   seedWeeklyReports()
-    .catch((error) => {
+    .catch(error => {
       console.error(error)
       process.exit(1)
     })

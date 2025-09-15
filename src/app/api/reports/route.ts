@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { ReportQuerySchema, WeeklyReportsResponseSchema, ErrorResponseSchema } from '@/lib/schemas/reports'
+import {
+  ReportQuerySchema,
+  WeeklyReportsResponseSchema,
+  ErrorResponseSchema,
+} from '@/lib/schemas/reports'
 import { Prisma } from '@prisma/client'
 
 /**
  * GET /api/reports - Fetch weekly reports with filtering, searching, and pagination
- * 
+ *
  * Query parameters:
  * - page: Page number (default: 1)
  * - limit: Items per page (default: 10, max: 100)
@@ -30,7 +34,7 @@ export async function GET(req: NextRequest) {
       endDate: searchParams.get('endDate') || undefined,
       weekNumber: searchParams.get('weekNumber') || undefined,
       status: searchParams.get('status') || undefined,
-    })    // Build where clause for filtering
+    }) // Build where clause for filtering
     const where: Prisma.WeeklyReportWhereInput = {}
 
     // Filter by project ID
@@ -88,28 +92,25 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        orderBy: [
-          { weekNumber: 'desc' },
-          { startDate: 'desc' },
-        ],
+        orderBy: [{ weekNumber: 'desc' }, { startDate: 'desc' }],
       }),
       prisma.weeklyReport.count({ where }),
     ])
 
     // Transform data to match the response schema
-    const transformedReports = reports.map((report) => {
+    const transformedReports = reports.map(report => {
       // Format the report period display string
       const startDate = new Date(report.startDate)
       const endDate = new Date(report.endDate)
-      const startDateStr = startDate.toLocaleDateString('id-ID', { 
+      const startDateStr = startDate.toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
       })
-      const endDateStr = endDate.toLocaleDateString('id-ID', { 
+      const endDateStr = endDate.toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
       })
       const reportPeriod = `Minggu ke-${report.weekNumber} | ${startDateStr} - ${endDateStr}`
 
@@ -171,7 +172,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/reports - Create a new weekly report
- * 
+ *
  * Body should contain:
  * - projectId: string
  * - weekNumber: number
@@ -182,7 +183,7 @@ export async function GET(req: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Import the schema dynamically to avoid issues
     const { CreateWeeklyReportSchema } = await import('@/lib/schemas/reports')
     const validatedData = CreateWeeklyReportSchema.parse(body)
@@ -243,15 +244,15 @@ export async function POST(request: NextRequest) {
     // Transform response data
     const startDate = new Date(report.startDate)
     const endDate = new Date(report.endDate)
-    const startDateStr = startDate.toLocaleDateString('id-ID', { 
+    const startDateStr = startDate.toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     })
-    const endDateStr = endDate.toLocaleDateString('id-ID', { 
+    const endDateStr = endDate.toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     })
     const reportPeriod = `Minggu ke-${report.weekNumber} | ${startDateStr} - ${endDateStr}`
 
@@ -270,11 +271,13 @@ export async function POST(request: NextRequest) {
       updatedAt: report.updatedAt.toISOString(),
     }
 
-    return NextResponse.json({
-      success: true,
-      data: transformedReport,
-    }, { status: 201 })
-
+    return NextResponse.json(
+      {
+        success: true,
+        data: transformedReport,
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error('Error creating weekly report:', error)
 

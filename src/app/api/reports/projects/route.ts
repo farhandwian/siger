@@ -4,7 +4,7 @@ import { ProjectOptionsResponseSchema, ErrorResponseSchema } from '@/lib/schemas
 
 /**
  * GET /api/reports/projects - Fetch project options for dropdown filters
- * 
+ *
  * Returns simplified project data for use in filter dropdowns
  */
 export async function GET(request: NextRequest) {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Transform data for dropdown options
-    const projectOptions = projects.map((project) => ({
+    const projectOptions = projects.map(project => ({
       id: project.id,
       name: project.pekerjaan || 'Unknown Project',
       location: project.lokasiProyek || undefined,

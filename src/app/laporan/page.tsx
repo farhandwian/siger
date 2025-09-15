@@ -16,7 +16,7 @@ import { ReportQuery } from '@/lib/schemas/reports'
 
 /**
  * Laporan Mingguan Pekerjaan (Weekly Work Reports) Page
- * 
+ *
  * This page displays a list of weekly work reports with:
  * - Header with title and create report button
  * - Filters for search, project selection, and period selection
@@ -27,7 +27,7 @@ export default function LaporanPage() {
   const { isAuthenticated, isLoading, permissions } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  
+
   // State for filters and pagination
   const [filters, setFilters] = useState<Partial<ReportQuery>>({
     page: 1,
@@ -39,7 +39,11 @@ export default function LaporanPage() {
   })
 
   // Fetch reports data with current filters
-  const { data: reportsData, isLoading: isLoadingReports, error: reportsError } = useReports(filters)
+  const {
+    data: reportsData,
+    isLoading: isLoadingReports,
+    error: reportsError,
+  } = useReports(filters)
 
   // Handle filter changes
   const handleFilterChange = (newFilters: Partial<ReportQuery>) => {
@@ -139,10 +143,7 @@ export default function LaporanPage() {
             <div className="my-3 border-t border-gray-200 lg:my-4 xl:my-6" />
 
             {/* Report Filters */}
-            <ReportFilters
-              filters={filters}
-              onFilterChange={handleFilterChange}
-            />
+            <ReportFilters filters={filters} onFilterChange={handleFilterChange} />
 
             {/* Report Table */}
             <div className="mt-4 lg:mt-6">

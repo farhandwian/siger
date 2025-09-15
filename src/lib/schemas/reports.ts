@@ -75,7 +75,7 @@ const BaseWeeklyReportSchema = z.object({
  * Schema for creating a new weekly report
  */
 export const CreateWeeklyReportSchema = BaseWeeklyReportSchema.refine(
-  (data) => new Date(data.startDate) <= new Date(data.endDate),
+  data => new Date(data.startDate) <= new Date(data.endDate),
   {
     message: 'Start date must be before or equal to end date',
     path: ['endDate'],

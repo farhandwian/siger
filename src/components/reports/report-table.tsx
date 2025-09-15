@@ -21,12 +21,12 @@ interface ReportTableProps {
  * Table component for displaying weekly reports
  * Includes report data, action buttons, and pagination
  */
-export function ReportTable({ 
-  data, 
-  pagination, 
-  isLoading, 
-  error, 
-  onPageChange 
+export function ReportTable({
+  data,
+  pagination,
+  isLoading,
+  error,
+  onPageChange,
 }: ReportTableProps) {
   const downloadMutation = useDownloadReport()
 
@@ -54,7 +54,7 @@ export function ReportTable({
     return (
       <div className="space-y-4">
         {/* Table Header */}
-        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
           <div className="bg-slate-700 text-white">
             <div className="grid grid-cols-12 gap-4 px-6 py-4">
               <div className="col-span-1">
@@ -75,7 +75,7 @@ export function ReportTable({
           {/* Table Body Skeleton */}
           <div className="divide-y divide-gray-200">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="grid grid-cols-12 gap-4 px-6 py-4 items-center">
+              <div key={index} className="grid grid-cols-12 items-center gap-4 px-6 py-4">
                 <div className="col-span-1">
                   <Skeleton className="h-4 w-6" />
                 </div>
@@ -114,12 +114,12 @@ export function ReportTable({
       <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
         <div className="mx-auto max-w-sm">
           <div className="mb-4">
-            <div className="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
               <Eye className="h-6 w-6 text-gray-400" />
             </div>
           </div>
-          <h3 className="text-sm font-medium text-gray-900 mb-2">No reports found</h3>
-          <p className="text-sm text-gray-500 mb-4">
+          <h3 className="mb-2 text-sm font-medium text-gray-900">No reports found</h3>
+          <p className="mb-4 text-sm text-gray-500">
             No weekly reports match your current filters. Try adjusting your search or filters.
           </p>
           <Button variant="outline" onClick={() => window.location.reload()}>
@@ -133,7 +133,7 @@ export function ReportTable({
   return (
     <div className="space-y-4">
       {/* Table */}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
         {/* Table Header */}
         <div className="bg-slate-700 text-white">
           <div className="grid grid-cols-12 gap-4 px-6 py-4">
@@ -155,27 +155,32 @@ export function ReportTable({
         {/* Table Body */}
         <div className="divide-y divide-gray-200">
           {data.map((report, index) => {
-            const rowNumber = pagination ? (pagination.page - 1) * pagination.limit + index + 1 : index + 1
-            
+            const rowNumber = pagination
+              ? (pagination.page - 1) * pagination.limit + index + 1
+              : index + 1
+
             return (
-              <div key={report.id} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50">
+              <div
+                key={report.id}
+                className="grid grid-cols-12 items-center gap-4 px-6 py-4 hover:bg-gray-50"
+              >
                 {/* Row Number */}
                 <div className="col-span-1">
-                  <span className="text-sm font-medium text-gray-700 text-center">
+                  <span className="text-center text-sm font-medium text-gray-700">
                     {rowNumber}.
                   </span>
                 </div>
 
                 {/* Project Name */}
                 <div className="col-span-6">
-                  <h4 className="text-sm font-medium text-gray-700 leading-5">
+                  <h4 className="text-sm font-medium leading-5 text-gray-700">
                     {report.projectName}
                   </h4>
                 </div>
 
                 {/* Period */}
                 <div className="col-span-3">
-                  <div className="text-xs text-gray-700 space-x-1">
+                  <div className="space-x-1 text-xs text-gray-700">
                     <span>Minggu ke-{report.weekNumber}</span>
                     <span className="text-gray-400">|</span>
                     <span>{report.reportPeriod.split(' | ')[1]}</span>
@@ -183,22 +188,22 @@ export function ReportTable({
                 </div>
 
                 {/* Actions */}
-                <div className="col-span-2 flex gap-2 justify-center">
+                <div className="col-span-2 flex justify-center gap-2">
                   <Button
                     size="sm"
                     onClick={() => handleViewReport(report)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium"
+                    className="rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600"
                   >
-                    <Eye className="h-4 w-4 mr-1" />
+                    <Eye className="mr-1 h-4 w-4" />
                     Lihat
                   </Button>
                   <Button
                     size="sm"
                     onClick={() => handleDownloadReport(report)}
                     disabled={downloadMutation.isPending}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium"
+                    className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600"
                   >
-                    <Download className="h-4 w-4 mr-1" />
+                    <Download className="mr-1 h-4 w-4" />
                     {downloadMutation.isPending ? 'Downloading...' : 'Unduh'}
                   </Button>
                 </div>
@@ -210,10 +215,7 @@ export function ReportTable({
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <PaginationComponent
-          pagination={pagination}
-          onPageChange={onPageChange}
-        />
+        <PaginationComponent pagination={pagination} onPageChange={onPageChange} />
       )}
     </div>
   )
@@ -283,14 +285,14 @@ function PaginationComponent({ pagination, onPageChange }: PaginationComponentPr
           return (
             <Button
               key={pageNum}
-              variant={isCurrentPage ? "default" : "ghost"}
+              variant={isCurrentPage ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onPageChange(pageNum as number)}
               className={cn(
-                "px-3 py-2 text-sm rounded-lg",
-                isCurrentPage 
-                  ? "bg-[#ffc928] text-[#1a365d] hover:bg-[#ffc928]/90" 
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                'rounded-lg px-3 py-2 text-sm',
+                isCurrentPage
+                  ? 'bg-[#ffc928] text-[#1a365d] hover:bg-[#ffc928]/90'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               )}
             >
               {pageNum}
