@@ -767,12 +767,19 @@ export default function ProjectDetailPage() {
                   </div>
 
                   {/* Chart and AI Insights */}
-                  <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <div className="flex flex-col xl:col-span-2">
-                      <SCurveChart projectId={projectId} type="actionPlan" />
+                  {/* Grid with two equal columns on xl and above; SCurveChart and AIInsights each occupy one column */}
+                  <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                    <div className="flex flex-col gap-6">
+                      {/* Make sure SCurveChart uses h-full */}
+                      <div className="h-full">
+                        <SCurveChart projectId={projectId} type="actionPlan" />
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <AIInsights />
+                    <div className="flex flex-col gap-6">
+                      {/* Make sure AIInsights uses h-full */}
+                      <div className="h-full">
+                        <AIInsights />
+                      </div>
                     </div>
                   </div>
 

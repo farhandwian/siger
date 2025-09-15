@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import seedUsers from './seed-users'
 import seedActivities from './seed-activities'
+import { seedAuthUsers } from './seed-auth-users'
 
 const prisma = new PrismaClient()
 
@@ -8,7 +9,7 @@ async function main() {
   console.log('🌱 Seeding database...')
 
   // Seed users first
-  await seedUsers()
+  await seedAuthUsers()
 
   // Clear existing data
   await prisma.materialSchedule.deleteMany({})

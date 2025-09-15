@@ -240,11 +240,9 @@ model User {
   lastLoginAt     DateTime?          @map("last_login_at")
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
-  
-  // NextAuth.js required fields
   accounts        Account[]
-  sessions        Session[]
   dailyActivities DailySubActivity[]
+  sessions        Session[]
 
   @@map("users")
 }
@@ -255,15 +253,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String  @map("provider_account_id")
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -286,13 +283,6 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
-}
-
-enum UserRole {
-  USER
-  ADMIN
-  MANAGER
-  VIEWER
 }
 
 model DailySubActivity {
@@ -319,4 +309,11 @@ model Wilayah {
 
   @@index([nama])
   @@map("wilayah")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MANAGER
+  VIEWER
 }

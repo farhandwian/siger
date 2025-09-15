@@ -40,6 +40,7 @@ export function SCurveChart({ projectId = '1', type = 'activity' }: SCurveChartP
     return sCurveData.map(dataPoint => ({
       week: dataPoint.weekLabel,
       weekNumber: dataPoint.weekNumber,
+      // Data is already in percentage format, no need to multiply by 100
       rencana: Math.round(dataPoint.rencana * 100) / 100, // Round to 2 decimal places
       realisasi: Math.round(dataPoint.realisasi * 100) / 100,
       deviation: Math.round(dataPoint.deviation * 100) / 100,
@@ -107,7 +108,7 @@ export function SCurveChart({ projectId = '1', type = 'activity' }: SCurveChartP
   }
 
   return (
-    <Card className="border border-gray-200 bg-transparent">
+    <Card className="h-full rounded-2xl border border-gray-200 bg-transparent">
       <CardHeader className="space-y-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg text-gray-700">
@@ -127,11 +128,11 @@ export function SCurveChart({ projectId = '1', type = 'activity' }: SCurveChartP
         {/* Legend */}
         <div className="mb-4 flex items-center justify-end gap-6">
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-blue-200" />
+            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#BFDBFE' }} />
             <span className="text-sm font-medium text-gray-500">Rencana</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-yellow-400" />
+            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#FFC928' }} />
             <span className="text-sm font-medium text-gray-500">Realisasi</span>
           </div>
         </div>
@@ -188,7 +189,7 @@ export function SCurveChart({ projectId = '1', type = 'activity' }: SCurveChartP
                     <div className="rounded-lg border bg-white p-3 shadow-lg">
                       <p className="font-medium text-gray-900">{label}</p>
                       {payload.map(entry => (
-                        <p key={entry.dataKey} className="text-sm text-gray-700">
+                        <p key={entry.dataKey} className="text-sm" style={{ color: entry.color }}>
                           {entry.name}: {entry.value}%
                         </p>
                       ))}

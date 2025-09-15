@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, UserRole } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -348,7 +348,7 @@ async function createSampleDailyActivities() {
 
   // Get some users to assign daily activities
   const users = await prisma.user.findMany({
-    where: { role: 'user' },
+    where: { role: UserRole.USER },
     take: 3,
   })
 
