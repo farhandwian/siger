@@ -41,9 +41,9 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1">
+        <div className="min-h-screen pl-0 lg:pl-44 xl:pl-64">
           <Header title="Profile" breadcrumb={{ level1: 'User', level2: 'Profile' }} />
           <div className="p-6">
             <div className="space-y-4">
@@ -58,9 +58,9 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1">
+        <div className="min-h-screen pl-0 lg:pl-44 xl:pl-64">
           <Header title="Profile" breadcrumb={{ level1: 'User', level2: 'Profile' }} />
           <div className="p-6">
             <Card>
@@ -75,10 +75,10 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
 
-      <div className="flex-1">
+      <div className="min-h-screen pl-0 lg:pl-44 xl:pl-64">
         <Header title="User Profile" breadcrumb={{ level1: 'Account', level2: 'Profile' }} />
 
         <div className="p-4 lg:p-6 xl:p-8">

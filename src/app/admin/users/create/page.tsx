@@ -139,9 +139,9 @@ export default function CreateUserPage() {
   // Check permissions
   if (!permissions.canCreateUsers) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1">
+        <div className="min-h-screen pl-0 lg:pl-44 xl:pl-64">
           <Header title="Access Denied" breadcrumb={{ level1: 'Admin', level2: 'Create User' }} />
           <div className="p-6">
             <Alert variant="destructive">
@@ -156,7 +156,7 @@ export default function CreateUserPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -166,8 +166,10 @@ export default function CreateUserPage() {
       )}
 
       {/* Sidebar */}
-      <div
-        className={`
+      <Sidebar className={sidebarOpen ? 'translate-x-0' : ''} />
+
+      {/* Main Content */}
+      <div className="min-h-screen pl-0 lg:pl-44 xl:pl-64">
         fixed left-0 top-0 z-50 h-screen transform transition-transform duration-300 ease-in-out
         lg:relative lg:z-auto lg:transform-none
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}

@@ -5,6 +5,8 @@ import { AuthProvider } from '@/components/providers/auth-provider'
 import ChunkErrorHandler from '@/components/client/chunk-error-handler'
 import { Toaster } from 'sonner'
 import '@/styles/globals.css'
+import '@/styles/scrollbar.css'
+import '@/styles/sidebar-force-hide.css'
 
 const inter = Inter({ subsets: ['latin'] })
 

@@ -1,7 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -205,6 +206,41 @@ const SidebarItemComponent: React.FC<{
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
   const { user, role } = useAuth()
   const pathname = usePathname()
+  const sidebarRef = useRef<HTMLDivElement>(null)
+
+  // Add scroll detection for showing/hiding scrollbar
+  useEffect(() => {
+    const sidebarElement = sidebarRef.current
+    if (!sidebarElement) return
+
+    let scrollTimeout: NodeJS.Timeout
+
+    const handleScroll = () => {
+      // Add scrolling class when scrolling starts
+      sidebarElement.classList.add('scrolling')
+
+      // Clear previous timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+
+      // Remove scrolling class after scrolling stops (600ms delay for better UX)
+      scrollTimeout = setTimeout(() => {
+        sidebarElement.classList.remove('scrolling')
+      }, 600)
+    }
+
+    // Add scroll listener with passive for better performance
+    sidebarElement.addEventListener('scroll', handleScroll, { passive: true })
+
+    // Cleanup function
+    return () => {
+      sidebarElement.removeEventListener('scroll', handleScroll)
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+    }
+  }, [])
 
   // Filter sidebar items based on user role
   const filteredItems = sidebarItems.filter(item => {
@@ -215,15 +251,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
   return (
     <div
+      ref={sidebarRef}
       className={cn(
-        'scrollbar-hide flex h-screen w-40 flex-col overflow-y-auto border-r border-gray-200 bg-white lg:w-44 xl:w-64',
+        'sidebar-scrollbar sidebar-scrollbar fixed left-0 top-0 z-50 flex h-screen w-40 flex-col overflow-y-auto border-r border-gray-200 bg-white lg:w-44 xl:w-64',
+        'transition-transform duration-300 ease-in-out',
+        // On mobile, hide by default unless className overrides
+        '-translate-x-full transform lg:translate-x-0',
         className
       )}
     >
       {/* Logo Section */}
       <div className="flex-shrink-0 border-b border-gray-100 p-2 lg:p-3 xl:p-6">
-        <Link href="/monitoring-evaluasi" className="flex items-center gap-1.5 lg:gap-2">
-          <SigerLogo className="h-5 w-5 lg:h-6 lg:w-6 xl:h-8 xl:w-8" />
+        {/* Logo link: use Next.js Image for optimized loading from /public.
+          NOTE: add `import Image from 'next/image'` at the top of this file. */}
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-1.5 lg:gap-2"
+          aria-label="Go to Monitoring & Evaluation"
+        >
+          {/* Next.js Image will serve files placed in /public (e.g. /public/logo.png).
+            If you use an SVG and want vector crispness, consider importing it as a React component instead. */}
+          <Image
+            src="/logo.svg" // change to /logo.svg or other filename if needed
+            alt="SIGER Logo"
+            width={32}
+            height={32}
+            priority // mark as important so Next.js loads it eagerly
+            className="h-5 w-5 object-contain lg:h-6 lg:w-6 xl:h-8 xl:w-8"
+          />
+
+          {/* App title next to the logo */}
           <span className="text-sm font-bold text-blue-900 lg:text-base xl:text-2xl">SIGER</span>
         </Link>
       </div>

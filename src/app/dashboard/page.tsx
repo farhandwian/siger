@@ -68,18 +68,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar - Fixed positioning handled in component */}
       <Sidebar />
 
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col">
+      {/* Main Content - Use padding instead of margin for better layout */}
+      <div className="flex min-h-screen flex-col pl-0 lg:pl-44 xl:pl-64">
         {/* Header */}
         <Header
           title="Dashboard SIGER"
           breadcrumb={{
-            level1: 'Monitoring & Evaluasi',
-            level2: 'Dashboard',
+            level1: 'Dashboard',
           }}
         />
 
