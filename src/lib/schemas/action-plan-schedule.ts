@@ -5,9 +5,7 @@ import { z } from 'zod'
 export const ActionPlanSchema = z.object({
   id: z.string(),
   subActivityId: z.string(), // Only subActivityId as per Prisma schema
-  month: z.number().min(1).max(12),
-  year: z.number().min(2020),
-  week: z.number().min(1).max(6), // Updated to match Prisma schema
+  weekNumber: z.number().min(1, 'Week number must be at least 1'),
   percentage: z.number().min(0).max(100).default(0), // Changed from planPercentage/actualPercentage to single percentage
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -17,41 +15,19 @@ export const ActionPlanSchema = z.object({
 export const ActionPlanApiSchema = z.object({
   id: z.string(),
   subActivityId: z.string(),
-  month: z.number().min(1).max(12),
-  year: z.number().min(2020),
-  week: z.number().min(1).max(6),
+  weekNumber: z.number().min(1, 'Week number must be at least 1'),
   percentage: z.number().min(0).max(100).default(0),
   createdAt: z.string().transform(str => new Date(str)),
   updatedAt: z.string().transform(str => new Date(str)),
 })
 
-// Schema for Action Plan Schedule with related data (includes subActivity details)
-export const ActionPlanWithRelationsSchema = ActionPlanSchema.extend({
-  subActivity: z.object({
-    id: z.string(),
-    name: z.string(),
-    activityId: z.string(),
-    activity: z.object({
-      id: z.string(),
-      name: z.string(),
-      projectId: z.string(),
-    }),
-  }),
-})
+// Schema for Action Plan Schedule with related data (subActivity removed for performance)
+// Use subActivityId to map relationships on the client side
+export const ActionPlanWithRelationsSchema = ActionPlanSchema
 
 // Schema for API responses with relations where dates come as ISO strings
-export const ActionPlanWithRelationsApiSchema = ActionPlanApiSchema.extend({
-  subActivity: z.object({
-    id: z.string(),
-    name: z.string(),
-    activityId: z.string(),
-    activity: z.object({
-      id: z.string(),
-      name: z.string(),
-      projectId: z.string(),
-    }),
-  }),
-})
+// Use subActivityId to map relationships on the client side  
+export const ActionPlanWithRelationsApiSchema = ActionPlanApiSchema
 
 export type ActionPlan = z.infer<typeof ActionPlanSchema>
 export type ActionPlanWithRelations = z.infer<typeof ActionPlanWithRelationsSchema>
@@ -119,5 +95,16 @@ export const CreateRealizationSchema = RealizationSchema.omit({
   updatedAt: true,
 })
 
+// Optimized response schemas for API endpoints
+// Note: SchedulePlanWithRelations now excludes subActivity to improve performance
+// Use subActivityId to map relationships on the client side
+export const SchedulePlanWithRelationsSchema = SchedulePlanSchema
+
+// Note: RealizationWithRelations now excludes subActivity to improve performance
+// Use subActivityId to map relationships on the client side
+export const RealizationWithRelationsSchema = RealizationSchema
+
 export type SchedulePlan = z.infer<typeof SchedulePlanSchema>
 export type Realization = z.infer<typeof RealizationSchema>
+export type SchedulePlanWithRelations = z.infer<typeof SchedulePlanWithRelationsSchema>
+export type RealizationWithRelations = z.infer<typeof RealizationWithRelationsSchema>

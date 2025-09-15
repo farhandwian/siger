@@ -2,15 +2,14 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Realization, CreateRealizationSchema, UpdateRealizationSchema } from '@/lib/schemas'
+import { RealizationWithRelations, Realization, CreateRealizationSchema } from '@/lib/schemas'
 import { z } from 'zod'
 
 // Query parameters for filtering realizations
 interface RealizationFilters {
   projectId?: string
   subActivityId?: string
-  year?: number
-  month?: number
+  weekNumber?: number
 }
 
 // Hook to fetch realizations with optional filters
@@ -34,7 +33,7 @@ export function useRealizations(filters: RealizationFilters = {}) {
       }
 
       const json = await response.json()
-      return json.data as Realization[]
+      return json.data as RealizationWithRelations[]
     },
     staleTime: 30000,
   })
@@ -88,6 +87,33 @@ export function useUpdateRealization() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['realizations'] })
+    },
+  })
+}
+
+// Hook for bulk realization operations
+export function useBulkRealizations() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (items: z.infer<typeof CreateRealizationSchema>[]) => {
+      const response = await fetch('/api/realizations/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to process bulk realizations')
+      }
+
+      const json = await response.json()
+      return json.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['realizations'] })
+      queryClient.invalidateQueries({ queryKey: ['schedule-plans-s-curve'] })
     },
   })
 }

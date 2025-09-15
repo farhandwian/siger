@@ -13,7 +13,6 @@ import { UserRole } from '@/lib/auth'
 const protectedApiRoutes = [
   '/api/projects',
   '/api/activities', 
-  '/api/monitoring',
   '/api/daily-activities',
   '/api/satkers',
   '/api/balai',

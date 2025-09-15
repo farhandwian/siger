@@ -4,7 +4,6 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import {
   CreateActionPlanSchema,
-  ActionPlanResponseSchema,
 } from '@/lib/schemas/action-plan-schedule'
 
 // Query parameters schema for filtering action plan schedules
@@ -12,8 +11,7 @@ const QuerySchema = z.object({
   projectId: z.string().optional(),
   activityId: z.string().optional(),
   subActivityId: z.string().optional(),
-  year: z.coerce.number().optional(),
-  month: z.coerce.number().min(1).max(12).optional(),
+  weekNumber: z.coerce.number().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -28,12 +26,8 @@ export async function GET(req: NextRequest) {
       where.subActivityId = query.subActivityId
     }
 
-    if (query.year) {
-      where.year = query.year
-    }
-
-    if (query.month) {
-      where.month = query.month
+    if (query.weekNumber) {
+      where.weekNumber = query.weekNumber
     }
 
     // If projectId or activityId is provided, filter through subActivity relations
@@ -53,21 +47,13 @@ export async function GET(req: NextRequest) {
 
     const actionPlans = await prisma.actionPlan.findMany({
       where,
-      include: {
-        subActivity: {
-          select: {
-            id: true,
-            name: true,
-            activityId: true,
-            activity: {
-              select: {
-                id: true,
-                name: true,
-                projectId: true,
-              },
-            },
-          },
-        },
+      select: {
+        id: true,
+        subActivityId: true,
+        weekNumber: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
       },
       orderBy: [{ year: 'asc' }, { month: 'asc' }, { week: 'asc' }],
     })
@@ -103,19 +89,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if a schedule already exists for this subactivity and time period
+    // Check if a schedule already exists for this subactivity and week
     const existingSchedule = await prisma.actionPlan.findFirst({
       where: {
         subActivityId: data.subActivityId,
-        month: data.month,
-        year: data.year,
-        week: data.week,
+        weekNumber: data.weekNumber,
       },
     })
 
     if (existingSchedule) {
       return NextResponse.json(
-        { success: false, error: 'Action plan schedule already exists for this time period' },
+        { success: false, error: 'Action plan schedule already exists for this week' },
         { status: 409 }
       )
     }
@@ -123,27 +107,17 @@ export async function POST(req: NextRequest) {
     const actionPlan = await prisma.actionPlan.create({
       data: {
         subActivityId: data.subActivityId,
-        month: data.month,
-        year: data.year,
-        week: data.week,
+        weekNumber: data.weekNumber,
         percentage: data.percentage || 0,
       },
-      include: {
-        subActivity: {
-          select: {
-            id: true,
-            name: true,
-            activityId: true,
-            activity: {
-              select: {
-                id: true,
-                name: true,
-                projectId: true,
-              },
-            },
-          },
-        },
-      },
+      select: {
+        id: true,
+        subActivityId: true,
+        weekNumber: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
+      }
     })
 
     return NextResponse.json(

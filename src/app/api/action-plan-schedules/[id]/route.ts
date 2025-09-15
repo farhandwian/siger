@@ -15,22 +15,16 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
     const actionPlan = await prisma.actionPlan.findUnique({
       where: { id },
-      include: {
-        subActivity: {
-          select: {
-            id: true,
-            name: true,
-            activityId: true,
-            activity: {
-              select: {
-                id: true,
-                name: true,
-                projectId: true,
-              },
-            },
-          },
-        },
-      },
+      select: {
+        id: true,
+        subActivityId: true,
+        month: true,
+        year: true,
+        week: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
+      }
     })
 
     if (!actionPlan) {
@@ -104,22 +98,16 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         week: data.week || existingSchedule.week,
         percentage: data.percentage !== undefined ? data.percentage : existingSchedule.percentage,
       },
-      include: {
-        subActivity: {
-          select: {
-            id: true,
-            name: true,
-            activityId: true,
-            activity: {
-              select: {
-                id: true,
-                name: true,
-                projectId: true,
-              },
-            },
-          },
-        },
-      },
+      select: {
+        id: true,
+        subActivityId: true,
+        month: true,
+        year: true,
+        week: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
+      }
     })
 
     return NextResponse.json({

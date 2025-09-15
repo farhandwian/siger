@@ -35,6 +35,11 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
   const [file, setFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
+  const [importProgress, setImportProgress] = useState<{
+    stage: string
+    progress: number
+    total: number
+  } | null>(null)
   const [parseResult, setParseResult] = useState<ParsedActivity[] | null>(null)
   const [importResult, setImportResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -571,6 +576,7 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
     setIsImporting(true)
     setError(null)
+    setImportProgress({ stage: 'Preparing data...', progress: 0, total: parseResult.length })
 
     try {
       const response = await fetch(`/api/projects/${projectId}/schedule/import`, {
@@ -585,25 +591,26 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
         }),
       })
 
+      setImportProgress({ stage: 'Processing import...', progress: 50, total: 100 })
+
       const result = await response.json()
 
       if (!response.ok) {
         throw new Error(result.error || 'Import failed')
       }
 
+      setImportProgress({ stage: 'Import completed!', progress: 100, total: 100 })
       setImportResult(result)
-      console.log('=== IMPORT TO DATABASE SUCCESSFUL ===')
-      console.log('Result:', result)
 
       // Call onSuccess callback to refresh data
       if (onSuccess) {
         onSuccess()
       }
     } catch (err) {
-      console.error('Import to database error:', err)
       setError(err instanceof Error ? err.message : 'Failed to import to database')
     } finally {
       setIsImporting(false)
+      setImportProgress(null)
     }
   }
 
@@ -769,7 +776,14 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                   disabled={isImporting}
                   className="flex-1 bg-green-600 hover:bg-green-700"
                 >
-                  {isImporting ? 'Mengimpor...' : 'Impor ke Database'}
+                  {isImporting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      {importProgress?.stage || 'Mengimpor...'}
+                    </div>
+                  ) : (
+                    'Impor ke Database'
+                  )}
                 </Button>
 
                 <Button
@@ -780,6 +794,24 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                   Edit CSV
                 </Button>
               </div>
+
+              {/* Progress Display */}
+              {importProgress && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{importProgress.stage}</span>
+                    <span>{Math.round((importProgress.progress / importProgress.total) * 100)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.round((importProgress.progress / importProgress.total) * 100)}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -805,10 +837,16 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold">📅 Rencana dan Realisasi:</p>
+                    <p className="font-semibold">📅 Rencana:</p>
                     <p className="ml-4 text-sm">
                       Ditambahkan: {importResult.data?.imported?.schedules || 0} | Diubah:{' '}
                       {importResult.data?.updated?.schedules || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold">📊 Realisasi:</p>
+                    <p className="ml-4 text-sm">
+                      Ditambahkan: {importResult.data?.imported?.realizations || 0}
                     </p>
                   </div>
                 </div>

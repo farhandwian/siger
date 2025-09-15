@@ -13,8 +13,7 @@ import { z } from 'zod'
 interface ActionPlanFilters {
   projectId?: string
   subActivityId?: string
-  year?: number
-  month?: number
+  weekNumber?: number
 }
 
 // Hook to fetch action plan schedules with optional filters

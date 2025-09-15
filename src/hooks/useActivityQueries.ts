@@ -4,7 +4,6 @@ import type {
   Activity,
   SubActivity,
   UpdateActivitySchema,
-  UpdateSubActivitySchema,
 } from '@/lib/schemas'
 import { z } from 'zod'
 
@@ -20,15 +19,6 @@ type CreateSubActivityData = {
   volumeMC0?: number
   bobotMC0?: number
   weight: number
-}
-
-// Define project type
-type Project = {
-  id: string
-  tanggalKontrak?: string | null
-  akhirKontrak?: string | null
-  tanggalSpmk?: string | null
-  // other project fields...
 }
 
 // Query keys factory
@@ -55,8 +45,8 @@ export function useActivities(projectId: string) {
       return response
     },
     enabled: !!projectId,
-    refetchInterval: 15000, // Refetch every 15 seconds for real-time updates
-    refetchIntervalInBackground: true, // Continue refetching even when tab is not active
+    // Removed automatic refetching to improve performance
+    // Data will be refreshed only when user clicks refresh button
   })
 }
 

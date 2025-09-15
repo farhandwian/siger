@@ -4,13 +4,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useCallback } from 'react'
 
 export interface MonitoringData {
-  progress: {
-    current: number
-    total: number
-    deviation: number
-    addendumCount: number
-    lastUpdated: string
-  }
   sCurveData: {
     weeks: number[]
     planned: number[]
@@ -37,20 +30,6 @@ export interface MonitoringData {
 // Custom hook for real-time monitoring data
 export function useMonitoringData() {
   const queryClient = useQueryClient()
-
-  // Progress data query
-  const progressQuery = useQuery({
-    queryKey: ['monitoring', 'progress'],
-    queryFn: async () => {
-      const response = await fetch('/api/monitoring/progress')
-      if (!response.ok) throw new Error('Failed to fetch progress data')
-      const result = await response.json()
-      return result.data
-    },
-    refetchInterval: 5000, // 5 seconds
-    staleTime: 0,
-    gcTime: 30000, // Keep in cache for 30 seconds
-  })
 
   // S-Curve data query
   const sCurveQuery = useQuery({
@@ -163,11 +142,10 @@ export function useMonitoringData() {
   }, [refreshAllData])
 
   return {
-    progress: progressQuery,
     sCurve: sCurveQuery,
     aiInsights: aiInsightsQuery,
     refreshAll: refreshAllData,
-    isLoading: progressQuery.isLoading || sCurveQuery.isLoading || aiInsightsQuery.isLoading,
-    isError: progressQuery.isError || sCurveQuery.isError || aiInsightsQuery.isError,
+    isLoading: sCurveQuery.isLoading || aiInsightsQuery.isLoading,
+    isError: sCurveQuery.isError || aiInsightsQuery.isError,
   }
 }

@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { AddActivityModal } from '@/components/activities/add-activity-modal'
 import { EditActivityModal } from '@/components/activities/edit-activity-modal'
 import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
-import { generateSequentialWeeks, type SequentialWeek } from '@/utils/dateUtils'
+import { generateSequentialWeeks } from '@/utils/dateUtils'
 import type { Activity } from '@/lib/schemas'
 
 /**
@@ -40,8 +40,7 @@ interface UnifiedScheduleTableProps {
 
   // Cumulative calculation function
   getCumulativeValueForWeek: (
-    month: number,
-    week: number,
+    weekNumber: number,
     type: 'plan' | 'actual' | 'deviation'
   ) => number
 
@@ -51,6 +50,132 @@ interface UnifiedScheduleTableProps {
   showCumulativeSection?: boolean
   weekCount?: number
 }
+
+// Memoized cell component for plan values
+const PlanCell = memo(function PlanCell({
+  subActivityId,
+  weekNumber,
+  value,
+  isEditing,
+  editValue,
+  isLastWeekInMonth,
+  onEdit,
+  onSave,
+  onCancel,
+  onChange
+}: {
+  subActivityId: string;
+  weekNumber: number;
+  value: number | null;
+  isEditing: boolean;
+  editValue: string;
+  isLastWeekInMonth: boolean;
+  onEdit: (cellId: string, currentValue: number | null) => void;
+  onSave: (subActivityId: string, weekNumber: number, type: 'plan' | 'actual') => void;
+  onCancel: () => void;
+  onChange: (value: string) => void;
+}) {
+  const cellId = `${subActivityId}-W${weekNumber}-plan`;
+  
+  return (
+    <td
+      className={`progress-cell-plan ${value && value > 0 ? 'has-value' : ''} ${
+        isLastWeekInMonth ? 'month-separator' : ''
+      }`}
+    >
+      {isEditing ? (
+        <Input
+          value={editValue}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+          onBlur={() => onSave(subActivityId, weekNumber, 'plan')}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              onSave(subActivityId, weekNumber, 'plan');
+            } else if (e.key === 'Escape') {
+              onCancel();
+            }
+          }}
+          className="progress-value-input"
+          autoFocus
+        />
+      ) : (
+        <div
+          className="progress-value-display"
+          onClick={() => onEdit(cellId, value)}
+        >
+          {value !== null && value !== undefined
+            ? value === 0
+              ? '-'
+              : value.toFixed(3)
+            : '-'}
+        </div>
+      )}
+    </td>
+  );
+});
+
+// Memoized cell component for actual values
+const ActualCell = memo(function ActualCell({
+  subActivityId,
+  weekNumber,
+  value,
+  isEditing,
+  editValue,
+  isLastWeekInMonth,
+  onEdit,
+  onSave,
+  onCancel,
+  onChange
+}: {
+  subActivityId: string;
+  weekNumber: number;
+  value: number | null;
+  isEditing: boolean;
+  editValue: string;
+  isLastWeekInMonth: boolean;
+  onEdit: (cellId: string, currentValue: number | null) => void;
+  onSave: (subActivityId: string, weekNumber: number, type: 'plan' | 'actual') => void;
+  onCancel: () => void;
+  onChange: (value: string) => void;
+}) {
+  const cellId = `${subActivityId}-W${weekNumber}-actual`;
+  
+  return (
+    <td
+      className={`progress-cell-actual ${value && value > 0 ? 'has-value' : ''} ${
+        isLastWeekInMonth ? 'month-separator' : ''
+      }`}
+    >
+      {isEditing ? (
+        <Input
+          value={editValue}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+          onBlur={() => onSave(subActivityId, weekNumber, 'actual')}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              onSave(subActivityId, weekNumber, 'actual');
+            } else if (e.key === 'Escape') {
+              onCancel();
+            }
+          }}
+          className="progress-value-input"
+          autoFocus
+        />
+      ) : (
+        <div
+          className="progress-value-display"
+          onClick={() => onEdit(cellId, value)}
+        >
+          {value !== null && value !== undefined
+            ? value === 0
+              ? '-'
+              : value.toFixed(3)
+            : '-'}
+        </div>
+      )}
+    </td>
+  );
+});
 
 export function UnifiedScheduleTable({
   projectId,
@@ -106,7 +231,7 @@ export function UnifiedScheduleTable({
     }
   }, [updateScrollbar])
 
-  const handleThumbMouseDown = (e: React.MouseEvent<HTMLDivElement>, isTop: boolean) => {
+  const handleThumbMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(true)
     setDragStartX(e.clientX)
@@ -136,11 +261,11 @@ export function UnifiedScheduleTable({
   }
 
   const handleTopThumbMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    handleThumbMouseDown(e, true)
+    handleThumbMouseDown(e)
   }
 
   const handleBottomThumbMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    handleThumbMouseDown(e, false)
+    handleThumbMouseDown(e)
   }
 
   useEffect(() => {
@@ -269,19 +394,14 @@ export function UnifiedScheduleTable({
     const numericValue = editValue === '' ? null : parseFloat(editValue)
     const value = !isNaN(numericValue!) ? numericValue : null
 
-    console.log('Saving cell value:', editValue, 'parsed as:', value)
-
-    if (!sequentialWeeks[weekNumber - 1]) {
-      console.error('Invalid week number:', weekNumber)
-      return
-    }
-
     try {
       await saveScheduleValue(activityId, subActivityId, weekNumber, type, value)
       setEditingCell(null)
       setEditValue('')
     } catch (error) {
-      console.error('Error updating schedule:', error)
+      // Handle error appropriately - could show a toast notification or error state
+      setEditingCell(null)
+      setEditValue('')
     }
   }
 
@@ -499,54 +619,21 @@ export function UnifiedScheduleTable({
                           const isLastWeekInMonth = isLastWeekOfMonth(week)
 
                           return (
-                            <td
+                            <PlanCell
                               key={cellId}
-                              className={`progress-cell-plan ${value && value > 0 ? 'has-value' : ''} ${
-                                isLastWeekInMonth ? 'month-separator' : ''
-                              }`}
-                            >
-                              {isEditing ? (
-                                <Input
-                                  value={editValue}
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                    setEditValue(e.target.value)
-                                  }
-                                  onBlur={() =>
-                                    handleCellSave(
-                                      activity.id,
-                                      subActivity.id,
-                                      week.weekNumber,
-                                      'plan'
-                                    )
-                                  }
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') {
-                                      handleCellSave(
-                                        activity.id,
-                                        subActivity.id,
-                                        week.weekNumber,
-                                        'plan'
-                                      )
-                                    } else if (e.key === 'Escape') {
-                                      handleCellCancel()
-                                    }
-                                  }}
-                                  className="progress-value-input"
-                                  autoFocus
-                                />
-                              ) : (
-                                <div
-                                  className="progress-value-display"
-                                  onClick={() => handleCellEdit(cellId, value)}
-                                >
-                                  {value !== null && value !== undefined
-                                    ? value === 0
-                                      ? '-'
-                                      : value.toFixed(3)
-                                    : '-'}
-                                </div>
-                              )}
-                            </td>
+                              subActivityId={subActivity.id}
+                              weekNumber={week.weekNumber}
+                              value={value}
+                              isEditing={isEditing}
+                              editValue={editValue}
+                              isLastWeekInMonth={isLastWeekInMonth}
+                              onEdit={handleCellEdit}
+                              onSave={(subId, weekNum, type) =>
+                                handleCellSave(activity.id, subId, weekNum, type)
+                              }
+                              onCancel={handleCellCancel}
+                              onChange={setEditValue}
+                            />
                           )
                         })}
                       </tr>
@@ -566,54 +653,21 @@ export function UnifiedScheduleTable({
                           const isLastWeekInMonth = isLastWeekOfMonth(week)
 
                           return (
-                            <td
+                            <ActualCell
                               key={cellId}
-                              className={`progress-cell-actual ${value && value > 0 ? 'has-value' : ''} ${
-                                isLastWeekInMonth ? 'month-separator' : ''
-                              }`}
-                            >
-                              {isEditing ? (
-                                <Input
-                                  value={editValue}
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                    setEditValue(e.target.value)
-                                  }
-                                  onBlur={() =>
-                                    handleCellSave(
-                                      activity.id,
-                                      subActivity.id,
-                                      week.weekNumber,
-                                      'actual'
-                                    )
-                                  }
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') {
-                                      handleCellSave(
-                                        activity.id,
-                                        subActivity.id,
-                                        week.weekNumber,
-                                        'actual'
-                                      )
-                                    } else if (e.key === 'Escape') {
-                                      handleCellCancel()
-                                    }
-                                  }}
-                                  className="progress-value-input"
-                                  autoFocus
-                                />
-                              ) : (
-                                <div
-                                  className="progress-value-display"
-                                  onClick={() => handleCellEdit(cellId, value)}
-                                >
-                                  {value !== null && value !== undefined
-                                    ? value === 0
-                                      ? '-'
-                                      : value.toFixed(3)
-                                    : '-'}
-                                </div>
-                              )}
-                            </td>
+                              subActivityId={subActivity.id}
+                              weekNumber={week.weekNumber}
+                              value={value}
+                              isEditing={isEditing}
+                              editValue={editValue}
+                              isLastWeekInMonth={isLastWeekInMonth}
+                              onEdit={handleCellEdit}
+                              onSave={(subId, weekNum, type) =>
+                                handleCellSave(activity.id, subId, weekNum, type)
+                              }
+                              onCancel={handleCellCancel}
+                              onChange={setEditValue}
+                            />
                           )
                         })}
                       </tr>
@@ -737,7 +791,7 @@ export function UnifiedScheduleTable({
                             isLastWeekInMonth ? 'month-separator' : ''
                           }`}
                         >
-                          {getCumulativeValueForWeek(week.month, week.weekInMonth, 'plan').toFixed(3)}
+                          {getCumulativeValueForWeek(week.weekNumber, 'plan').toFixed(3)}
                         </td>
                       )
                     })}
@@ -756,7 +810,7 @@ export function UnifiedScheduleTable({
                             isLastWeekInMonth ? 'month-separator' : ''
                           }`}
                         >
-                          {getCumulativeValueForWeek(week.month, week.weekInMonth, 'actual').toFixed(
+                          {getCumulativeValueForWeek(week.weekNumber, 'actual').toFixed(
                             3
                           )}
                         </td>
@@ -778,8 +832,7 @@ export function UnifiedScheduleTable({
                           }`}
                         >
                           {getCumulativeValueForWeek(
-                            week.month,
-                            week.weekInMonth,
+                            week.weekNumber,
                             'deviation'
                           ).toFixed(3)}
                         </td>

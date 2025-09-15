@@ -2,15 +2,14 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { SchedulePlan, CreateSchedulePlanSchema, UpdateSchedulePlanSchema } from '@/lib/schemas'
+import { SchedulePlanWithRelations, SchedulePlan, CreateSchedulePlanSchema } from '@/lib/schemas'
 import { z } from 'zod'
 
 // Query parameters for filtering schedule plans
 interface SchedulePlanFilters {
   projectId?: string
   subActivityId?: string
-  year?: number
-  month?: number
+  weekNumber?: number
 }
 
 // Hook to fetch schedule plans with optional filters
@@ -34,7 +33,7 @@ export function useSchedulePlans(filters: SchedulePlanFilters = {}) {
       }
 
       const json = await response.json()
-      return json.data as SchedulePlan[]
+      return json.data as SchedulePlanWithRelations[]
     },
     staleTime: 30000,
   })
@@ -88,6 +87,33 @@ export function useUpdateSchedulePlan() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedule-plans'] })
+    },
+  })
+}
+
+// Hook for bulk schedule plan operations
+export function useBulkSchedulePlans() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (items: z.infer<typeof CreateSchedulePlanSchema>[]) => {
+      const response = await fetch('/api/schedule-plans/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to process bulk schedule plans')
+      }
+
+      const json = await response.json()
+      return json.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedule-plans'] })
+      queryClient.invalidateQueries({ queryKey: ['schedule-plans-s-curve'] })
     },
   })
 }

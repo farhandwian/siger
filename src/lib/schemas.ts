@@ -330,9 +330,7 @@ export const ChartDataSchema = z.object({
 export const SchedulePlanSchema = z.object({
   id: z.string(),
   subActivityId: z.string(),
-  month: z.number().min(1).max(12),
-  year: z.number().min(2020),
-  week: z.number().min(1).max(6),
+  weekNumber: z.number().min(1, 'Week number must be at least 1'),
   percentage: z.number().min(0).max(100).default(0),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -342,9 +340,7 @@ export const SchedulePlanSchema = z.object({
 export const ActionPlanSchema = z.object({
   id: z.string(),
   subActivityId: z.string(),
-  month: z.number().min(1).max(12),
-  year: z.number().min(2020),
-  week: z.number().min(1).max(6),
+  weekNumber: z.number().min(1, 'Week number must be at least 1'),
   percentage: z.number().min(0).max(100).default(0),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -354,9 +350,7 @@ export const ActionPlanSchema = z.object({
 export const RealizationSchema = z.object({
   id: z.string(),
   subActivityId: z.string(),
-  month: z.number().min(1).max(12),
-  year: z.number().min(2020),
-  week: z.number().min(1).max(6),
+  weekNumber: z.number().min(1, 'Week number must be at least 1'),
   percentage: z.number().min(0).max(100).default(0),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -510,6 +504,15 @@ export type Report = z.infer<typeof CreateReportSchema> & {
   updatedAt: Date
 }
 
+// Optimized response schemas for API endpoints
+// Note: SchedulePlanWithRelations now excludes subActivity to improve performance
+// Use subActivityId to map relationships on the client side
+export const SchedulePlanWithRelationsSchema = SchedulePlanSchema
+
+// Note: RealizationWithRelations now excludes subActivity to improve performance
+// Use subActivityId to map relationships on the client side
+export const RealizationWithRelationsSchema = RealizationSchema
+
 export type Activity = z.infer<typeof ActivitySchema>
 export type SubActivity = z.infer<typeof SubActivitySchema>
 export type SchedulePlan = z.infer<typeof SchedulePlanSchema>
@@ -517,6 +520,8 @@ export type ActionPlan = z.infer<typeof ActionPlanSchema>
 export type Realization = z.infer<typeof RealizationSchema>
 export type RealizationDaily = z.infer<typeof RealizationDailySchema>
 export type Addendum = z.infer<typeof AddendumSchema>
+export type SchedulePlanWithRelations = z.infer<typeof SchedulePlanWithRelationsSchema>
+export type RealizationWithRelations = z.infer<typeof RealizationWithRelationsSchema>
 
 // Daily Sub Activity schemas for mobile API (DailyReport model)
 export const DailySubActivitySchema = z.object({

@@ -3,6 +3,55 @@ import { PrismaClient, UserRole } from '@prisma/client'
 const prisma = new PrismaClient()
 
 /**
+ * Generates S-curve distribution for project scheduling
+ * S-curve follows typical project progression: slow start, rapid middle, slow finish
+ * @param totalWeeks - Total duration of the work in weeks
+ * @param totalWeight - Total percentage weight to distribute across weeks
+ * @returns Array of weekly percentage contributions
+ */
+function generateSCurveDistribution(totalWeeks: number, totalWeight: number): number[] {
+  if (totalWeeks <= 0) return []
+  
+  const weeklyPercentages: number[] = []
+  
+  for (let week = 1; week <= totalWeeks; week++) {
+    // Normalized position in project timeline (0 to 1)
+    const progress = week / totalWeeks
+    
+    // S-curve formula using logistic function
+    // Starts slow (2-5%), peaks in middle (10-15%), ends slow (2-5%)
+    const sCurveValue = 1 / (1 + Math.exp(-8 * (progress - 0.5))) // Slightly gentler curve
+    
+    // Calculate incremental progress for this week
+    const previousProgress = week === 1 ? 0 : (week - 1) / totalWeeks
+    const previousSCurveValue = week === 1 ? 0 : 1 / (1 + Math.exp(-8 * (previousProgress - 0.5)))
+    
+    const incrementalProgress = sCurveValue - previousSCurveValue
+    const weeklyWeight = incrementalProgress * totalWeight
+    
+    weeklyPercentages.push(weeklyWeight)
+  }
+  
+  // Normalize to ensure exact total weight (avoid floating point errors)
+  const currentTotal = weeklyPercentages.reduce((sum, weight) => sum + weight, 0)
+  const normalizationFactor = totalWeight / currentTotal
+  
+  const normalizedWeights = weeklyPercentages.map(weight => weight * normalizationFactor)
+  
+  // Final adjustment to ensure exact total
+  const finalTotal = normalizedWeights.reduce((sum, weight) => sum + weight, 0)
+  const finalAdjustment = totalWeight - finalTotal
+  
+  // Add the final adjustment to the week with highest percentage (typically middle weeks)
+  if (Math.abs(finalAdjustment) > 0.001) {
+    const maxIndex = normalizedWeights.indexOf(Math.max(...normalizedWeights))
+    normalizedWeights[maxIndex] += finalAdjustment
+  }
+  
+  return normalizedWeights.map(weight => Math.round(weight * 1000) / 1000) // 3 decimal precision
+}
+
+/**
  * Seeds activities and sub-activities with new schema structure
  * 
  * Key improvements:
@@ -11,6 +60,8 @@ const prisma = new PrismaClient()
  * 3. Removed deprecated fields (volumeMC0, bobotMC0) to match current Prisma schema
  * 4. Each sub-activity weight represents its percentage contribution to the total project
  * 5. 21 sub-activities total: weights range from 2% to 9% each, summing to 100%
+ * 6. S-curve progression: slow start, rapid middle, slow finish
+ * 7. WeekNumber structure: uses sequential week numbering (1-52) instead of month/year/week
  */
 async function seedActivities() {
   // eslint-disable-next-line no-console
@@ -273,46 +324,58 @@ async function seedActivities() {
         // eslint-disable-next-line no-console
         console.log(`    ✅ Created sub-activity: ${subActivity.name}`)
 
-        // Create schedules for the current year (2025) for each sub-activity
+        // Create schedules with S-curve progression and weekNumber structure
         // The sub-activity weight represents its percentage contribution to the total project
-        const currentYear = 2025
         const scheduleData = []
 
-        // Create monthly schedules for the entire year
-        for (let month = 1; month <= 12; month++) {
-          for (let week = 1; week <= 4; week++) {
-            // Calculate plan percentage based on activity progression and timeline
-            let planPercentage = 0
-            let actualPercentage = 0
+        // Define work timeline based on activity order - distribute activities across the year
+        // 7 activities total, distribute them across 52 weeks with overlapping periods
+        const totalActivities = 7
+        const projectDurationWeeks = 48 // Use 48 weeks to leave buffer at end
+        const activitySpacing = Math.floor(projectDurationWeeks / totalActivities) // ~6-7 weeks between starts
+        
+        const startWeek = Math.max(1, (activityData.order - 1) * activitySpacing + 1)
+        const durationWeeks = Math.min(20, 52 - startWeek + 1) // 20 weeks duration per activity
+        const endWeek = startWeek + durationWeeks - 1
 
-            // Distribute work across months based on activity order and timeline
-            const startMonth = Math.max(1, activityData.order)
-            const endMonth = Math.min(12, activityData.order + 3)
+        // Generate S-curve distribution for this sub-activity
+        const sCurveDistribution = generateSCurveDistribution(durationWeeks, subActivityData.weight)
 
-            if (month >= startMonth && month <= endMonth) {
-              const totalWeeks = (endMonth - startMonth + 1) * 4
-              const currentWeek = (month - startMonth) * 4 + week
+        // Create weekly schedules for the work period
+        for (let weekNumber = 1; weekNumber <= 52; weekNumber++) {
+          let planPercentage = 0
+          let actualPercentage = 0
 
-              // Calculate weekly progress as a portion of total sub-activity weight
-              // Each week should contribute a small portion of the total weight
-              const weeklyProgress = subActivityData.weight / totalWeeks
-              planPercentage = Math.min(subActivityData.weight, weeklyProgress * currentWeek)
+          if (weekNumber >= startWeek && weekNumber <= endWeek) {
+            const workWeek = weekNumber - startWeek + 1
+            planPercentage = sCurveDistribution[workWeek - 1] || 0
 
-              // Add some realistic variance to actual progress
-              if (month <= 9) {
-                // Up to current month (September 2025)
-                const variance = (Math.random() - 0.5) * 0.5 // ±0.25% variance
-                actualPercentage = Math.max(0, Math.min(subActivityData.weight, planPercentage + variance))
-              }
+            // Add realistic variance to actual progress for completed weeks
+            if (weekNumber <= 36) { // Up to current week (September 2025, week 36)
+              const variance = (Math.random() - 0.5) * 0.3 // ±0.15% variance
+              actualPercentage = Math.max(0, planPercentage + variance)
             }
+          }
 
-            scheduleData.push({
-              subActivityId: subActivity.id,
-              month,
-              year: currentYear,
-              week,
-              planPercentage: Math.round(planPercentage * 100) / 100,
-              actualPercentage: Math.round(actualPercentage * 100) / 100,
+          scheduleData.push({
+            subActivityId: subActivity.id,
+            weekNumber,
+            planPercentage: Math.round(planPercentage * 1000) / 1000, // 3 decimal precision
+            actualPercentage: Math.round(actualPercentage * 1000) / 1000, // 3 decimal precision
+          })
+        }
+
+        // Verify and correct total to exactly match sub-activity weight
+        const totalPlan = scheduleData.reduce((sum, data) => sum + data.planPercentage, 0)
+        const weightDiff = subActivityData.weight - totalPlan
+        
+        if (Math.abs(weightDiff) > 0.001) {
+          // Distribute the difference across non-zero weeks to maintain S-curve shape
+          const nonZeroWeeks = scheduleData.filter(data => data.planPercentage > 0)
+          if (nonZeroWeeks.length > 0) {
+            const adjustmentPerWeek = weightDiff / nonZeroWeeks.length
+            nonZeroWeeks.forEach(data => {
+              data.planPercentage = Math.max(0, Math.round((data.planPercentage + adjustmentPerWeek) * 1000) / 1000)
             })
           }
         }
@@ -320,17 +383,13 @@ async function seedActivities() {
         // Create separate SchedulePlan and Realization records
         const schedulePlans = scheduleData.map(data => ({
           subActivityId: data.subActivityId,
-          month: data.month,
-          year: data.year,
-          week: data.week,
+          weekNumber: data.weekNumber,
           percentage: data.planPercentage,
         }))
 
         const realizations = scheduleData.filter(data => data.actualPercentage > 0).map(data => ({
           subActivityId: data.subActivityId,
-          month: data.month,
-          year: data.year,
-          week: data.week,
+          weekNumber: data.weekNumber,
           percentage: data.actualPercentage,
         }))
 

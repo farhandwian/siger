@@ -78,7 +78,7 @@ export const authConfig: NextAuthConfig = {
           const validatedFields = LoginSchema.safeParse(credentials)
           
           if (!validatedFields.success) {
-            console.log('Validation failed:', validatedFields.error.issues)
+            // Invalid credentials format
             return null
           }
 
@@ -108,7 +108,7 @@ export const authConfig: NextAuthConfig = {
           })
 
           if (!user || !user.isActive) {
-            console.log('User not found or inactive:', email)
+            // User not found or inactive
             return null
           }
 
@@ -116,7 +116,7 @@ export const authConfig: NextAuthConfig = {
           const isValidPassword = await bcrypt.compare(password, user.password)
           
           if (!isValidPassword) {
-            console.log('Invalid password for user:', email)
+            // Invalid password
             return null
           }
 
@@ -140,7 +140,7 @@ export const authConfig: NextAuthConfig = {
             projectIds: projectIds.length > 0 ? projectIds : undefined,
           }
         } catch (error) {
-          console.error('Auth error:', error)
+          // Authentication error occurred
           return null
         }
       },
@@ -203,8 +203,8 @@ export const authConfig: NextAuthConfig = {
       },
     },
   },
-  // Enable debug in development
-  debug: process.env.NODE_ENV === 'development',
+  // Only enable debug in explicit development mode, not in production or when NODE_ENV is undefined
+  debug: process.env.NODE_ENV === 'development' && !process.env.NEXTAUTH_URL?.includes('production'),
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)

@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
-// Schema for URL params validation
-const ParamsSchema = z.object({
-  id: z.string().cuid()
-})
-
 // Schema for updating realizations
 const UpdateRealizationSchema = z.object({
   percentage: z.number().min(0).max(100).optional(),
@@ -25,16 +20,15 @@ export async function GET(
     const { id } = await params
     const realization = await prisma.realization.findUnique({
       where: { id },
-      include: {
-        subActivity: {
-          include: {
-            activity: {
-              include: {
-                project: true
-              }
-            }
-          }
-        }
+      select: {
+        id: true,
+        subActivityId: true,
+        month: true,
+        year: true,
+        week: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
       }
     })
 
@@ -47,7 +41,6 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: realization })
   } catch (error) {
-    console.error('Error fetching realization:', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -102,16 +95,15 @@ export async function PUT(
     const realization = await prisma.realization.update({
       where: { id },
       data: validatedData,
-      include: {
-        subActivity: {
-          include: {
-            activity: {
-              include: {
-                project: true
-              }
-            }
-          }
-        }
+      select: {
+        id: true,
+        subActivityId: true,
+        month: true,
+        year: true,
+        week: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
       }
     })
 
@@ -124,7 +116,6 @@ export async function PUT(
       )
     }
 
-    console.error('Error updating realization:', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -156,7 +147,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, data: { id } })
   } catch (error) {
-    console.error('Error deleting realization:', error)
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

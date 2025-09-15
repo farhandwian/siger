@@ -12,16 +12,15 @@ export async function GET(
     const { id } = await params
     const schedulePlan = await prisma.schedulePlan.findUnique({
       where: { id },
-      include: {
-        subActivity: {
-          include: {
-            activity: {
-              include: {
-                project: true
-              }
-            }
-          }
-        }
+      select: {
+        id: true,
+        subActivityId: true,
+        month: true,
+        year: true,
+        week: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
       }
     })
 
@@ -91,16 +90,15 @@ export async function PUT(
     const schedulePlan = await prisma.schedulePlan.update({
       where: { id },
       data: validatedData,
-      include: {
-        subActivity: {
-          include: {
-            activity: {
-              include: {
-                project: true
-              }
-            }
-          }
-        }
+      select: {
+        id: true,
+        subActivityId: true,
+        month: true,
+        year: true,
+        week: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
       }
     })
 

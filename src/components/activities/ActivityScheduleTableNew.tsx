@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { UnifiedScheduleTable } from '@/components/shared/UnifiedScheduleTable'
 import { useActivities, useProject, activityKeys } from '@/hooks/useActivityQueries'
@@ -24,7 +24,40 @@ export function ScheduleTableNew({ projectId }: ScheduleTableProps) {
 
   const currentYear = new Date().getFullYear()
 
-  // Function to get schedule value from activity data
+  // Memoize sequential weeks to avoid recalculating on every render
+  const sequentialWeeks = useMemo(() => {
+    // Use tanggalSpmk or fallback to tanggalKontrak or current year start
+    const startDate = project?.tanggalSpmk || project?.tanggalKontrak || `${currentYear}-01-01`
+    return generateSequentialWeeks(startDate, 20)
+  }, [project?.tanggalSpmk, project?.tanggalKontrak, currentYear])
+
+  // Create lookup maps for faster data access
+  const scheduleDataMaps = useMemo(() => {
+    const planMap = new Map<string, number | null>()
+    const actualMap = new Map<string, number | null>()
+    
+    if (activities) {
+      activities.forEach(activity => {
+        activity.subActivities?.forEach(subActivity => {
+          // Create maps for schedule plans
+          subActivity.schedulePlans?.forEach(plan => {
+            const key = `${activity.id}-${subActivity.id}-${plan.month}-${plan.week}-${plan.year}-plan`
+            planMap.set(key, plan.percentage)
+          })
+          
+          // Create maps for realizations
+          subActivity.realization?.forEach(actual => {
+            const key = `${activity.id}-${subActivity.id}-${actual.month}-${actual.week}-${actual.year}-actual`
+            actualMap.set(key, actual.percentage)
+          })
+        })
+      })
+    }
+    
+    return { planMap, actualMap }
+  }, [activities])
+
+  // Function to get schedule value from activity data using optimized lookup
   const getScheduleValue = (
     activityId: string,
     subActivityId: string | null,
@@ -33,15 +66,8 @@ export function ScheduleTableNew({ projectId }: ScheduleTableProps) {
   ): number | null => {
     if (!activities) return null
 
-    // Use tanggalSpmk or fallback to tanggalKontrak or current year start
-    const startDate = project?.tanggalSpmk || project?.tanggalKontrak || `${currentYear}-01-01`
-    
-    // Generate sequential weeks to get the correct mapping
-    const sequentialWeeks = generateSequentialWeeks(startDate, 20)
+    // Check if we have the sequential week data
     if (!sequentialWeeks[weekNumber - 1]) return null
-
-    const activity = activities.find(a => a.id === activityId)
-    if (!activity) return null
 
     // Get the month and week from the sequential week
     const sequentialWeek = sequentialWeeks[weekNumber - 1]
@@ -49,27 +75,86 @@ export function ScheduleTableNew({ projectId }: ScheduleTableProps) {
     const week = sequentialWeek.weekInMonth
 
     if (subActivityId) {
-      const subActivity = activity.subActivities?.find(sa => sa.id === subActivityId)
-      if (!subActivity) return null
-
-      if (type === 'plan') {
-        // Look for schedule plan data
-        const schedulePlan = subActivity.schedulePlans?.find(
-          s => s.month === month && s.week === week && s.year === currentYear
-        )
-        return schedulePlan?.percentage !== undefined ? schedulePlan.percentage : null
-      } else {
-        // Look for realization data
-        const realization = subActivity.realization?.find(
-          r => r.month === month && r.week === week && r.year === currentYear
-        )
-        return realization?.percentage !== undefined ? realization.percentage : null
-      }
+      // Use the pre-built maps for O(1) lookup instead of array.find()
+      const key = `${activityId}-${subActivityId}-${month}-${week}-${currentYear}-${type}`
+      const value = type === 'plan'
+        ? scheduleDataMaps.planMap.get(key)
+        : scheduleDataMaps.actualMap.get(key)
+      return value !== undefined ? value : null
     } else {
       // For activity level, we might need to aggregate sub-activity data
       // For now, return null as activities don't have direct schedules
       return null
     }
+  }
+
+  // Memoize cumulative values to avoid recalculating on every render
+  const cumulativeValues = useMemo(() => {
+    if (!activities) return new Map<string, number>()
+    
+    const cumulatives = new Map<string, number>()
+    
+    // Pre-calculate all cumulative values
+    for (let i = 0; i < sequentialWeeks.length; i++) {
+      const currentWeek = sequentialWeeks[i]
+      const key = `${currentWeek.month}-${currentWeek.weekInMonth}`
+      
+      // Calculate cumulative sum up to and including the current week
+      let cumulativePlan = 0
+      let cumulativeActual = 0
+      
+      // Sum all sub-activities for all weeks up to current week
+      for (let j = 0; j <= i; j++) {
+        const week = sequentialWeeks[j]
+        const weekTotalPlan = activities.reduce((total, activity) => {
+          const subActivityTotal = activity.subActivities?.reduce((subTotal, subActivity) => {
+            const value = getScheduleValue(
+              activity.id,
+              subActivity.id,
+              week.weekNumber,
+              'plan'
+            )
+            return subTotal + (value || 0)
+          }, 0) || 0
+          return total + subActivityTotal
+        }, 0)
+        
+        const weekTotalActual = activities.reduce((total, activity) => {
+          const subActivityTotal = activity.subActivities?.reduce((subTotal, subActivity) => {
+            const value = getScheduleValue(
+              activity.id,
+              subActivity.id,
+              week.weekNumber,
+              'actual'
+            )
+            return subTotal + (value || 0)
+          }, 0) || 0
+          return total + subActivityTotal
+        }, 0)
+        
+        cumulativePlan += weekTotalPlan
+        cumulativeActual += weekTotalActual
+      }
+      
+      cumulatives.set(`${key}-plan`, cumulativePlan)
+      cumulatives.set(`${key}-actual`, cumulativeActual)
+      cumulatives.set(`${key}-deviation`, cumulativeActual - cumulativePlan)
+    }
+    
+    return cumulatives
+  }, [activities, sequentialWeeks, scheduleDataMaps])
+
+  // Function to get cumulative values using pre-calculated data
+  const getCumulativeValueForWeek = (
+    month: number,
+    week: number,
+    type: 'plan' | 'actual' | 'deviation'
+  ): number => {
+    if (!activities) return 0
+    
+    const key = `${month}-${week}-${type}`
+    const value = cumulativeValues.get(key)
+    return value !== undefined ? value : 0
   }
 
   // Function to save schedule values
@@ -154,57 +239,6 @@ export function ScheduleTableNew({ projectId }: ScheduleTableProps) {
     queryClient.invalidateQueries({ queryKey: activityKeys.list(projectId) })
   }
 
-  // Function to calculate cumulative values for each week
-  const getCumulativeValueForWeek = (
-    month: number,
-    week: number,
-    type: 'plan' | 'actual' | 'deviation'
-  ): number => {
-    if (!activities) return 0
-
-    // Use tanggalSpmk or fallback to tanggalKontrak or current year start
-    const startDate = project?.tanggalSpmk || project?.tanggalKontrak || `${currentYear}-01-01`
-
-    // Generate sequential weeks to determine the cutoff point
-    const sequentialWeeks = generateSequentialWeeks(startDate, 20)
-    const targetWeekIndex = sequentialWeeks.findIndex(
-      sw => sw.month === month && sw.weekInMonth === week
-    )
-
-    if (targetWeekIndex === -1) return 0
-
-    // Calculate cumulative sum up to and including the target week
-    let cumulative = 0
-
-    for (let i = 0; i <= targetWeekIndex; i++) {
-      const currentWeek = sequentialWeeks[i]
-
-      // Sum all sub-activities for this week
-      const weekTotal = activities.reduce((total, activity) => {
-        const subActivityTotal =
-          activity.subActivities?.reduce((subTotal, subActivity) => {
-            const value = getScheduleValue(
-              activity.id,
-              subActivity.id,
-              currentWeek.weekNumber,
-              type === 'deviation' ? 'actual' : type // Use actual for deviation calculation
-            )
-            return subTotal + (value || 0)
-          }, 0) || 0
-        return total + subActivityTotal
-      }, 0)
-
-      cumulative += weekTotal
-    }
-
-    // For deviation, calculate the difference between cumulative actual and plan
-    if (type === 'deviation') {
-      const cumulativePlan = getCumulativeValueForWeek(month, week, 'plan')
-      return cumulative - cumulativePlan
-    }
-
-    return cumulative
-  }
 
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">

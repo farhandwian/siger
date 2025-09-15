@@ -17,11 +17,10 @@ import { AutoSaveField } from '@/components/ui/auto-save-field'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
-import { useMonitoringData } from '@/hooks/use-monitoring-data'
 import { useProjectDetail } from '@/hooks/useProjectQueries'
 import { cn } from '@/lib/utils'
 import { formatDateForInput } from '@/utils/dateUtils'
-import { RefreshCw, Wifi, WifiOff, Upload } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ActionPlanMetrics } from '@/components/monitoring/action-plan-metrics'
 import { ArrowLeft } from 'lucide-react'
@@ -192,7 +191,6 @@ export default function ProjectDetailPage() {
 
   const projectId = (params?.id as string) || '1'
   const { data: project, isLoading, error } = useProjectDetail(projectId)
-  const { refreshAll, isLoading: monitoringLoading, isError: monitoringError } = useMonitoringData()
 
   // Update activeTab when URL search params change
   useEffect(() => {
@@ -626,49 +624,6 @@ export default function ProjectDetailPage() {
               {/* Jadwal Tab Content */}
               {activeTab === 'Jadwal' && (
                 <div className="space-y-6">
-                  {/* Real-time Status Indicator */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1">
-                        <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-                        <span className="text-xs font-medium text-green-700">
-                          Real-time monitoring aktif (refresh setiap 5 detik)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {!monitoringError ? (
-                          <Wifi className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <WifiOff className="h-4 w-4 text-red-500" />
-                        )}
-                        <span
-                          className={`text-xs ${!monitoringError ? 'text-green-500' : 'text-red-500'}`}
-                        >
-                          {!monitoringError ? 'Live' : 'Offline'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <Button
-                        onClick={refreshAll}
-                        disabled={monitoringLoading}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2"
-                      >
-                        <RefreshCw
-                          className={`h-4 w-4 ${monitoringLoading ? 'animate-spin' : ''}`}
-                        />
-                        Refresh
-                      </Button>
-
-                      <div className="text-xs text-gray-500">
-                        Last updated: {new Date().toLocaleTimeString('id-ID')}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Metrics Cards */}
                   <div>
                     <h2 className="mb-4 text-sm font-medium text-gray-900">Progress Overview</h2>
@@ -706,49 +661,6 @@ export default function ProjectDetailPage() {
               {/* Action Plan Content */}
               {activeTab === 'Action Plan' && (
                 <div className="space-y-6">
-                  {/* Real-time Status Indicator */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1">
-                        <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-                        <span className="text-xs font-medium text-green-700">
-                          Real-time monitoring aktif (refresh setiap 5 detik)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {!monitoringError ? (
-                          <Wifi className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <WifiOff className="h-4 w-4 text-red-500" />
-                        )}
-                        <span
-                          className={`text-xs ${!monitoringError ? 'text-green-500' : 'text-red-500'}`}
-                        >
-                          {!monitoringError ? 'Live' : 'Offline'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <Button
-                        onClick={refreshAll}
-                        disabled={monitoringLoading}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2"
-                      >
-                        <RefreshCw
-                          className={`h-4 w-4 ${monitoringLoading ? 'animate-spin' : ''}`}
-                        />
-                        Refresh
-                      </Button>
-
-                      <div className="text-xs text-gray-500">
-                        Last updated: {new Date().toLocaleTimeString('id-ID')}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Metrics Cards */}
                   <div>
                     <h2 className="mb-4 text-sm font-medium text-gray-900">Progress Overview</h2>

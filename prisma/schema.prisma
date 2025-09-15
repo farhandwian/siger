@@ -154,48 +154,42 @@ model SubActivity {
 model SchedulePlan {
   id                 String      @id @default(cuid())
   subActivityId      String      @map("sub_activity_id")
-  month              Int         @map("month")
-  year               Int         @map("year")
-  week               Int         @map("week")
+  weekNumber         Int         @map("week_number")
   percentage         Float?      @default(0) @map("percentage")
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
   subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
 
-  @@unique([subActivityId, month, year, week])
+  @@unique([subActivityId, weekNumber])
   @@map("schedule_plans")
 }
 
 model ActionPlan {
   id                 String      @id @default(cuid())
   subActivityId      String      @map("sub_activity_id")
-  month              Int         @map("month")
-  year               Int         @map("year")
-  week               Int         @map("week")
+  weekNumber         Int         @map("week_number")
   percentage         Float?      @default(0) @map("percentage")
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
   subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
 
-  @@unique([subActivityId, month, year, week])
+  @@unique([subActivityId, weekNumber])
   @@map("action_plans")
 }
 
 model Realization {
   id                 String      @id @default(cuid())
   subActivityId      String      @map("sub_activity_id")
-  month              Int         @map("month")
-  year               Int         @map("year")
-  week               Int         @map("week")
+  weekNumber         Int         @map("week_number")
   percentage         Float?      @default(0) @map("percentage")
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
   subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
 
-  @@unique([subActivityId, month, year, week])
+  @@unique([subActivityId, weekNumber])
   @@map("realizations")
 }
 

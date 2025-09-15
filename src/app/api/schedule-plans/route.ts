@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { SchedulePlanSchema, CreateSchedulePlanSchema } from '@/lib/schemas'
+import { CreateSchedulePlanSchema } from '@/lib/schemas'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 // GET /api/schedule-plans - Fetch schedule plans with optional filters
 export async function GET(request: NextRequest) {
@@ -9,11 +10,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
     const subActivityId = searchParams.get('subActivityId')
-    const year = searchParams.get('year')
-    const month = searchParams.get('month')
+    const weekNumber = searchParams.get('weekNumber')
 
-    // Build where clause based on filters
-    const where: any = {}
+    // Build where clause with proper typing
+    const where: Prisma.SchedulePlanWhereInput = {}
     
     if (subActivityId) {
       where.subActivityId = subActivityId
@@ -27,40 +27,82 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    if (year) {
-      where.year = parseInt(year)
-    }
-    
-    if (month) {
-      where.month = parseInt(month)
+    if (weekNumber) {
+      where.weekNumber = parseInt(weekNumber)
     }
 
-    const schedulePlans = await prisma.schedulePlan.findMany({
-      where,
-      include: {
-        subActivity: {
-          include: {
-            activity: {
-              include: {
-                project: true
-              }
-            }
+    // Optimize query based on filtering patterns
+    let schedulePlans
+
+    if (projectId && !subActivityId) {
+      // For project-based queries, use a more efficient approach
+      // First get subActivityIds for the project, then query schedule plans
+      const subActivityIds = await prisma.subActivity.findMany({
+        where: {
+          activity: {
+            projectId: projectId
           }
+        },
+        select: {
+          id: true
         }
-      },
-      orderBy: [
-        { year: 'asc' },
-        { month: 'asc' },
-        { week: 'asc' }
-      ]
-    })
+      })
+
+      const subActivityIdList = subActivityIds.map(sa => sa.id)
+
+      if (subActivityIdList.length === 0) {
+        return NextResponse.json({
+          success: true,
+          data: []
+        })
+      }
+
+      // Build optimized where clause
+      const optimizedWhere: Prisma.SchedulePlanWhereInput = {
+        subActivityId: {
+          in: subActivityIdList
+        }
+      }
+
+      if (weekNumber) optimizedWhere.weekNumber = parseInt(weekNumber)
+
+      schedulePlans = await prisma.schedulePlan.findMany({
+        where: optimizedWhere,
+        select: {
+          id: true,
+          subActivityId: true,
+          weekNumber: true,
+          percentage: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: [
+          { weekNumber: 'asc' }
+        ]
+      })
+    } else {
+      // For other queries, use the standard approach
+      schedulePlans = await prisma.schedulePlan.findMany({
+        where,
+        select: {
+          id: true,
+          subActivityId: true,
+          weekNumber: true,
+          percentage: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: [
+          { weekNumber: 'asc' }
+        ]
+      })
+    }
 
     return NextResponse.json({
       success: true,
       data: schedulePlans
     })
   } catch (error) {
-    console.error('Error fetching schedule plans:', error)
     return NextResponse.json(
       { success: false, error: 'Failed to fetch schedule plans' },
       { status: 500 }
@@ -78,31 +120,26 @@ export async function POST(request: NextRequest) {
     const existing = await prisma.schedulePlan.findFirst({
       where: {
         subActivityId: validatedData.subActivityId,
-        year: validatedData.year,
-        month: validatedData.month,
-        week: validatedData.week
+        weekNumber: validatedData.weekNumber
       }
     })
 
     if (existing) {
       return NextResponse.json(
-        { success: false, error: 'Schedule plan already exists for this period' },
+        { success: false, error: 'Schedule plan already exists for this week' },
         { status: 409 }
       )
     }
 
     const schedulePlan = await prisma.schedulePlan.create({
       data: validatedData,
-      include: {
-        subActivity: {
-          include: {
-            activity: {
-              include: {
-                project: true
-              }
-            }
-          }
-        }
+      select: {
+        id: true,
+        subActivityId: true,
+        weekNumber: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
       }
     })
 
@@ -118,7 +155,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.error('Error creating schedule plan:', error)
     return NextResponse.json(
       { success: false, error: 'Failed to create schedule plan' },
       { status: 500 }

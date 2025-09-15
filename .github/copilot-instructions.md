@@ -361,6 +361,7 @@
 - Bypass Zod validation or store untyped JSON in React Query cache
 - Use Server Components for rapid client-side data revalidation (use React Query instead)
 - Create README files or comprehensive implementation summaries (focus on code with comments)
+- Create documentation outside of code comments.
 - Expose sensitive data in API responses without proper authorization
 - Return detailed error messages that could reveal system information
 

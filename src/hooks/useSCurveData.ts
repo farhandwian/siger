@@ -8,8 +8,6 @@ import { generateMonthsFromContract } from '@/utils/dateUtils'
 export interface SCurveDataPoint {
   weekNumber: number
   weekLabel: string
-  month: number
-  week: number
   rencana: number
   realisasi: number
   deviation: number
@@ -44,8 +42,6 @@ export function useSCurveData(projectId: string) {
       sCurvePoints.push({
         weekNumber: weekCounter,
         weekLabel: `Minggu ${weekCounter}`,
-        month: weekData.month,
-        week: weekData.week,
         rencana: weekData.cumulativePlan,
         realisasi: weekData.cumulativeActual,
         deviation: weekData.cumulativeDeviation,
