@@ -45,6 +45,7 @@ model Project {
   activities         Activity[]
   materials          Material[]
   auditLogs          ProjectAuditLog[]
+  weeklyReports      WeeklyReport[]
 
   @@map("projects")
 }
@@ -316,4 +317,34 @@ enum UserRole {
   ADMIN
   MANAGER
   VIEWER
+}
+
+model WeeklyReport {
+  id         String   @id @default(cuid())
+  projectId  String   @map("project_id")
+  weekNumber Int      @map("week_number")
+  startDate  DateTime @map("start_date") @db.Date
+  endDate    DateTime @map("end_date") @db.Date
+  filePath   String?  @map("file_path")
+  fileUrl    String?  @map("file_url")
+  status     ReportStatus @default(PUBLISHED)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Indexes for efficient querying
+  @@index([projectId])
+  @@index([weekNumber])
+  @@index([startDate, endDate])
+  @@index([status])
+  @@unique([projectId, weekNumber, startDate, endDate])
+  @@map("weekly_reports")
+}
+
+enum ReportStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
