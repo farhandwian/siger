@@ -66,13 +66,13 @@ function hasRequiredPermissions(userRole: UserRole, pathname: string, userContex
   satkerId?: string
   projectIds?: string[]
 }): boolean {
-  // ADMIN_SISTEM has access to everything
-  if (userRole === 'ADMIN_SISTEM') return true
-
   // Check system admin-only routes
   if (systemAdminRoutes.some(route => pathname.startsWith(route))) {
     return userRole === 'ADMIN_SISTEM'
   }
+
+  // ADMIN_SISTEM has access to everything
+  if (userRole === 'ADMIN_SISTEM') return true
 
   // Check balai admin routes
   if (balaiAdminRoutes.some(route => pathname.startsWith(route))) {

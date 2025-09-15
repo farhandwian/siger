@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // PUT /api/users/[id] - Update user by ID
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const validatedData = UpdateUserSchema.parse(body)
 
@@ -119,7 +119,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 // DELETE /api/users/[id] - Delete user by ID
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({

@@ -167,6 +167,7 @@ export const UpdateProjectFieldSchema = z.object({
       'nilaiKontrak',
       'nomorKontrak',
       'spmk',
+      'tanggalSpmk',
       'masaKontrak',
       'tanggalKontrak',
       'akhirKontrak',

@@ -10,15 +10,41 @@ const mockActivities: Activity[] = [
     id: '1',
     name: 'Test Activity 1',
     order: 1,
+    projectId: 'proj1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
     subActivities: [
       {
         id: 'sub1',
         name: 'Sub Activity 1',
         weight: 50,
         order: 1,
-        schedules: [
-          { month: 6, week: 1, year: 2025, planPercentage: 5, actualPercentage: 5 },
-          { month: 6, week: 2, year: 2025, planPercentage: 10, actualPercentage: 8 },
+        activityId: 'act1',
+        satuan: 'unit',
+        volume: 100,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        schedulePlans: [
+          { 
+            id: 'sp1', 
+            subActivityId: 'sub1',
+            month: 6, 
+            week: 1, 
+            year: 2025, 
+            percentage: 5,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          { 
+            id: 'sp2', 
+            subActivityId: 'sub1',
+            month: 6, 
+            week: 2, 
+            year: 2025, 
+            percentage: 10,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
         ],
       },
       {
@@ -26,9 +52,32 @@ const mockActivities: Activity[] = [
         name: 'Sub Activity 2',
         weight: 30,
         order: 2,
-        schedules: [
-          { month: 6, week: 1, year: 2025, planPercentage: 3, actualPercentage: 3 },
-          { month: 6, week: 2, year: 2025, planPercentage: 7, actualPercentage: 7 },
+        activityId: 'act1',
+        satuan: 'unit',
+        volume: 50,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        schedulePlans: [
+          { 
+            id: 'sp3', 
+            subActivityId: 'sub2',
+            month: 6, 
+            week: 1, 
+            year: 2025, 
+            percentage: 3,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          { 
+            id: 'sp4', 
+            subActivityId: 'sub2',
+            month: 6, 
+            week: 2, 
+            year: 2025, 
+            percentage: 7,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
         ],
       },
     ],

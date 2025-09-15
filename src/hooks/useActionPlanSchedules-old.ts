@@ -144,9 +144,9 @@ export function useCreateActionPlan() {
       queryClient.setQueryData(['action-plan-schedule', newSchedule.id], newSchedule)
 
       // If the schedule belongs to a specific project, invalidate project-specific queries
-      if (newSchedule.activity?.projectId) {
+      if (newSchedule.subActivity?.activity?.projectId) {
         queryClient.invalidateQueries({
-          queryKey: ['action-plan-schedules', { projectId: newSchedule.activity.projectId }],
+          queryKey: ['action-plan-schedules', { projectId: newSchedule.subActivity.activity.projectId }],
         })
       }
 
@@ -216,9 +216,9 @@ export function useUpdateActionPlan() {
       queryClient.invalidateQueries({ queryKey: ['action-plan-schedules'] })
 
       // If the schedule belongs to a specific project, invalidate project-specific queries
-      if (updatedSchedule.activity?.projectId) {
+      if (updatedSchedule.subActivity?.activity?.projectId) {
         queryClient.invalidateQueries({
-          queryKey: ['action-plan-schedules', { projectId: updatedSchedule.activity.projectId }],
+          queryKey: ['action-plan-schedules', { projectId: updatedSchedule.subActivity.activity.projectId }],
         })
       }
 
@@ -249,11 +249,8 @@ export function useUpsertActionPlan() {
       if (existingId) {
         // Update existing schedule - only pass the fields that can be updated
         const updateData: z.infer<typeof UpdateActionPlanSchema> = {}
-        if (createData.planPercentage !== undefined) {
-          updateData.planPercentage = createData.planPercentage
-        }
-        if (createData.actualPercentage !== undefined) {
-          updateData.actualPercentage = createData.actualPercentage
+        if (createData.percentage !== undefined) {
+          updateData.percentage = createData.percentage
         }
 
         return updateMutation.mutateAsync({
@@ -275,7 +272,6 @@ export function useUpsertActionPlan() {
 
             // Directly fetch the conflicting schedule from the API
             const queryParams = new URLSearchParams()
-            if (createData.activityId) queryParams.append('activityId', createData.activityId)
             if (createData.subActivityId)
               queryParams.append('subActivityId', createData.subActivityId)
             if (createData.year) queryParams.append('year', createData.year.toString())
@@ -305,32 +301,20 @@ export function useUpsertActionPlan() {
 
             // Find the exact conflicting schedule
             const existingSchedule = schedules.find((s: any) => {
-              if (createData.subActivityId) {
-                return (
-                  s.subActivityId === createData.subActivityId &&
-                  s.month === createData.month &&
-                  s.week === createData.week &&
-                  s.year === createData.year
-                )
-              } else {
-                return (
-                  s.activityId === createData.activityId &&
-                  s.month === createData.month &&
-                  s.week === createData.week &&
-                  s.year === createData.year
-                )
-              }
+              return (
+                s.subActivityId === createData.subActivityId &&
+                s.month === createData.month &&
+                s.week === createData.week &&
+                s.year === createData.year
+              )
             })
 
             if (existingSchedule) {
               // Update the existing schedule with new data
               console.log('Upsert: Found existing schedule, updating:', existingSchedule.id)
               const updateData: z.infer<typeof UpdateActionPlanSchema> = {}
-              if (createData.planPercentage !== undefined) {
-                updateData.planPercentage = createData.planPercentage
-              }
-              if (createData.actualPercentage !== undefined) {
-                updateData.actualPercentage = createData.actualPercentage
+              if (createData.percentage !== undefined) {
+                updateData.percentage = createData.percentage
               }
 
               const updateResult = await updateMutation.mutateAsync({

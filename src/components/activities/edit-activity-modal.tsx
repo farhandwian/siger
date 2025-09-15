@@ -14,10 +14,8 @@ interface SubActivityForm {
   id: string
   name: string
   satuan: string
-  volumeKontrak: number
+  volume: number
   weight: number
-  volumeMC0: number
-  bobotMC0: number
 }
 
 interface EditActivityModalProps {
@@ -48,9 +46,7 @@ export function EditActivityModal({
             id: sub.id || index.toString(),
             name: sub.name,
             satuan: sub.satuan || '',
-            volumeKontrak: sub.volumeKontrak || 0,
-            volumeMC0: sub.volumeMC0 || 0,
-            bobotMC0: sub.bobotMC0 || 0,
+            volume: sub.volume || 0,
             weight: sub.weight,
           }))
         )
@@ -62,7 +58,7 @@ export function EditActivityModal({
     const newId = (Math.max(...subActivities.map(sa => parseInt(sa.id))) + 1).toString()
     setSubActivities([
       ...subActivities,
-      { id: newId, name: '', satuan: '', volumeKontrak: 0, volumeMC0: 0, bobotMC0: 0, weight: 0 },
+      { id: newId, name: '', satuan: '', volume: 0, weight: 0 },
     ])
   }
 
@@ -203,20 +199,20 @@ export function EditActivityModal({
                       <div className="w-[130px]">
                         {index === 0 && (
                           <Label className="text-sm font-medium text-gray-700">
-                            Volume Kontrak
+                            Volume
                           </Label>
                         )}
                         <Input
                           type="number"
-                          value={subActivity.volumeKontrak}
+                          value={subActivity.volume}
                           onChange={e =>
                             updateSubActivity(
                               subActivity.id,
-                              'volumeKontrak',
+                              'volume',
                               parseFloat(e.target.value) || 0
                             )
                           }
-                          placeholder="Volume Kontrak"
+                          placeholder="Volume"
                           className="rounded-lg border-gray-200 text-sm"
                         />
                       </div>
@@ -239,49 +235,6 @@ export function EditActivityModal({
                             )
                           }
                           placeholder="Bobot (%)"
-                          className="rounded-lg border-gray-200 text-sm"
-                        />
-                      </div>
-
-                      <div className="w-[130px]">
-                        {index === 0 && (
-                          <Label className="text-sm font-medium text-gray-700">Volume MC 0</Label>
-                        )}
-                        <Input
-                          type="number"
-                          value={subActivity.volumeMC0}
-                          onChange={e =>
-                            updateSubActivity(
-                              subActivity.id,
-                              'volumeMC0',
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          placeholder="Volume MC 0"
-                          className="rounded-lg border-gray-200 text-sm"
-                        />
-                      </div>
-
-                      <div className="w-[130px]">
-                        {index === 0 && (
-                          <Label className="text-sm font-medium text-gray-700">
-                            Bobot MC 0 (%)
-                          </Label>
-                        )}
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          value={subActivity.bobotMC0}
-                          onChange={e =>
-                            updateSubActivity(
-                              subActivity.id,
-                              'bobotMC0',
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          placeholder="Bobot MC 0 (%)"
                           className="rounded-lg border-gray-200 text-sm"
                         />
                       </div>

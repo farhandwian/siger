@@ -520,7 +520,7 @@ export default function ProjectDetailPage() {
                           value={projectData.tanggalSpmk}
                           onChange={(value: string) => updateField('tanggalSpmk', value)}
                           projectId={projectId}
-                          fieldName="tanggalSpmk  "
+                          fieldName="tanggalSpmk"
                           type="date"
                         />
                       </div>

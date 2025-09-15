@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       // Delete existing action plan schedules
       await prisma.actionPlan.deleteMany({
         where: {
-          OR: [{ activityId: { in: activityIds } }, { subActivityId: { in: subActivityIds } }],
+          subActivityId: { in: subActivityIds },
         },
       })
 
@@ -168,9 +168,7 @@ export async function POST(request: NextRequest) {
                 weight: activityData.bobotMC0 || 0,
                 order: stats.subActivitiesCreated,
                 satuan: activityData.satuan,
-                volumeKontrak: activityData.volumeKontrak,
-                bobotMC0: activityData.bobotMC0,
-                volumeMC0: activityData.volumeMC0,
+                volume: activityData.volumeKontrak,
               },
             })
             stats.subActivitiesCreated++
@@ -181,9 +179,8 @@ export async function POST(request: NextRequest) {
               where: { id: subActivity.id },
               data: {
                 satuan: activityData.satuan || subActivity.satuan,
-                volumeKontrak: activityData.volumeKontrak ?? subActivity.volumeKontrak,
-                bobotMC0: activityData.bobotMC0 ?? subActivity.bobotMC0,
-                volumeMC0: activityData.volumeMC0 ?? subActivity.volumeMC0,
+                volume: activityData.volumeKontrak ?? subActivity.volume,
+                weight: activityData.bobotMC0 ?? subActivity.weight,
               },
             })
             console.log(`✅ Updated sub-activity: ${activityData.name}`)
@@ -238,25 +235,24 @@ export async function POST(request: NextRequest) {
               await tx.actionPlan.update({
                 where: { id: existingSchedule.id },
                 data: {
-                  planPercentage: scheduleData.planPercentage,
-                  actualPercentage: scheduleData.actualPercentage,
+                  percentage: scheduleData.planPercentage,
                 },
               })
               stats.schedulesUpdated++
             } else {
               // Create new action plan schedule
-              await tx.actionPlan.create({
-                data: {
-                  activityId: targetActivityId,
-                  subActivityId: targetSubActivityId,
-                  month: scheduleData.month,
-                  year: scheduleData.year,
-                  week: scheduleData.week,
-                  planPercentage: scheduleData.planPercentage,
-                  actualPercentage: scheduleData.actualPercentage,
-                },
-              })
-              stats.schedulesCreated++
+              if (targetSubActivityId) {
+                await tx.actionPlan.create({
+                  data: {
+                    subActivityId: targetSubActivityId,
+                    month: scheduleData.month,
+                    year: scheduleData.year,
+                    week: scheduleData.week,
+                    percentage: scheduleData.planPercentage,
+                  },
+                })
+                stats.schedulesCreated++
+              }
             }
           } catch (error: any) {
             const errorMsg = `Failed to process schedule for ${activityData.name} - ${scheduleData.period}: ${error.message}`

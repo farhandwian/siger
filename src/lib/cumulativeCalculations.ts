@@ -94,12 +94,12 @@ function calculateWeekTotal(
   for (const activity of activities) {
     if (activity.subActivities && activity.subActivities.length > 0) {
       for (const subActivity of activity.subActivities) {
-        const schedule = subActivity.schedules?.find(
-          s => s.month === month && s.week === week && s.year === year
+        const schedule = subActivity.schedulePlans?.find(
+          (s: any) => s.month === month && s.week === week && s.year === year
         )
 
         if (schedule) {
-          const value = type === 'plan' ? schedule.planPercentage : schedule.actualPercentage
+          const value = schedule.percentage
           if (value !== null && value !== undefined) {
             total += value
           }

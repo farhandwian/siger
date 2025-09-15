@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { UpdateRealizationSchema } from '@/lib/schemas'
 import { z } from 'zod'
+
+// Schema for URL params validation
+const ParamsSchema = z.object({
+  id: z.string().cuid()
+})
+
+// Schema for updating realizations
+const UpdateRealizationSchema = z.object({
+  percentage: z.number().min(0).max(100).optional(),
+  subActivityId: z.string().cuid().optional(),
+  year: z.number().int().min(2020).max(2030).optional(),
+  month: z.number().int().min(1).max(12).optional(),
+  week: z.number().int().min(1).max(4).optional(),
+})
 
 // GET /api/realizations/[id] - Fetch a single realization
 export async function GET(
@@ -9,8 +22,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params
     const realization = await prisma.realization.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         subActivity: {
           include: {
@@ -31,13 +45,11 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: realization
-    })
+    return NextResponse.json({ success: true, data: realization })
   } catch (error) {
+    console.error('Error fetching realization:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch realization' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -49,12 +61,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const validatedData = UpdateRealizationSchema.parse(body)
 
     // Check if realization exists
     const existing = await prisma.realization.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existing) {
@@ -67,7 +80,7 @@ export async function PUT(
     // Check for conflicts if key fields are being updated
     if (validatedData.subActivityId || validatedData.year || validatedData.month || validatedData.week) {
       const conflictWhere = {
-        id: { not: params.id },
+        id: { not: id },
         subActivityId: validatedData.subActivityId || existing.subActivityId,
         year: validatedData.year || existing.year,
         month: validatedData.month || existing.month,
@@ -87,7 +100,7 @@ export async function PUT(
     }
 
     const realization = await prisma.realization.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
       include: {
         subActivity: {
@@ -102,20 +115,18 @@ export async function PUT(
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      data: realization
-    })
+    return NextResponse.json({ success: true, data: realization })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Invalid input data', details: error.errors },
+        { success: false, error: 'Validation failed', details: error.errors },
         { status: 400 }
       )
     }
 
+    console.error('Error updating realization:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to update realization' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -127,8 +138,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params
     const existing = await prisma.realization.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existing) {
@@ -139,16 +151,14 @@ export async function DELETE(
     }
 
     await prisma.realization.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
-    return NextResponse.json({
-      success: true,
-      data: { id: params.id }
-    })
+    return NextResponse.json({ success: true, data: { id } })
   } catch (error) {
+    console.error('Error deleting realization:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to delete realization' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     )
   }

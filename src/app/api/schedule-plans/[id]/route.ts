@@ -9,8 +9,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params
     const schedulePlan = await prisma.schedulePlan.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         subActivity: {
           include: {
@@ -49,12 +50,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const validatedData = UpdateSchedulePlanSchema.parse(body)
 
     // Check if schedule plan exists
     const existing = await prisma.schedulePlan.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existing) {
@@ -67,7 +69,7 @@ export async function PUT(
     // Check for conflicts if key fields are being updated
     if (validatedData.subActivityId || validatedData.year || validatedData.month || validatedData.week) {
       const conflictWhere = {
-        id: { not: params.id },
+        id: { not: id },
         subActivityId: validatedData.subActivityId || existing.subActivityId,
         year: validatedData.year || existing.year,
         month: validatedData.month || existing.month,
@@ -87,7 +89,7 @@ export async function PUT(
     }
 
     const schedulePlan = await prisma.schedulePlan.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
       include: {
         subActivity: {
@@ -127,8 +129,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params
     const existing = await prisma.schedulePlan.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existing) {
@@ -139,12 +142,12 @@ export async function DELETE(
     }
 
     await prisma.schedulePlan.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({
       success: true,
-      data: { id: params.id }
+      data: { id }
     })
   } catch (error) {
     return NextResponse.json(

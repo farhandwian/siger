@@ -16,6 +16,7 @@ type AllowedFieldName =
   | 'nilaiKontrak'
   | 'nomorKontrak'
   | 'spmk'
+  | 'tanggalSpmk'
   | 'masaKontrak'
   | 'tanggalKontrak'
   | 'akhirKontrak'
