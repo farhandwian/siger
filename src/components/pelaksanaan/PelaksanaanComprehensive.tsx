@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useExecutionSummary } from '@/hooks/useExecutionSummary'
+import { useProjectsList, type ComponentProjectData } from '@/hooks/useProjectsList'
 import { SCurveChart } from '@/components/monitoring/SCurveChartNew'
 import { AIInsights } from '@/components/monitoring/ai-insights'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -73,50 +74,89 @@ function ProgressPekerjaanSection() {
 }
 
 /**
- * Project progress list component matching Figma design
+ * Project progress list component fetching real data from existing /api/projects endpoint
+ * Displays all projects with their progress, areas, and contract values
  */
 function ProgressSeluruhPekerjaan() {
-  // Mock data matching Figma design
-  const projects = [
-    {
-      id: '1',
-      title:
-        'Rehabilitasi/Peningkatan Bangunan, Pintu Air dan Jaringan Irigasi DIR Rawa Mesuji Atas di Kabupaten Mesuji',
-      progress: 90,
-      plannedProgress: 88,
-      type: 'Kontraktual',
-      area: 'IRA 1',
-      contractValue: 'Rp19.211.000.000',
-    },
-    {
-      id: '2',
-      title: 'Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Lampung (Paket I)',
-      progress: 68,
-      plannedProgress: 75,
-      type: 'Kontraktual',
-      area: 'IRA 2',
-      contractValue: 'Rp38.624.955.000',
-    },
-    {
-      id: '3',
-      title:
-        'Rehabilitasi/Peningkatan Bangunan, Pintu Air dan jaringan Irigasi DIR Rawa Jitu dan Rawa Pitu di Kabupaten Mesuji',
-      progress: 60,
-      plannedProgress: 67,
-      type: 'Swakelola',
-      area: 'IRA III',
-      contractValue: 'Rp29.900.973.824',
-    },
-    {
-      id: '4',
-      title: 'D.I. Gilingeng - Pembangunan',
-      progress: 65,
-      plannedProgress: 70,
-      type: 'Kontraktual',
-      area: 'IRA 1',
-      contractValue: null,
-    },
-  ]
+  const { data: projects, isLoading, isError, error } = useProjectsList()
+
+  // Loading state with skeleton
+  if (isLoading) {
+    return (
+      <Card className="rounded-2xl border border-gray-200">
+        <CardContent className="p-6">
+          {/* Header with legend */}
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-lg font-medium text-gray-900">Progress Seluruh Pekerjaan</h3>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                <span className="text-sm text-gray-500">Realisasi</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-[#FFC928]" />
+                <span className="text-sm text-gray-500">Rencana</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Loading skeletons */}
+          <div className="space-y-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <Skeleton className="h-3 w-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <Card className="rounded-2xl border border-gray-200">
+        <CardContent className="p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-lg font-medium text-gray-900">Progress Seluruh Pekerjaan</h3>
+          </div>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Gagal memuat data proyek</AlertTitle>
+            <AlertDescription>
+              {(error as Error)?.message || 'Terjadi kesalahan saat mengambil data proyek'}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Empty state
+  if (!projects || projects.length === 0) {
+    return (
+      <Card className="rounded-2xl border border-gray-200">
+        <CardContent className="p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-lg font-medium text-gray-900">Progress Seluruh Pekerjaan</h3>
+          </div>
+          <div className="py-12 text-center">
+            <p className="text-gray-500">Tidak ada data proyek yang tersedia</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="rounded-2xl border border-gray-200">
@@ -136,9 +176,9 @@ function ProgressSeluruhPekerjaan() {
           </div>
         </div>
 
-        {/* Project list */}
+        {/* Project list from existing API */}
         <div className="space-y-6">
-          {projects.map(project => (
+          {projects.map((project: ComponentProjectData) => (
             <div key={project.id} className="space-y-2">
               {/* Project header */}
               <div className="flex items-start justify-between">

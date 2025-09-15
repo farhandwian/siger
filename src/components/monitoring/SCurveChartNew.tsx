@@ -146,7 +146,7 @@ export function SCurveChart({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="h-full w-full">
         {/* Legend */}
         <div className="mb-4 flex items-center justify-end gap-6">
           <div className="flex items-center gap-2">

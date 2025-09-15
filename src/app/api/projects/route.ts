@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         orderBy: { createdAt: 'desc' },
         select: {
+          jenisPengadaan: true,
           id: true,
           lokasiProyek: true,
           pekerjaan: true,
@@ -91,6 +92,7 @@ export async function GET(request: NextRequest) {
     // Transform data to match the expected format with validation
     const transformedProjects = projects.map(project => {
       const transformed = {
+        type: project.jenisPengadaan || '',
         id: project.id,
         title: project.pekerjaan || '',
         location: project.lokasiProyek || '',
@@ -105,6 +107,7 @@ export async function GET(request: NextRequest) {
       try {
         return {
           id: z.string().parse(transformed.id),
+          type: z.string().parse(transformed.type),
           title: z.string().parse(transformed.title),
           location: z.string().parse(transformed.location),
           budget: z.string().parse(transformed.budget),
@@ -118,6 +121,7 @@ export async function GET(request: NextRequest) {
         // Return safe defaults if validation fails
         return {
           id: project.id,
+          type: project.jenisPengadaan || 'Unknown',
           title: project.pekerjaan || 'Unknown Project',
           location: 'Sumatra',
           budget: project.nilaiKontrak || 'Rp0',
