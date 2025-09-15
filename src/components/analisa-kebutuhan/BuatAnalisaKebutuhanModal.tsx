@@ -248,22 +248,20 @@ export function BuatAnalisaKebutuhanModal({
   // Effect to populate form with existing data when sub-activity changes
   useEffect(() => {
     if (selectedSubActivityId && existingEntries.length > 0) {
-      // Clear current entries by removing from end to avoid index issues
-      while (entriesFields.length > 0) {
-        removeEntry(entriesFields.length - 1)
-      }
+      // Clear current entries safely using reset with new data
+      const newEntries = existingEntries.map(entry => ({
+        id: entry.id, // Include the ID for updates
+        kategoriKebutuhanId: entry.kebutuhan.kategoriKebutuhanId,
+        kebutuhanId: entry.kebutuhanId,
+        koefisien: entry.koefisien,
+        categoryName: entry.kebutuhan.kategoriKebutuhan.nama,
+        itemName: entry.kebutuhan.nama,
+      }))
 
-      // Add existing entries to form
-      existingEntries.forEach(entry => {
-        const categoryItem = kebutuhanItems.find(item => item.id === entry.kebutuhanId)
-        appendEntry({
-          id: entry.id, // Include the ID for updates
-          kategoriKebutuhanId: entry.kebutuhan.kategoriKebutuhanId,
-          kebutuhanId: entry.kebutuhanId,
-          koefisien: entry.koefisien,
-          categoryName: entry.kebutuhan.kategoriKebutuhan.nama,
-          itemName: entry.kebutuhan.nama,
-        })
+      // Reset the entire form with new entries instead of removing/adding individually
+      reset({
+        subActivityId: selectedSubActivityId,
+        entries: newEntries,
       })
     } else if (
       selectedSubActivityId &&
@@ -271,15 +269,20 @@ export function BuatAnalisaKebutuhanModal({
       entriesFields.length === 0
     ) {
       // No existing data, add empty entry for new sub-activity
-      appendEntry({
-        kategoriKebutuhanId: '',
-        kebutuhanId: '',
-        koefisien: 0,
-        categoryName: '',
-        itemName: '',
+      reset({
+        subActivityId: selectedSubActivityId,
+        entries: [
+          {
+            kategoriKebutuhanId: '',
+            kebutuhanId: '',
+            koefisien: 0,
+            categoryName: '',
+            itemName: '',
+          },
+        ],
       })
     }
-  }, [selectedSubActivityId, existingEntries, kebutuhanItems, categories])
+  }, [selectedSubActivityId, existingEntries, kebutuhanItems, categories, reset])
 
   // Find selected sub-activity
   const selectedSubActivity = activities
@@ -394,13 +397,21 @@ export function BuatAnalisaKebutuhanModal({
   }
 
   // Handle modal close
-  const handleClose = () => {
+  const handleClose = React.useCallback(() => {
+    // Use useCallback to prevent recreation and batch state updates
     onOpenChange(false)
-    reset()
-    setSelectedSubActivityId('')
-    setSearchQuery('')
-    setExpandedActivities(new Set())
-  }
+
+    // Use a timeout to ensure the modal close animation doesn't conflict with state reset
+    setTimeout(() => {
+      reset({
+        subActivityId: '',
+        entries: [],
+      })
+      setSelectedSubActivityId('')
+      setSearchQuery('')
+      setExpandedActivities(new Set())
+    }, 0)
+  }, [onOpenChange, reset])
 
   const isLoading = upsertMutation.isPending
 
@@ -408,19 +419,21 @@ export function BuatAnalisaKebutuhanModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-h-[90vh] max-w-[80vw] gap-0 rounded-2xl p-0">
         {/* Header */}
-        <DialogHeader className="border-b border-gray-200 px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Settings2 className="h-5 w-5 text-gray-700" />
-              <DialogTitle className="text-lg font-medium text-gray-900">
-                Buat Analisa Kebutuhan
-              </DialogTitle>
+        <div className="border-b border-gray-200 px-6 py-5">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings2 className="h-5 w-5 text-gray-700" />
+                <DialogTitle className="text-lg font-medium text-gray-900">
+                  Buat Analisa Kebutuhan
+                </DialogTitle>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleClose}>
+                <X className="h-5 w-5" />
+              </Button>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleClose}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-        </DialogHeader>
+          </DialogHeader>
+        </div>
 
         {/* Content */}
         <div className="flex h-[833px]">
