@@ -49,3 +49,21 @@ interface DialogTitleProps {
 export function DialogTitle({ className, children }: DialogTitleProps) {
   return <h2 className={cn('text-lg font-semibold text-gray-900', className)}>{children}</h2>
 }
+
+interface DialogDescriptionProps {
+  className?: string
+  children: React.ReactNode
+}
+
+export function DialogDescription({ className, children }: DialogDescriptionProps) {
+  return <p className={cn('text-sm text-gray-600', className)}>{children}</p>
+}
+
+interface DialogFooterProps {
+  className?: string
+  children: React.ReactNode
+}
+
+export function DialogFooter({ className, children }: DialogFooterProps) {
+  return <div className={cn('mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}>{children}</div>
+}

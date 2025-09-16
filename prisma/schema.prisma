@@ -46,6 +46,7 @@ model Project {
   bangunanDeviasi    Float?              @default(0) @map("bangunan_deviasi")
   bangunanProgress   Float?              @default(0) @map("bangunan_progress")
   bangunanTarget     Float?              @default(0) @map("bangunan_target")
+  status             ProjectStatus       @default(DRAFT) @map("status")
   createdAt          DateTime            @default(now()) @map("created_at")
   fisikDeviasi       Float?              @default(0) @map("fisik_deviasi")
   fisikProgress      Float?              @default(0) @map("fisik_progress")
@@ -99,22 +100,20 @@ model ProjectAuditLog {
 model Addendums {
   id                 String    @id @default(cuid())
   projectId          String    @map("project_id")
-  addendumNumber     String    @map("addendum_number")
+  addendumNumber     Int       @map("addendum_number")
   title              String    @map("title")
   description        String?   @map("description")
-  oldValue           String?   @map("old_value")
-  newValue           String?   @map("new_value")
-  changeType         String    @map("change_type") // TIME_EXTENSION, VALUE_CHANGE, SCOPE_CHANGE, etc.
-  effectiveDate      DateTime? @map("effective_date")
-  documentPath       String?   @map("document_path")
+  effectiveDate      DateTime  @map("effective_date")
+  weekNumber         Int       @map("week_number") // Week from which changes can be made
+  modifiedBy         String    @map("modified_by") // User ID who created the addendum
   approvedBy         String?   @map("approved_by")
   approvedAt         DateTime? @map("approved_at")
-  isActive           Boolean   @default(true) @map("is_active")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
   project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@unique([projectId, addendumNumber])
   @@map("addendums")
 }
 
@@ -398,6 +397,12 @@ enum ReportStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+enum ProjectStatus {
+  DRAFT
+  KONTRAK
+  DRAFT_ADDENDUM
 }
 
 enum UserRole {

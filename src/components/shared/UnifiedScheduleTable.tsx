@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button'
 import { AddActivityModal } from '@/components/activity/add-activity-modal'
 import { EditActivityModal } from '@/components/activity/edit-activity-modal'
 import { CopyPlanToActionPlanModal } from '@/components/schedule/copy-plan-to-action-plan-modal'
+import { ProjectStatusManager } from '@/components/addendum/project-status-manager'
 import { Input } from '@/components/ui/input'
-import { Plus, Copy } from 'lucide-react'
+import { Plus, Copy, Settings } from 'lucide-react'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 import type { Activity, Schedule } from '@/lib/schemas'
 import { ScheduleValueType, useUpdateScheduleValue } from '@/hooks/useActivityQueries'
+import { useCanEditSchedulePlan } from '@/hooks/useAddendum'
 
 
 /**
@@ -49,6 +51,8 @@ const PlanCell = memo(function PlanCell({
   editValue,
   isLastWeekOfMonth,
   isActionPlanTable,
+  weekNumber,
+  projectId,
   onEdit,
   onSave,
   onCancel,
@@ -60,6 +64,8 @@ const PlanCell = memo(function PlanCell({
   editValue: string;
   isLastWeekOfMonth: boolean;
   isActionPlanTable: boolean;
+  weekNumber: number;
+  projectId: string;
   onEdit: (cellId: string, currentValue: number | null) => void;
   onSave: (scheduleId: string, type: 'plan' | 'realization' | 'actionPlan') => void;
   onCancel: () => void;
@@ -68,11 +74,18 @@ const PlanCell = memo(function PlanCell({
 
   const value = isActionPlanTable ? schedule?.actionPlan ?? null : schedule?.plan ?? null;
   const mode = isActionPlanTable ? 'actionPlan' : 'plan';
+  
+  // Check if this plan cell can be edited based on project status and week
+  const { canEdit: canEditThisWeek } = useCanEditSchedulePlan(projectId, weekNumber);
+  
+  // For action plan, always allow editing (as per requirements)
+  const canEditCell = isActionPlanTable || canEditThisWeek;
+  
   return (
     <td
       className={`progress-cell-plan ${value && value > 0 ? 'has-value' : ''} ${
         isLastWeekOfMonth ? 'month-separator' : ''
-      }`}
+      } ${!canEditCell ? 'cursor-not-allowed opacity-60' : ''}`}
     >
       {isEditing ? (
         <Input
@@ -97,8 +110,13 @@ const PlanCell = memo(function PlanCell({
         />
       ) : (
         <div
-          className="progress-value-display"
-          onClick={() => onEdit(cellId, value)}
+          className={`progress-value-display ${canEditCell ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'}`}
+          onClick={() => {
+            if (canEditCell) {
+              onEdit(cellId, value)
+            }
+          }}
+          title={canEditCell ? 'Klik untuk mengedit' : 'Tidak dapat diedit berdasarkan status proyek'}
         >
           {value !== null && value !== undefined
             ? value === 0
@@ -195,6 +213,7 @@ export function UnifiedScheduleTable({
   const [editingCell, setEditingCell] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false)
+  const [isStatusManagerOpen, setIsStatusManagerOpen] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const customScrollbarRef = useRef<HTMLDivElement>(null)
 
@@ -482,6 +501,15 @@ export function UnifiedScheduleTable({
                 Salin Rencana
               </Button>
               )}
+              <Button
+                aria-label="Kelola Status Proyek"
+                title="Kelola Status Proyek"
+                onClick={() => setIsStatusManagerOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border-[#10b981] bg-[#10b981] px-2 py-1.5 text-[9px] font-medium text-white hover:bg-[#059669] lg:gap-2 lg:px-3 lg:py-2 lg:text-[10px] xl:text-xs"
+              >
+                <Settings className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
+                Status Proyek
+              </Button>
             </div>
 
             {/* Legend placed to the far right */}
@@ -649,6 +677,8 @@ export function UnifiedScheduleTable({
                               isEditing={isEditing}
                               editValue={editValue}
                               isLastWeekOfMonth={week.isLastWeekOfMonth}
+                              weekNumber={week.weekNumber}
+                              projectId={projectId}
                               onEdit={handleCellEdit}
                               onSave={handleCellSave}
                               onCancel={handleCellCancel}
@@ -892,6 +922,33 @@ export function UnifiedScheduleTable({
           window.location.reload();
         }}
       />
+
+      {/* Project Status Manager - Opens in a dialog-like overlay */}
+      {isStatusManagerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div className="bg-white rounded-lg shadow-lg">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h2 className="text-lg font-semibold">Kelola Status Proyek</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsStatusManagerOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </Button>
+              </div>
+              <div className="p-4">
+                <ProjectStatusManager
+                  projectId={projectId}
+                  projectTitle={title}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
