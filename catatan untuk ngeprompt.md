@@ -345,9 +345,11 @@ tolong ubah kode tersebut dan tolong juga buat seeder datanya juga supaya saya b
 tolong sesuaikan agar range waktu nya itu dimulai dari tanggal spmk pada tabel Project dan berakhir pada akhirKontrak pada tabel Project. tolong sesuiakan juga seeder nya agar sesusai dengan aturan tersebut.
 
 
-pada saat membuat analisa kebtuhuhan saya ingin anda membuat data pada resource flow schedule demgan range waktu seusai dengan aturan sebelumnya, tolong buat data rencananya menggunakan  
- 
 
+
+pada saat membuat data analisa kebtuhuhan saya ingin anda membuat data pada resource flow schedule demgan range waktu seusai dengan aturan sebelumnya, tolong buat data rencananya menggunakan  
+ 
+there is still a mistake on seeder the value of rencana on ResourceFlowSchedule accross the day is taken from value satuanHasilAnalisaKebutuhan in AnalisaKebutuhan table
 
 
 ==============================================

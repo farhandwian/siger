@@ -199,11 +199,30 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
 
   // Calculate cumulative values for a specific date based on current analisa kebutuhan schedules
   const calculateRencanaKumulatif = (targetDate: string) => {
-    if (!currentAnalisaKebutuhan?.resourceFlowSchedules) return 0
+    if (!currentAnalisaKebutuhan?.hasilAnalisaKebutuhan || !dateColumns.length) return 0
 
-    return currentAnalisaKebutuhan.resourceFlowSchedules
-      .filter(schedule => schedule.tanggal <= targetDate)
-      .reduce((sum: number, schedule) => sum + (schedule.rencana || 0), 0)
+    // Get the start date of the project or earliest available date
+    let startDate: string
+    if (project?.tanggalSpmk) {
+      startDate = project.tanggalSpmk
+    } else {
+      // Fallback: use the first date in current month view
+      startDate = dateColumns[0]?.date || targetDate
+    }
+
+    // Calculate total days from project start until target date
+    const start = new Date(startDate)
+    const target = new Date(targetDate)
+
+    // Calculate the number of days (inclusive)
+    const timeDifference = target.getTime() - start.getTime()
+    const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24)) + 1
+
+    // Only count positive days (target date should be >= start date)
+    const totalDays = Math.max(0, daysDifference)
+
+    // Rencana kumulatif = hasilAnalisaKebutuhan * total days from project start
+    return currentAnalisaKebutuhan.hasilAnalisaKebutuhan * totalDays
   }
 
   const calculateRealisasiKumulatif = (targetDate: string) => {
@@ -220,10 +239,10 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     setEditValue(currentValue !== null ? currentValue.toString() : '')
   }
 
-  // Handle saving schedule data
+  // Handle saving schedule data (only for realisasi now)
   const handleCellSave = async (
     scheduleId: string | undefined,
-    field: 'rencana' | 'realisasi',
+    field: 'realisasi',
     date: string,
     analisaKebutuhanId: string
   ) => {
@@ -556,64 +575,21 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                       </span>
                     </td>
                     {dateColumns.map(col => {
-                      const schedule = currentAnalisaKebutuhan.resourceFlowSchedules?.find(
-                        s => s.tanggal === col.date
-                      )
-                      const cellId = `rencana-${col.date}`
-                      const value = schedule?.rencana || 0
-                      const isEditing = editingCell === cellId
-                      const isLoading = loadingCell === cellId
+                      // Rencana value comes from hasilAnalisaKebutuhan (daily value)
+                      const value = currentAnalisaKebutuhan?.hasilAnalisaKebutuhan || 0
 
                       return (
                         <td
                           key={col.date}
                           className="border-b border-gray-200 px-2 py-1 text-center lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5"
                         >
-                          {isEditing ? (
-                            <div className="flex items-center justify-center">
-                              <input
-                                value={editValue}
-                                onChange={e => setEditValue(e.target.value)}
-                                onBlur={() =>
-                                  handleCellSave(
-                                    schedule?.id,
-                                    'rencana',
-                                    col.date,
-                                    currentAnalisaKebutuhan.id
-                                  )
-                                }
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    handleCellSave(
-                                      schedule?.id,
-                                      'rencana',
-                                      col.date,
-                                      currentAnalisaKebutuhan.id
-                                    )
-                                  } else if (e.key === 'Escape') {
-                                    handleCellCancel()
-                                  }
-                                }}
-                                className="h-4 w-full border-0 bg-transparent p-0 text-center text-[8px] focus:ring-0 lg:h-5 lg:text-[9px] xl:h-6 xl:text-xs"
-                                autoFocus
-                                type="number"
-                              />
-                              {isLoading && (
-                                <Loader2 className="ml-1 h-2 w-2 animate-spin text-blue-500 lg:h-2.5 lg:w-2.5 xl:h-3 xl:w-3" />
-                              )}
-                            </div>
-                          ) : (
-                            <div
-                              className="flex cursor-pointer items-center justify-center text-[8px] font-medium text-gray-700 hover:bg-gray-50 lg:text-[9px] xl:text-xs"
-                              onClick={() => handleCellEdit(cellId, value)}
-                            >
-                              {value !== null && value !== undefined
-                                ? value === 0
-                                  ? '0'
-                                  : value.toLocaleString()
-                                : '-'}
-                            </div>
-                          )}
+                          <div className="flex cursor-not-allowed items-center justify-center bg-gray-50 text-[8px] font-medium text-gray-600 lg:text-[9px] xl:text-xs">
+                            {value !== null && value !== undefined
+                              ? value === 0
+                                ? '0'
+                                : value.toLocaleString()
+                              : '-'}
+                          </div>
                         </td>
                       )
                     })}
@@ -746,7 +722,8 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                         s => s.tanggal === col.date
                       )
                       // For resource flow, we'll calculate if targets are met based on rencana vs realisasi
-                      const rencana = schedule?.rencana || 0
+                      // Rencana comes from hasilAnalisaKebutuhan (daily target)
+                      const rencana = currentAnalisaKebutuhan?.hasilAnalisaKebutuhan || 0
                       const realisasi = schedule?.realisasi || 0
                       const tercapai = realisasi >= rencana ? 'Y' : 'N'
 

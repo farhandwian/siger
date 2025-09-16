@@ -121,20 +121,16 @@ export async function seedResourceFlowSchedules() {
       )
 
       // Use koefisien as base value for generating realistic numbers
-      const baseRencana = analisaEntry.koefisien || 1
-      const baseRealisasi = baseRencana * 0.85 // Slightly lower realisasi on average
-
       for (const date of dateRange) {
         try {
-          // Generate realistic values
-          const rencana = generateScheduleValue(date, baseRencana, 0.3)
+          // Generate realistic realisasi values based on koefisien
+          const baseRealisasi = analisaEntry.koefisien || 1
           const realisasi = generateScheduleValue(date, baseRealisasi, 0.4)
 
           await prisma.resourceFlowSchedule.create({
             data: {
               analisaKebutuhanId: analisaEntry.id,
               tanggal: date,
-              rencana: rencana,
               realisasi: realisasi,
               // file: null, // No files for seed data
             },
