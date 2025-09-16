@@ -337,7 +337,7 @@ export const ProjectAreaBaseLayer = ({
 
   // Save changes
   const handleSave = useCallback(async () => {
-    if (!currentPolygon || !dataLayer) return
+    if (!currentPolygon || !dataLayer || !map) return
 
     setIsLoading(true)
 
@@ -355,6 +355,7 @@ export const ProjectAreaBaseLayer = ({
 
         // Save to database if projectId is provided
         if (projectId) {
+          // First save the polygon data
           const response = await fetch(`/api/projects/${projectId}/area`, {
             method: 'PUT',
             headers: {
@@ -376,6 +377,28 @@ export const ProjectAreaBaseLayer = ({
           if (!result.success) {
             throw new Error(result.error || 'Failed to save polygon')
           }
+
+          // Then save the map state (center and zoom)
+          const center = map.getCenter()
+          if (center) {
+            const mapStateResponse = await fetch(`/api/projects/${projectId}/map-state`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                center: {
+                  lat: center.lat(),
+                  lng: center.lng(),
+                },
+                zoom: map.getZoom(),
+              }),
+            })
+
+            if (!mapStateResponse.ok) {
+              console.error('Failed to save map state')
+            }
+          }
         }
 
         // Call save callback if provided (will trigger page reload)
@@ -394,7 +417,7 @@ export const ProjectAreaBaseLayer = ({
     } finally {
       setIsLoading(false)
     }
-  }, [currentPolygon, dataLayer, onPolygonSave, projectId])
+  }, [currentPolygon, dataLayer, onPolygonSave, projectId, map])
 
   // Cancel changes
   const handleCancel = useCallback(async () => {
