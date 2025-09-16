@@ -7,38 +7,6 @@ const GroupedAnalisaKebutuhanQuerySchema = z.object({
   projectId: z.string().optional(),
 })
 
-// Response schema for grouped data
-const GroupedAnalisaKebutuhanResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.object({
-    Kegiatan: z.array(
-      z.object({
-        name: z.string(),
-        subActivities: z.array(
-          z.object({
-            name: z.string(),
-            Target: z.string(),
-            categories: z
-              .record(
-                z.string(),
-                z.array(
-                  z.object({
-                    name: z.string(),
-                    jumlah: z.string(),
-                    stokHarian: z.string(),
-                    terpasang: z.string(),
-                    totalStokHariIni: z.string(),
-                  })
-                )
-              )
-              .optional(),
-          })
-        ),
-      })
-    ),
-  }),
-})
-
 /**
  * GET /api/analisa-kebutuhan/grouped
  * Fetch analisa kebutuhan data grouped by activities and sub-activities
@@ -49,13 +17,21 @@ export async function GET(req: NextRequest) {
     const query = GroupedAnalisaKebutuhanQuerySchema.parse(Object.fromEntries(searchParams))
 
     // Build where clause for analisa kebutuhan
-    const analisaWhere: any = {}
+    const analisaWhere: Record<string, unknown> = {}
 
     // If projectId is provided, filter by activities belonging to that project
-    let activityWhere: any = {}
+    const activityWhere: Record<string, unknown> = {}
     if (query.projectId) {
       activityWhere.projectId = query.projectId
     }
+
+    // Fetch project data to get masa kontrak for target calculation
+    const project = query.projectId
+      ? await prisma.project.findUnique({
+          where: { id: query.projectId },
+          select: { masaKontrak: true },
+        })
+      : null
 
     // Fetch activities with their sub-activities and analisa kebutuhan data
     const activities = await prisma.activity.findMany({
@@ -118,6 +94,21 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Helper function to calculate weekly target based on project duration
+    const calculateWeeklyTarget = (
+      volume: number | null,
+      satuan: string | null,
+      masaKontrak: string | null
+    ): string => {
+      if (!volume || !masaKontrak) return '0 Unit/Minggu'
+
+      const masaKontrakDays = parseInt(masaKontrak) || 1
+      const volumePerHari = volume / masaKontrakDays
+      const weeklyTarget = volumePerHari * 7 // 7 days per week
+
+      return `${weeklyTarget.toFixed(2)} ${satuan || 'Unit'}/Minggu`
+    }
+
     // Transform data to match the dummy structure
     const transformedData = {
       Kegiatan: activities.map(activity => ({
@@ -133,16 +124,30 @@ export async function GET(req: NextRequest) {
               acc[kategoriNama].push(analisa)
               return acc
             },
-            {} as Record<string, any[]>
+            {} as Record<string, typeof subActivity.analisaKebutuhan>
           )
 
           // Build the sub-activity object
-          const subActivityData: any = {
+          const subActivityData: {
+            name: string
+            Target: string
+            categories?: Record<
+              string,
+              Array<{
+                name: string
+                jumlah: string
+                stokHarian: string
+                terpasang: string
+                totalStokHariIni: string
+              }>
+            >
+          } = {
             name: subActivity.name,
-            Target:
-              subActivity.satuan && subActivity.volumeKontrak
-                ? `${subActivity.volumeKontrak} ${subActivity.satuan}/Minggu`
-                : '0 Unit/Minggu', // Default target if not set
+            Target: calculateWeeklyTarget(
+              subActivity.volume,
+              subActivity.satuan,
+              project?.masaKontrak || null
+            ),
           }
 
           // Process all categories dynamically
@@ -150,13 +155,15 @@ export async function GET(req: NextRequest) {
             subActivityData.categories = {}
 
             Object.entries(analisaByKategori).forEach(([categoryName, analisaList]) => {
-              subActivityData.categories[categoryName] = analisaList.map(analisa => ({
-                name: analisa.kebutuhan.nama,
-                jumlah: getUnitForCategory(categoryName, analisa.koefisien),
-                stokHarian: formatValue(analisa.stokHarian),
-                terpasang: formatValue(analisa.terpasang),
-                totalStokHariIni: formatStockDifference(analisa.totalSisaStokHariIni),
-              }))
+              if (subActivityData.categories) {
+                subActivityData.categories[categoryName] = analisaList.map(analisa => ({
+                  name: analisa.kebutuhan.nama,
+                  jumlah: getUnitForCategory(categoryName, analisa.koefisien),
+                  stokHarian: formatValue(analisa.stokHarian),
+                  terpasang: formatValue(analisa.terpasang),
+                  totalStokHariIni: formatStockDifference(analisa.totalSisaStokHariIni),
+                }))
+              }
             })
           }
 
@@ -172,8 +179,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error fetching grouped analisa kebutuhan:', error)
-
+    // Log error for debugging but don't expose sensitive information
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Invalid query parameters', details: error.errors },

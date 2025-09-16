@@ -12,6 +12,10 @@ export interface AnalisaKebutuhan {
   subActivityId: string
   kebutuhanId: string
   koefisien: number
+  hasil: number | null
+  satuanHasil: string | null
+  hasilAnalisaKebutuhan: number | null
+  satuanHasilAnalisaKebutuhan: string | null
   stokHarian: number | null
   terpasang: number | null
   totalSisaStokHariIni: number | null
@@ -43,9 +47,8 @@ export interface ResourceFlowSchedule {
   id: string
   analisaKebutuhanId: string
   tanggal: string
-  rencana: number | null
   realisasi: number | null
-  file: any | null
+  file: unknown | null
   createdAt: string
   updatedAt: string
 }
@@ -54,15 +57,13 @@ export interface ResourceFlowSchedule {
 export interface CreateResourceFlowScheduleData {
   analisaKebutuhanId: string
   tanggal: string
-  rencana?: number
   realisasi?: number
-  file?: any
+  file?: unknown
 }
 
 export interface UpdateResourceFlowScheduleData {
-  rencana?: number
   realisasi?: number
-  file?: any
+  file?: unknown
 }
 
 // Response schemas for validation

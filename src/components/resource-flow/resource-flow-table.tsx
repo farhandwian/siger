@@ -1,16 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChevronDown, Loader2 } from 'lucide-react'
 import {
   useResourceFlowData,
   useActivitiesForResourceFlow,
   useCreateResourceFlowSchedule,
-  useUpdateResourceFlowSchedule,
   AnalisaKebutuhan,
 } from '@/hooks/useResourceFlowQueries'
+import { useProject } from '@/hooks/useActivityQueries'
 import { cn } from '@/lib/utils'
 
 /**
@@ -19,16 +18,6 @@ import { cn } from '@/lib/utils'
  */
 interface ResourceFlowTableProps {
   projectId: string
-}
-
-/**
- * Editable cell component for numeric input in the table
- */
-interface EditableCellProps {
-  value: number
-  onChange: (value: number) => void
-  isDisabled?: boolean
-  className?: string
 }
 
 /**
@@ -47,55 +36,6 @@ interface SubActivity {
   id: string
   nama: string
   analisa_kebutuhan?: AnalisaKebutuhan[]
-}
-
-const EditableCell = ({ value, onChange, isDisabled = false, className }: EditableCellProps) => {
-  const [localValue, setLocalValue] = useState(value.toString())
-  const [isFocused, setIsFocused] = useState(false)
-
-  useEffect(() => {
-    if (!isFocused) {
-      setLocalValue(value.toString())
-    }
-  }, [value, isFocused])
-
-  const handleBlur = () => {
-    setIsFocused(false)
-    const numValue = parseFloat(localValue) || 0
-    if (numValue !== value) {
-      onChange(numValue)
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleBlur()
-    }
-  }
-
-  if (isDisabled) {
-    return (
-      <div className={cn('py-1.5 text-center text-xs text-gray-700', className)}>
-        {value.toLocaleString()}
-      </div>
-    )
-  }
-
-  return (
-    <input
-      type="number"
-      value={localValue}
-      onChange={e => setLocalValue(e.target.value)}
-      onFocus={() => setIsFocused(true)}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      className={cn(
-        'w-full border-none bg-transparent py-1.5 text-center text-xs outline-none',
-        'focus:bg-blue-50 focus:ring-1 focus:ring-blue-200',
-        className
-      )}
-    />
-  )
 }
 
 export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
@@ -118,19 +58,57 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     isLoading: activitiesLoading,
     error: activitiesError,
   } = useActivitiesForResourceFlow(projectId)
-  const updateSchedule = useUpdateResourceFlowSchedule()
+  const { data: project } = useProject(projectId)
   const createSchedule = useCreateResourceFlowSchedule()
-
-  // Debug logging
-  console.log('Debug - Activities data:', activitiesData)
-  console.log('Debug - Activities loading:', activitiesLoading)
-  console.log('Debug - Activities error:', activitiesError)
-  console.log('Debug - Resource flow data:', resourceFlowData)
 
   // Data processing: Get the selected analisa kebutuhan and its schedules
   const currentAnalisaKebutuhan = resourceFlowData?.find(
     item => item.id === selectedAnalisaKebutuhan
   )
+
+  // Memoized volume calculations for performance optimization
+  const volumeCalculations = useMemo(() => {
+    if (!currentAnalisaKebutuhan) {
+      return {
+        volumeRencana: 0,
+        volumeRealisasi: 0,
+        latestScheduleDate: null as string | null,
+      }
+    }
+
+    // Calculate volume rencana (daily planned amount)
+    const volumeRencana = currentAnalisaKebutuhan.hasilAnalisaKebutuhan || 0
+
+    // Calculate latest realisasi kumulatif efficiently
+    let volumeRealisasi = 0
+    let latestScheduleDate: string | null = null
+
+    if (currentAnalisaKebutuhan.resourceFlowSchedules?.length) {
+      // Sort once and cache - only get the latest date
+      const sortedSchedules = [...currentAnalisaKebutuhan.resourceFlowSchedules].sort(
+        (a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
+      )
+
+      if (sortedSchedules.length > 0) {
+        latestScheduleDate = sortedSchedules[0].tanggal
+        // Calculate cumulative sum up to latest date
+        volumeRealisasi = currentAnalisaKebutuhan.resourceFlowSchedules
+          .filter(schedule => schedule.tanggal <= latestScheduleDate!)
+          .reduce((sum, schedule) => sum + (schedule.realisasi || 0), 0)
+      }
+    }
+
+    return {
+      volumeRencana,
+      volumeRealisasi,
+      latestScheduleDate,
+    }
+  }, [currentAnalisaKebutuhan])
+
+  // Memoized unit string for consistent formatting
+  const unitString = useMemo(() => {
+    return currentAnalisaKebutuhan?.satuanHasilAnalisaKebutuhan || 'unit'
+  }, [currentAnalisaKebutuhan?.satuanHasilAnalisaKebutuhan])
 
   // Auto-select first available items when data loads
   useEffect(() => {
@@ -177,23 +155,28 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     }
   }, [selectedSubActivity, selectedActivity, activitiesData])
 
-  // Get current month for display based on selected month/year
-  const currentMonth = new Date(selectedYear, selectedMonth - 1)
-    .toLocaleDateString('id-ID', {
-      month: 'long',
-      year: 'numeric',
-    })
-    .toUpperCase()
-
-  // Generate date range for the selected month
-  const generateDateColumns = () => {
+  // Memoized date columns for performance
+  const dateColumns = useMemo(() => {
     const monthStart = new Date(selectedYear, selectedMonth - 1, 1)
-    const monthEnd = new Date(selectedYear, selectedMonth, 0) // Last day of month
+    const monthEnd = new Date(selectedYear, selectedMonth, 0)
+
+    // If project has date constraints, apply them
+    let actualStart = monthStart
+    let actualEnd = monthEnd
+
+    if (project?.tanggalSpmk && project?.akhirKontrak) {
+      const projectStart = new Date(project.tanggalSpmk)
+      const projectEnd = new Date(project.akhirKontrak)
+
+      // Constrain the month view to project date boundaries
+      actualStart = new Date(Math.max(monthStart.getTime(), projectStart.getTime()))
+      actualEnd = new Date(Math.min(monthEnd.getTime(), projectEnd.getTime()))
+    }
 
     const dates = []
-    const currentDate = new Date(monthStart)
+    const currentDate = new Date(actualStart)
 
-    while (currentDate <= monthEnd) {
+    while (currentDate <= actualEnd) {
       dates.push({
         date: currentDate.toISOString().split('T')[0],
         display: currentDate.getDate().toString(),
@@ -203,26 +186,98 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     }
 
     return dates
-  }
+  }, [selectedYear, selectedMonth, project?.tanggalSpmk, project?.akhirKontrak])
 
-  const dateColumns = generateDateColumns()
+  // Memoized display period for performance
+  const displayPeriod = useMemo(() => {
+    return new Date(selectedYear, selectedMonth - 1)
+      .toLocaleDateString('id-ID', {
+        month: 'long',
+        year: 'numeric',
+      })
+      .toUpperCase()
+  }, [selectedYear, selectedMonth])
 
-  // Calculate cumulative values for a specific date based on current analisa kebutuhan schedules
-  const calculateRencanaKumulatif = (targetDate: string) => {
-    if (!currentAnalisaKebutuhan?.resourceFlowSchedules) return 0
+  // Optimized month navigation constraints using useCallback
+  const canNavigateToPrevMonth = useCallback(() => {
+    if (!project?.tanggalSpmk) return true // No constraints if no project dates
 
-    return currentAnalisaKebutuhan.resourceFlowSchedules
-      .filter((schedule: any) => schedule.tanggal <= targetDate)
-      .reduce((sum: number, schedule: any) => sum + (schedule.rencana || 0), 0)
-  }
+    const prevMonthStart = new Date(selectedYear, selectedMonth - 2, 1)
+    const projectStart = new Date(project.tanggalSpmk)
 
-  const calculateRealisasiKumulatif = (targetDate: string) => {
-    if (!currentAnalisaKebutuhan?.resourceFlowSchedules) return 0
+    return prevMonthStart >= new Date(projectStart.getFullYear(), projectStart.getMonth(), 1)
+  }, [project?.tanggalSpmk, selectedYear, selectedMonth])
 
-    return currentAnalisaKebutuhan.resourceFlowSchedules
-      .filter((schedule: any) => schedule.tanggal <= targetDate)
-      .reduce((sum: number, schedule: any) => sum + (schedule.realisasi || 0), 0)
-  }
+  const canNavigateToNextMonth = useCallback(() => {
+    if (!project?.akhirKontrak) return true // No constraints if no project dates
+
+    const nextMonthStart = new Date(selectedYear, selectedMonth, 1)
+    const projectEnd = new Date(project.akhirKontrak)
+
+    return nextMonthStart <= new Date(projectEnd.getFullYear(), projectEnd.getMonth(), 1)
+  }, [project?.akhirKontrak, selectedYear, selectedMonth])
+
+  // Auto-adjust selected month to be within project bounds when project loads
+  useEffect(() => {
+    if (project?.tanggalSpmk && project?.akhirKontrak) {
+      const projectStart = new Date(project.tanggalSpmk)
+      const projectEnd = new Date(project.akhirKontrak)
+      const currentSelected = new Date(selectedYear, selectedMonth - 1, 1)
+
+      const minAllowedMonth = new Date(projectStart.getFullYear(), projectStart.getMonth(), 1)
+      const maxAllowedMonth = new Date(projectEnd.getFullYear(), projectEnd.getMonth(), 1)
+
+      if (currentSelected < minAllowedMonth) {
+        setSelectedMonth(projectStart.getMonth() + 1)
+        setSelectedYear(projectStart.getFullYear())
+      } else if (currentSelected > maxAllowedMonth) {
+        setSelectedMonth(projectEnd.getMonth() + 1)
+        setSelectedYear(projectEnd.getFullYear())
+      }
+    }
+  }, [project, selectedMonth, selectedYear])
+
+  // Optimized calculation functions using useCallback to prevent unnecessary re-renders
+  const calculateRencanaKumulatif = useCallback(
+    (targetDate: string) => {
+      if (!currentAnalisaKebutuhan?.hasilAnalisaKebutuhan || !dateColumns.length) return 0
+
+      // Get the start date of the project or earliest available date
+      let startDate: string
+      if (project?.tanggalSpmk) {
+        startDate = project.tanggalSpmk
+      } else {
+        // Fallback: use the first date in current month view
+        startDate = dateColumns[0]?.date || targetDate
+      }
+
+      // Calculate total days from project start until target date
+      const start = new Date(startDate)
+      const target = new Date(targetDate)
+
+      // Calculate the number of days (inclusive)
+      const timeDifference = target.getTime() - start.getTime()
+      const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24)) + 1
+
+      // Only count positive days (target date should be >= start date)
+      const totalDays = Math.max(0, daysDifference)
+
+      // Rencana kumulatif = hasilAnalisaKebutuhan * total days from project start
+      return currentAnalisaKebutuhan.hasilAnalisaKebutuhan * totalDays
+    },
+    [currentAnalisaKebutuhan?.hasilAnalisaKebutuhan, dateColumns, project?.tanggalSpmk]
+  )
+
+  const calculateRealisasiKumulatif = useCallback(
+    (targetDate: string) => {
+      if (!currentAnalisaKebutuhan?.resourceFlowSchedules) return 0
+
+      return currentAnalisaKebutuhan.resourceFlowSchedules
+        .filter(schedule => schedule.tanggal <= targetDate)
+        .reduce((sum: number, schedule) => sum + (schedule.realisasi || 0), 0)
+    },
+    [currentAnalisaKebutuhan?.resourceFlowSchedules]
+  )
 
   // Handle cell editing
   const handleCellEdit = (cellId: string, currentValue: number | null) => {
@@ -230,10 +285,10 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     setEditValue(currentValue !== null ? currentValue.toString() : '')
   }
 
-  // Handle saving schedule data
+  // Handle saving schedule data (only for realisasi now)
   const handleCellSave = async (
     scheduleId: string | undefined,
-    field: 'rencana' | 'realisasi',
+    field: 'realisasi',
     date: string,
     analisaKebutuhanId: string
   ) => {
@@ -243,15 +298,6 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     const cellId = `${field}-${date}`
     setLoadingCell(cellId)
 
-    console.log('Saving resource flow schedule:', {
-      scheduleId,
-      field,
-      date,
-      analisaKebutuhanId,
-      value,
-      editValue,
-    })
-
     try {
       // Only send the field being updated - API will preserve other fields
       const scheduleData = {
@@ -260,14 +306,11 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
         [field]: value, // Only send the field being updated
       }
 
-      console.log('Schedule data to upsert (field-specific):', scheduleData)
       await createSchedule.mutateAsync(scheduleData)
 
       setEditingCell(null)
       setEditValue('')
-      console.log('Resource flow schedule saved successfully')
     } catch (error) {
-      console.error('Error saving resource flow schedule:', error)
       // Don't reset the cell if there was an error, let user try again
     } finally {
       setLoadingCell(null)
@@ -279,21 +322,21 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     setEditValue('')
   }
 
-  // Get dropdown options
-  const getActivityOptions = (): Activity[] => activitiesData || []
+  // Memoized dropdown options for better performance
+  const activityOptions = useMemo(() => activitiesData || [], [activitiesData])
 
-  const getSubActivityOptions = (): SubActivity[] => {
+  const subActivityOptions = useMemo(() => {
     const activity = activitiesData?.find((a: Activity) => a.id === selectedActivity)
     return activity?.sub_activities || []
-  }
+  }, [activitiesData, selectedActivity])
 
-  const getAnalisaKebutuhanOptions = (): AnalisaKebutuhan[] => {
+  const analisaKebutuhanOptions = useMemo(() => {
     const activity = activitiesData?.find((a: Activity) => a.id === selectedActivity)
     const subActivity = activity?.sub_activities?.find(
       (sa: SubActivity) => sa.id === selectedSubActivity
     )
     return subActivity?.analisa_kebutuhan || []
-  }
+  }, [activitiesData, selectedActivity, selectedSubActivity])
 
   // Loading state
   if (isLoading || activitiesLoading) {
@@ -349,7 +392,7 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                     className="w-full appearance-none border-b border-gray-200 bg-white px-2 py-1 pr-8 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
                   >
                     <option value="">-- Pilih Pekerjaan --</option>
-                    {getActivityOptions().map((activity: Activity) => (
+                    {activityOptions.map((activity: Activity) => (
                       <option key={activity.id} value={activity.id}>
                         {activity.nama}
                       </option>
@@ -372,7 +415,7 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                     className="w-full appearance-none border-b border-gray-200 bg-white px-2 py-1 pr-8 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
                   >
                     <option value="">-- Pilih Kegiatan --</option>
-                    {getSubActivityOptions().map((subActivity: SubActivity) => (
+                    {subActivityOptions.map((subActivity: SubActivity) => (
                       <option key={subActivity.id} value={subActivity.id}>
                         {subActivity.nama}
                       </option>
@@ -395,7 +438,7 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                     className="w-full appearance-none border-b border-gray-200 bg-white px-2 py-1 pr-8 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
                   >
                     <option value="">-- Pilih Analisa Kebutuhan --</option>
-                    {getAnalisaKebutuhanOptions().map((analisa: any) => (
+                    {analisaKebutuhanOptions.map((analisa: AnalisaKebutuhan) => (
                       <option key={analisa.id} value={analisa.id}>
                         {analisa.kebutuhan.nama} - {analisa.kebutuhan.kategoriKebutuhan.nama}
                       </option>
@@ -409,6 +452,7 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
             {/* Resource Information Display */}
             {currentAnalisaKebutuhan && (
               <div className="border-t border-gray-100 pt-3 lg:pt-4 xl:pt-6">
+                {/* First Row - Basic Information */}
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4 xl:gap-6">
                   <div className="space-y-0.5 lg:space-y-1">
                     <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
@@ -437,6 +481,35 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                     </div>
                   </div>
                 </div>
+
+                {/* Second Row - Volume Information */}
+                <div className="mt-3 grid grid-cols-1 gap-3 lg:mt-4 lg:grid-cols-2 lg:gap-4 xl:mt-6 xl:gap-6">
+                  <div className="space-y-0.5 lg:space-y-1">
+                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
+                      Volume Rencana (Harian)
+                    </label>
+                    <input
+                      type="text"
+                      value={`${volumeCalculations.volumeRencana.toLocaleString()} ${unitString}/hari`}
+                      disabled
+                      className="w-full border-b border-gray-200 bg-gray-50 px-2 py-1 text-[9px] text-gray-600 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
+                      readOnly
+                    />
+                  </div>
+
+                  <div className="space-y-0.5 lg:space-y-1">
+                    <label className="text-[9px] font-medium text-gray-700 lg:text-[10px] xl:text-xs">
+                      Volume Realisasi (Kumulatif)
+                    </label>
+                    <input
+                      type="text"
+                      value={`${volumeCalculations.volumeRealisasi.toLocaleString()} ${unitString}`}
+                      disabled
+                      className="w-full border-b border-gray-200 bg-gray-50 px-2 py-1 text-[9px] text-gray-600 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
+                      readOnly
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -450,7 +523,7 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
             Tabel Progress {currentAnalisaKebutuhan.kebutuhan.nama}
           </h3>
 
-          {/* Month Picker */}
+          {/* Period Display - Always show month picker with project constraints */}
           <div className="w-48 lg:w-56 xl:w-64">
             <div className="relative">
               <div className="rounded-lg border border-gray-200 bg-white px-2 py-1 shadow-sm lg:px-3 lg:py-1.5 xl:px-4 xl:py-2">
@@ -464,7 +537,8 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                         setSelectedMonth(selectedMonth - 1)
                       }
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    disabled={!canNavigateToPrevMonth()}
+                    className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     <svg
                       className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5"
@@ -495,8 +569,13 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                       />
                     </svg>
                     <span className="text-[9px] text-gray-500 lg:text-[10px] xl:text-sm">
-                      {currentMonth}
+                      {displayPeriod}
                     </span>
+                    {project?.tanggalSpmk && project?.akhirKontrak && (
+                      <span className="text-[8px] text-gray-400 lg:text-[9px] xl:text-xs">
+                        (Kontrak)
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={() => {
@@ -507,7 +586,8 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                         setSelectedMonth(selectedMonth + 1)
                       }
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    disabled={!canNavigateToNextMonth()}
+                    className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     <svg
                       className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5"
@@ -544,7 +624,7 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                       colSpan={dateColumns.length}
                     >
                       <span className="text-[9px] font-bold text-white lg:text-[10px] xl:text-xs">
-                        {currentMonth.split(' ')[0]}
+                        {displayPeriod.split(' ')[0]}
                       </span>
                     </th>
                   </tr>
@@ -571,64 +651,21 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                       </span>
                     </td>
                     {dateColumns.map(col => {
-                      const schedule = currentAnalisaKebutuhan.resourceFlowSchedules?.find(
-                        s => s.tanggal === col.date
-                      )
-                      const cellId = `rencana-${col.date}`
-                      const value = schedule?.rencana || 0
-                      const isEditing = editingCell === cellId
-                      const isLoading = loadingCell === cellId
+                      // Rencana value comes from hasilAnalisaKebutuhan (daily value)
+                      const value = currentAnalisaKebutuhan?.hasilAnalisaKebutuhan || 0
 
                       return (
                         <td
                           key={col.date}
                           className="border-b border-gray-200 px-2 py-1 text-center lg:px-3 lg:py-1.5 xl:px-6 xl:py-1.5"
                         >
-                          {isEditing ? (
-                            <div className="flex items-center justify-center">
-                              <input
-                                value={editValue}
-                                onChange={e => setEditValue(e.target.value)}
-                                onBlur={() =>
-                                  handleCellSave(
-                                    schedule?.id,
-                                    'rencana',
-                                    col.date,
-                                    currentAnalisaKebutuhan.id
-                                  )
-                                }
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    handleCellSave(
-                                      schedule?.id,
-                                      'rencana',
-                                      col.date,
-                                      currentAnalisaKebutuhan.id
-                                    )
-                                  } else if (e.key === 'Escape') {
-                                    handleCellCancel()
-                                  }
-                                }}
-                                className="h-4 w-full border-0 bg-transparent p-0 text-center text-[8px] focus:ring-0 lg:h-5 lg:text-[9px] xl:h-6 xl:text-xs"
-                                autoFocus
-                                type="number"
-                              />
-                              {isLoading && (
-                                <Loader2 className="ml-1 h-2 w-2 animate-spin text-blue-500 lg:h-2.5 lg:w-2.5 xl:h-3 xl:w-3" />
-                              )}
-                            </div>
-                          ) : (
-                            <div
-                              className="flex cursor-pointer items-center justify-center text-[8px] font-medium text-gray-700 hover:bg-gray-50 lg:text-[9px] xl:text-xs"
-                              onClick={() => handleCellEdit(cellId, value)}
-                            >
-                              {value !== null && value !== undefined
-                                ? value === 0
-                                  ? '0'
-                                  : value.toLocaleString()
-                                : '-'}
-                            </div>
-                          )}
+                          <div className="flex cursor-not-allowed items-center justify-center bg-gray-50 text-[8px] font-medium text-gray-600 lg:text-[9px] xl:text-xs">
+                            {value !== null && value !== undefined
+                              ? value === 0
+                                ? '0'
+                                : value.toLocaleString()
+                              : '-'}
+                          </div>
                         </td>
                       )
                     })}
@@ -761,7 +798,8 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                         s => s.tanggal === col.date
                       )
                       // For resource flow, we'll calculate if targets are met based on rencana vs realisasi
-                      const rencana = schedule?.rencana || 0
+                      // Rencana comes from hasilAnalisaKebutuhan (daily target)
+                      const rencana = currentAnalisaKebutuhan?.hasilAnalisaKebutuhan || 0
                       const realisasi = schedule?.realisasi || 0
                       const tercapai = realisasi >= rencana ? 'Y' : 'N'
 

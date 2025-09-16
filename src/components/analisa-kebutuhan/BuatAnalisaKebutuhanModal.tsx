@@ -31,7 +31,7 @@ interface SubActivity {
   id: string
   name: string
   satuan?: string
-  volumeKontrak?: number
+  volume?: number
   weight: number
 }
 
@@ -360,9 +360,9 @@ export function BuatAnalisaKebutuhanModal({
 
   // Calculate volume per hari
   const calculateVolumePerHari = () => {
-    if (!selectedSubActivity?.volumeKontrak || !project?.masaKontrak) return 0
+    if (!selectedSubActivity?.volume || !project?.masaKontrak) return 0
     const masaKontrakDays = parseInt(project.masaKontrak) || 1
-    return selectedSubActivity.volumeKontrak / masaKontrakDays
+    return selectedSubActivity.volume / masaKontrakDays
   }
 
   // Calculate volume target per minggu
@@ -574,7 +574,7 @@ export function BuatAnalisaKebutuhanModal({
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Volume</Label>
                     <div className="mt-1 border-b border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400">
-                      {selectedSubActivity.volumeKontrak || 0} {selectedSubActivity.satuan || 'm³'}
+                      {selectedSubActivity.volume || 0} {selectedSubActivity.satuan || 'm³'}
                     </div>
                   </div>
                   <div>

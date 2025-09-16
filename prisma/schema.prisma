@@ -323,7 +323,6 @@ model ResourceFlowSchedule {
   id               String           @id @default(cuid())
   analisaKebutuhanId String         @map("analisa_kebutuhan_id")
   tanggal          String           @map("tanggal")
-  rencana          Float?           @default(0) @map("rencana")
   realisasi        Float?           @default(0) @map("realisasi")
   file             Json?            @map("file")
   createdAt        DateTime         @default(now()) @map("created_at")

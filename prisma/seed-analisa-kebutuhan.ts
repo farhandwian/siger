@@ -425,18 +425,31 @@ export async function seedAnalisaKebutuhan() {
         }
 
         try {
+          // Calculate hasilAnalisaKebutuhan based on koefisien
+          // This represents the daily requirement for resource flow
+          const hasilAnalisaKebutuhan = req.koefisien * 0.8 // 80% of koefisien as daily target
+
           await prisma.analisaKebutuhan.create({
             data: {
               subActivityId: subActivity.id,
               kebutuhanId: kebutuhanId,
               koefisien: req.koefisien,
+              hasilAnalisaKebutuhan: hasilAnalisaKebutuhan,
+              satuanHasilAnalisaKebutuhan:
+                req.kategori === 'Tenaga Kerja'
+                  ? 'Orang/Hari'
+                  : req.kategori === 'Bahan'
+                    ? 'Unit/Hari'
+                    : 'Unit/Hari', // Default for Alat
               stokHarian: req.stokHarian,
               terpasang: req.terpasang,
               totalSisaStokHariIni: req.totalSisaStokHariIni,
             },
           })
           createdCount++
-          console.log(`    ✅ Created analisa kebutuhan: ${req.nama} (${req.koefisien})`)
+          console.log(
+            `    ✅ Created analisa kebutuhan: ${req.nama} (koef: ${req.koefisien}, daily: ${hasilAnalisaKebutuhan})`
+          )
         } catch (error) {
           console.log(`    ❌ Failed to create: ${req.nama} - ${error}`)
         }
