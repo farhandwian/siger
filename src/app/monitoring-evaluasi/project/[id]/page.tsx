@@ -195,7 +195,7 @@ export default function ProjectDetailPage() {
   const { data: project, isLoading, error } = useProjectDetail(projectId)
 
   // Calculate cumulative data for the entire project - available immediately when page loads
-  const calculatedData = useCalculatedData(projectId)  // Update activeTab when URL search params change
+  const calculatedData = useCalculatedData(projectId) // Update activeTab when URL search params change
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab')
     if (tabFromUrl) {
@@ -346,7 +346,7 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -355,19 +355,11 @@ export default function ProjectDetailPage() {
         />
       )}
 
-      {/* Sidebar - Full height */}
-      <div
-        className={`
-        fixed left-0 top-0 z-50 h-screen transform transition-transform duration-300 ease-in-out
-        lg:relative lg:z-auto lg:transform-none
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}
-      >
-        <Sidebar />
-      </div>
+      {/* Sidebar */}
+      <Sidebar className={sidebarOpen ? 'translate-x-0' : ''} />
 
       {/* Main Content */}
-      <div className="min-w-0 flex-1 lg:ml-0">
+      <div className="min-h-screen pl-0 lg:pl-44 xl:pl-64">
         {/* Mobile Menu Button */}
         <div className="border-b border-gray-200 bg-white p-2 lg:hidden">
           <button
@@ -668,10 +660,7 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ScheduleTable 
-                      projectId={projectId} 
-                      calculatedData={calculatedData}
-                    />
+                    <ScheduleTable projectId={projectId} calculatedData={calculatedData} />
                   </div>
                 </div>
               )}
@@ -708,10 +697,7 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActionPlanTable 
-                      projectId={projectId} 
-                      calculatedData={calculatedData}
-                    />
+                    <ActionPlanTable projectId={projectId} calculatedData={calculatedData} />
                   </div>
                 </div>
               )}

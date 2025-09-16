@@ -30,6 +30,9 @@ export type {
   ScheduleWithRelations as RealizationWithRelations
 } from './schemas/schedule'
 
+// Re-export report schemas
+export * from './schemas/reports'
+
 // Project schemas
 export const ProjectStatusSchema = z.enum(['on-track', 'at-risk', 'delayed'])
 

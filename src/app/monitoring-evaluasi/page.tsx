@@ -48,7 +48,7 @@ export default function MonitoringEvaluasiPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -57,19 +57,11 @@ export default function MonitoringEvaluasiPage() {
         />
       )}
 
-      {/* Sidebar - Full height */}
-      <div
-        className={`
-        fixed left-0 top-0 z-50 h-screen transform transition-transform duration-300 ease-in-out
-        lg:relative lg:z-auto lg:transform-none
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}
-      >
-        <Sidebar />
-      </div>
+      {/* Sidebar - Fixed positioning handled in component */}
+      <Sidebar className={sidebarOpen ? 'translate-x-0' : ''} />
 
-      {/* Main Content */}
-      <div className="min-w-0 flex-1 lg:ml-0">
+      {/* Main Content - Use padding instead of margin for better layout */}
+      <div className="min-h-screen pl-0 lg:pl-44 xl:pl-64">
         {/* Mobile Menu Button - Reduced padding */}
         <div className="border-b border-gray-200 bg-white p-2 lg:hidden">
           <Button

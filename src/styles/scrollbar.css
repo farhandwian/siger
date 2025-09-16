@@ -1,0 +1,73 @@
+/* Custom scrollbar styles for sidebar - Force hidden with highest specificity */
+.sidebar-scrollbar.sidebar-scrollbar {
+  /* Hide scrollbar completely by default - multiple approaches with !important */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* Internet Explorer 10+ */
+  overflow-y: auto !important; /* Ensure scrolling works */
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) - Force hide with highest specificity */
+.sidebar-scrollbar.sidebar-scrollbar::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  display: none !important;
+}
+
+.sidebar-scrollbar.sidebar-scrollbar::-webkit-scrollbar-track {
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  display: none !important;
+}
+
+.sidebar-scrollbar.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  display: none !important;
+}
+
+.sidebar-scrollbar.sidebar-scrollbar::-webkit-scrollbar-corner {
+  background: transparent !important;
+  display: none !important;
+}
+
+/* Only show scrollbar when actively scrolling - with high specificity */
+.sidebar-scrollbar.sidebar-scrollbar.scrolling::-webkit-scrollbar {
+  width: 6px !important;
+  height: auto !important;
+  display: block !important;
+  background: transparent;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.sidebar-scrollbar.sidebar-scrollbar.scrolling::-webkit-scrollbar-track {
+  width: 6px !important;
+  height: auto !important;
+  display: block !important;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 3px;
+}
+
+.sidebar-scrollbar.sidebar-scrollbar.scrolling::-webkit-scrollbar-thumb {
+  width: 6px !important;
+  height: auto !important;
+  display: block !important;
+  background-color: #d1d5db;
+  border-radius: 3px;
+}
+
+.sidebar-scrollbar.sidebar-scrollbar.scrolling::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+/* Firefox scrollbar when scrolling - with high specificity */
+.sidebar-scrollbar.sidebar-scrollbar.scrolling {
+  scrollbar-width: thin !important; /* Firefox */
+  scrollbar-color: #d1d5db rgba(0, 0, 0, 0.03) !important; /* Firefox thumb and track */
+}
+
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}

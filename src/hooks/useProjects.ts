@@ -15,12 +15,14 @@ interface ProjectData {
 
 interface ProjectsResponse {
   success: boolean
-  data: ProjectData[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
+  data: {
+    projects: ProjectData[]
+    pagination: {
+      page: number
+      limit: number
+      total: number
+      totalPages: number
+    }
   }
 }
 
@@ -63,8 +65,8 @@ export function useProjects(options: UseProjectsOptions = {}) {
         const result: ProjectsResponse = await response.json()
 
         if (result.success) {
-          setProjects(result.data)
-          setPagination(result.pagination)
+          setProjects(result.data.projects)
+          setPagination(result.data.pagination)
         } else {
           throw new Error('Failed to fetch projects')
         }
