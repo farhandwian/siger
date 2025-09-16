@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button'
 import { AddActivityModal } from '@/components/activity/add-activity-modal'
 import { EditActivityModal } from '@/components/activity/edit-activity-modal'
 import { CopyPlanToActionPlanModal } from '@/components/schedule/copy-plan-to-action-plan-modal'
-import { ProjectStatusManager } from '@/components/addendum/project-status-manager'
+import { CreateAddendumModal } from '@/components/addendum/create-addendum-modal'
 import { Input } from '@/components/ui/input'
-import { Plus, Copy, Settings } from 'lucide-react'
+import { Plus, Copy } from 'lucide-react'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 import type { Activity, Schedule } from '@/lib/schemas'
 import { ScheduleValueType, useUpdateScheduleValue } from '@/hooks/useActivityQueries'
-import { useCanEditSchedulePlan } from '@/hooks/useAddendum'
+import { useProjectStatus, useCanEditSchedulePlan, useUpdateProjectStatus } from '@/hooks/useAddendum'
+import { ProjectStatusBadge } from '@/components/addendum/project-status-badge'
 
 
 /**
@@ -38,8 +39,6 @@ interface UnifiedScheduleTableProps {
   ) => number
 
   // Optional customization
-  showAddButton?: boolean
-  showTitle?: boolean
   weekCount?: number // Fallback week count if project.numberOfWeeks is not available
 }
 
@@ -204,8 +203,6 @@ export function UnifiedScheduleTable({
   isLoading = false,
   isActionPlanTable = false, // New prop to indicate if this is an action plan table
   getCalculatedValueForWeek,
-  showAddButton = true,
-  showTitle = true,
 }: UnifiedScheduleTableProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -213,12 +210,18 @@ export function UnifiedScheduleTable({
   const [editingCell, setEditingCell] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false)
-  const [isStatusManagerOpen, setIsStatusManagerOpen] = useState(false)
+  const [isAddendumModalOpen, setIsAddendumModalOpen] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const customScrollbarRef = useRef<HTMLDivElement>(null)
 
   // Use the update schedule value hook
   const updateScheduleValue = useUpdateScheduleValue(projectId)
+
+  // Fetch project status for status display
+  const { data: statusData } = useProjectStatus(projectId)
+
+  // Hook for updating project status
+  const updateProjectStatus = useUpdateProjectStatus()
 
   // Internal save function using the new single-value API
   const saveScheduleValue = async (
@@ -452,6 +455,17 @@ export function UnifiedScheduleTable({
     setIsEditModalOpen(true)
   }
 
+  const handleFinalisasi = async () => {
+    try {
+      await updateProjectStatus.mutateAsync({
+        projectId,
+        data: { status: 'KONTRAK' }
+      })
+    } catch (error) {
+      // Error handling will be done by the mutation
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="animate-pulse">
@@ -468,18 +482,15 @@ export function UnifiedScheduleTable({
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
       {/* Header with Add Button and Legend */}
-      {(showAddButton || showTitle) && (
+      {(
         <div className="border-b border-gray-200 px-2 py-2 lg:px-3 lg:py-3 xl:px-4 xl:py-4">
           <div className="flex items-center justify-between">
-            <div>
-              {showTitle && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
-            </div>
             {/* Move Add button to the left using Tailwind order-first so it appears before the title */}
             <div
               className="order-first flex items-center gap-4"
-              aria-hidden={!showAddButton}
+              aria-hidden={false}
             >
-              {showAddButton && (
+              {statusData?.success && statusData.data.status !== 'KONTRAK' && (
               <Button
                 aria-label="Tambah Kegiatan"
                 title="Tambah Kegiatan"
@@ -501,15 +512,52 @@ export function UnifiedScheduleTable({
                 Salin Rencana
               </Button>
               )}
+              {/* Show FINALISASI button when status is DRAFT or DRAFT_ADDENDUM */}
+              {!isActionPlanTable && statusData?.success && (statusData.data.status === 'DRAFT' || statusData.data.status === 'DRAFT_ADDENDUM') && (
               <Button
-                aria-label="Kelola Status Proyek"
-                title="Kelola Status Proyek"
-                onClick={() => setIsStatusManagerOpen(true)}
-                className="flex items-center gap-1.5 rounded-lg border-[#10b981] bg-[#10b981] px-2 py-1.5 text-[9px] font-medium text-white hover:bg-[#059669] lg:gap-2 lg:px-3 lg:py-2 lg:text-[10px] xl:text-xs"
+                aria-label="Finalisasi Proyek"
+                title="Finalisasi Proyek"
+                onClick={() => {
+                  if (window.confirm('Apakah Anda yakin ingin memfinalisasi proyek ini? Tindakan ini tidak dapat dibatalkan.')) {
+                    handleFinalisasi()
+                  }
+                }}
+                disabled={updateProjectStatus.isPending}
+                className="flex items-center gap-1.5 rounded-lg border-[#10b981] bg-[#10b981] px-2 py-1.5 text-[9px] font-medium text-white hover:bg-[#059669] disabled:opacity-50 lg:gap-2 lg:px-3 lg:py-2 lg:text-[10px] xl:text-xs"
               >
-                <Settings className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
-                Status Proyek
+                <svg className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Finalisasi
               </Button>
+              )}
+              {/* Hide Buat Addendum button when status is DRAFT or DRAFT_ADDENDUM */}
+              {!isActionPlanTable && statusData?.success && statusData.data.status === 'KONTRAK' && (
+              <Button
+                aria-label="Buat Addendum"
+                title="Buat Addendum"
+                onClick={() => setIsAddendumModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border-[#364878] bg-[#364878] px-2 py-1.5 text-[9px] font-medium text-[#ffc928] hover:bg-[#273c72] lg:gap-2 lg:px-3 lg:py-2 lg:text-[10px] xl:text-xs"
+              >
+                <Plus className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
+                Buat Addendum
+              </Button>
+              )}
+              {/* Status Information */}
+              {statusData?.success && (
+                <div className="flex items-center gap-2 ml-2">
+                  <ProjectStatusBadge status={statusData.data.status} />
+                  {statusData.data.canEditPlan ? (
+                    <span className="text-[9px] text-green-600 font-medium lg:text-[10px] xl:text-xs">
+                      Dapat Diedit
+                    </span>
+                  ) : (
+                    <span className="text-[9px] text-red-600 font-medium lg:text-[10px] xl:text-xs">
+                      Terkunci
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Legend placed to the far right */}
@@ -923,32 +971,13 @@ export function UnifiedScheduleTable({
         }}
       />
 
-      {/* Project Status Manager - Opens in a dialog-like overlay */}
-      {isStatusManagerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
-            <div className="bg-white rounded-lg shadow-lg">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-lg font-semibold">Kelola Status Proyek</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsStatusManagerOpen(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </Button>
-              </div>
-              <div className="p-4">
-                <ProjectStatusManager
-                  projectId={projectId}
-                  projectTitle={title}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Create Addendum Modal */}
+      <CreateAddendumModal
+        isOpen={isAddendumModalOpen}
+        onClose={() => setIsAddendumModalOpen(false)}
+        projectId={projectId}
+        projectTitle={title}
+      />
     </div>
   )
 }

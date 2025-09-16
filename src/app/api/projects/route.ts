@@ -163,6 +163,7 @@ export async function GET(request: NextRequest) {
           fisikTarget: true,
           jenisPengadaan: true,
           lokasiProyek: true,
+          status: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -189,6 +190,7 @@ export async function GET(request: NextRequest) {
         progress: project.fisikProgress || 0,
         deviation: project.fisikDeviasi || 0,
         target: project.fisikTarget || 100,
+        projectStatus: project.status || 'DRAFT', // Add the actual project status from schema
       }
     })
 

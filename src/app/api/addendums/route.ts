@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
 import { 
   CreateAddendumSchema, 
   AddendumListResponseSchema,
@@ -181,11 +180,11 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Note: Project status update will be enabled after migration
-    // await prisma.project.update({
-    //   where: { id: validatedData.projectId },
-    //   data: { status: 'DRAFT_ADDENDUM' }
-    // })
+    // Update project status to DRAFT_ADDENDUM after creating addendum
+    await prisma.project.update({
+      where: { id: validatedData.projectId },
+      data: { status: 'DRAFT_ADDENDUM' }
+    })
 
     const response = {
       success: true as const,

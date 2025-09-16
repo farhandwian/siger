@@ -36,14 +36,15 @@ export async function GET(
       )
     }
 
-    const { id: projectId } = params
+    // Await params before accessing properties (Next.js 15 requirement)
+    const { id: projectId } = await params
 
     // Fetch project with current status (will be enabled after migration)
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       select: { 
         id: true,
-        // status: true, // Will be enabled after migration
+        status: true, // Will be enabled after migration
       }
     })
 
@@ -58,26 +59,26 @@ export async function GET(
     const currentAddendum = await prisma.addendums.findFirst({
       where: { 
         projectId,
-        // isActive: true // Will be enabled after migration
       },
       orderBy: { addendumNumber: 'desc' }
     })
 
     // For now, default status is DRAFT until migration
-    const projectStatus = 'DRAFT' // project.status after migration
+    const projectStatus = project?.status ?? 'DRAFT' // project.status after migration
     
     // Determine if plans can be edited and from which week
-    let canEditPlan = true
+    let canEditPlan = false
     let editableFromWeek: number | null = null
 
     // This logic will be fully implemented after migration
-    // if (projectStatus === 'DRAFT') {
-    //   canEditPlan = true
-    // } else if (projectStatus === 'KONTRAK') {
-    //   canEditPlan = false
-    // } else if (projectStatus === 'DRAFT_ADDENDUM' && currentAddendum) {
-    //   canEditPlan = true
-    //   editableFromWeek = currentAddendum.weekNumber
+    if (projectStatus === 'DRAFT') {
+      canEditPlan = true
+    } else if (projectStatus === 'KONTRAK') {
+      canEditPlan = false
+    } else if (projectStatus === 'DRAFT_ADDENDUM' && currentAddendum) {
+      canEditPlan = true
+      editableFromWeek = currentAddendum.weekNumber
+    }
     // }
 
     const response = {
@@ -134,7 +135,8 @@ export async function PATCH(
       )
     }
 
-    const { id: projectId } = params
+    // Await params before accessing properties (Next.js 15 requirement)
+    const { id: projectId } = await params
 
     // Parse and validate request body
     const body = await request.json()
@@ -153,21 +155,74 @@ export async function PATCH(
       )
     }
 
-    // Update project status (will be enabled after migration)
-    // const updatedProject = await prisma.project.update({
-    //   where: { id: projectId },
-    //   data: { status: validatedData.status }
-    // })
+    // Parse requested status from validated body
+    const { status } = validatedData
 
-    // For now, return success without actual update
+    // Fetch the latest addendum for this project (if any)
+    let currentAddendum = await prisma.addendums.findFirst({
+      where: { projectId },
+      orderBy: { addendumNumber: 'desc' }
+    })
+
+    // Perform update inside a transaction to keep project and addendum changes consistent
+    // If moving to DRAFT_ADDENDUM we create a new addendum and mark previous active addendums as inactive
+    const updatedProject = await prisma.$transaction(async (tx) => {
+      if (status === 'DRAFT_ADDENDUM') {
+      // Compute next addendum number
+      const nextAddendumNumber = (currentAddendum?.addendumNumber ?? 0) + 1
+
+      // Create the new addendum. If your schema requires additional fields adjust accordingly.
+      const created = await tx.addendums.create({
+        data: {
+        projectId,
+        addendumNumber: nextAddendumNumber,
+        title: `Addendum ${nextAddendumNumber}`,
+        effectiveDate: new Date(),
+        weekNumber: 1, // Default to week 1, can be adjusted later
+        modifiedBy: user.id ?? '',
+        }
+      })
+
+      // Update reference for response
+      currentAddendum = created
+
+      // Update project status
+      return tx.project.update({
+        where: { id: projectId },
+        data: { status },
+        select: { id: true, status: true }
+      })
+      }
+
+      // For other status transitions, just update the project status
+      return tx.project.update({
+      where: { id: projectId },
+      data: { status },
+      select: { id: true, status: true }
+      })
+    })
+
+    // Determine plan editability based on new status
+    const canEditPlan = updatedProject.status === 'DRAFT' || updatedProject.status === 'DRAFT_ADDENDUM'
+    const editableFromWeek = updatedProject.status === 'DRAFT_ADDENDUM'
+      ? (currentAddendum?.weekNumber ?? null)
+      : null
+
+    // Build response object following the established API format
     const response = {
       success: true as const,
       data: {
-        id: projectId,
-        status: validatedData.status,
-        message: 'Status update will be enabled after database migration'
+      id: updatedProject.id,
+      status: updatedProject.status,
+      currentAddendum: currentAddendum || null,
+      canEditPlan,
+      editableFromWeek,
+      message: 'Project status updated successfully'
       }
     }
+
+    // Validate response shape with Zod before returning
+    ProjectStatusResponseSchema.parse(response)
 
     return NextResponse.json(response)
 

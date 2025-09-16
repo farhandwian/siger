@@ -17,6 +17,7 @@ const protectedApiRoutes = [
   '/api/satkers',
   '/api/balai',
   '/api/assignments',
+  '/api/addendums',
 ]
 
 // Protected web pages that require authentication

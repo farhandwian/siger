@@ -30,8 +30,6 @@ export function ActionPlanTable({
         project={project}
         isLoading={isLoading}
         getCalculatedValueForWeek={getCalculatedValueForWeek}
-        showAddButton={true}
-        showTitle={false}
       />
     </div>
   )

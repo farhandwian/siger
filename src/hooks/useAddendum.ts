@@ -4,11 +4,11 @@ import {
   AddendumResponse,
   CreateAddendumRequest,
   UpdateAddendumRequest,
-  ApproveAddendumRequest,
   ProjectStatusResponse,
   UpdateProjectStatusRequest,
   AddendumQuery
 } from '@/lib/schemas/addendum'
+import { projectKeys } from './useProjectQueries'
 
 /**
  * Custom React Query hooks for addendum management
@@ -143,6 +143,11 @@ export function useCreateAddendum() {
         queryKey: projectStatusKeys.detail(data.data.projectId) 
       })
 
+      // Invalidate project detail to reflect status change
+      queryClient.invalidateQueries({ 
+        queryKey: projectKeys.detail(data.data.projectId) 
+      })
+
       // Immediately cache the new addendum detail
       queryClient.setQueryData(
         addendumKeys.detail(data.data.id), 
@@ -247,7 +252,7 @@ export function useUpdateProjectStatus() {
     }: { 
       projectId: string; 
       data: UpdateProjectStatusRequest 
-    }): Promise<{ success: boolean; data: any }> => {
+    }): Promise<ProjectStatusResponse> => {
       const response = await fetch(`/api/projects/${projectId}/status`, {
         method: 'PATCH',
         headers: {

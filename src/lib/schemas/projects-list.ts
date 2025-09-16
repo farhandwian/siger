@@ -14,6 +14,7 @@ export const ProjectProgressItemSchema = z.object({
   progress: z.number().min(0).max(100),
   deviation: z.number(),
   target: z.number().min(0).max(100),
+  projectStatus: z.enum(['DRAFT', 'KONTRAK', 'DRAFT_ADDENDUM']).optional(),
 })
 
 /**
