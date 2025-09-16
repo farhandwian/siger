@@ -3,33 +3,26 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { ActivityScheduleTable } from '@/components/activities/activity-schedule-table'
-import { ActivityScheduleTableNew } from '@/components/activities/ActivityScheduleTableNew'
-import { CSVImportModal } from '@/components/activities/csv-import-modal'
-import { ActionPlanScheduleTable } from '@/components/action-plan/ActionPlanScheduleTable'
-import { ActionPlanScheduleTableNew } from '@/components/action-plan/ActionPlanScheduleTableNew'
+import { ScheduleTable } from '@/components/schedule/schedule-table'
+import { CSVImportModal } from '@/components/schedule/csv-import-modal'
 import { ActionPlanCSVImportModal } from '@/components/action-plan/ActionPlanCSVImportModal'
+import { ActionPlanTable } from '@/components/action-plan/action-plan-table'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
-import { AddMaterialModal } from '@/components/materials/add-material-modal'
-import { MaterialFlowTable } from '@/components/materials/material-flow-table'
-import { MaterialChart } from '@/components/materials/material-chart'
 import { AIInsights } from '@/components/monitoring/ai-insights'
 import { MonitoringMetrics } from '@/components/monitoring/monitoring-metrics'
-import { SCurveChart } from '@/components/monitoring/SCurveChartNew'
+import { SCurveChart } from '@/components/monitoring/s-curve-chart'
 import { ProjectWorkMap } from '@/components/monitoring/project-work-map'
 import { AutoSaveField } from '@/components/ui/auto-save-field'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
-import { useMonitoringData } from '@/hooks/use-monitoring-data'
-import { useMaterials } from '@/hooks/useMaterialQueries'
-import { useProjectDetail, useUpdateProjectField } from '@/hooks/useProjectQueries'
+import { useProjectDetail } from '@/hooks/useProjectQueries'
+import { useCalculatedData } from '@/hooks/useCalculatedData'
 import { cn } from '@/lib/utils'
 import { formatDateForInput } from '@/utils/dateUtils'
-import { ChevronDown, Plus, RefreshCw, Wifi, WifiOff, Upload } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { ActionPlanMetrics } from '@/components/monitoring/action-plan-metrics'
 import { ArrowLeft } from 'lucide-react'
 import AnalisaKebutuhanTable from '@/components/analisa-kebutuhan/AnalisaKebutuhanTable'
 import { ResourceFlowTable } from '@/components/resource-flow/resource-flow-table'
@@ -195,25 +188,14 @@ export default function ProjectDetailPage() {
   const tabFromUrl = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(tabFromUrl || 'Data Teknis')
 
-  const [addMaterialModalOpen, setAddMaterialModalOpen] = useState(false)
   const [csvImportModalOpen, setCsvImportModalOpen] = useState(false)
   const [actionPlanCsvImportModalOpen, setActionPlanCsvImportModalOpen] = useState(false)
-  const [selectedMaterial, setSelectedMaterial] = useState<string>('')
 
   const projectId = (params?.id as string) || '1'
   const { data: project, isLoading, error } = useProjectDetail(projectId)
-  const { data: materials } = useMaterials(projectId)
-  const updateProjectMutation = useUpdateProjectField()
-  const { refreshAll, isLoading: monitoringLoading, isError: monitoringError } = useMonitoringData()
 
-  // Initialize selectedMaterial when materials are loaded
-  useEffect(() => {
-    if (materials && materials.length > 0 && !selectedMaterial) {
-      setSelectedMaterial(materials[0].jenisMaterial)
-    }
-  }, [materials, selectedMaterial])
-
-  // Update activeTab when URL search params change
+  // Calculate cumulative data for the entire project - available immediately when page loads
+  const calculatedData = useCalculatedData(projectId)  // Update activeTab when URL search params change
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab')
     if (tabFromUrl) {
@@ -230,10 +212,12 @@ export default function ProjectDetailPage() {
     paguAnggaran: '',
     nilaiKontrak: '',
     nomorKontrak: '',
+    numberOfWeeks: '',
     spmk: '',
     masaKontrak: '',
     tanggalKontrak: '',
     akhirKontrak: '',
+    tanggalSpmk: '',
     pembayaranTerakhir: '',
   })
 
@@ -248,10 +232,12 @@ export default function ProjectDetailPage() {
         paguAnggaran: project.paguAnggaran || '',
         nilaiKontrak: project.nilaiKontrak || '',
         nomorKontrak: project.nomorKontrak || '',
+        numberOfWeeks: project.numberOfWeeks?.toString() || '',
         spmk: project.spmk || '',
         masaKontrak: project.masaKontrak || '',
         tanggalKontrak: formatDateForInput(project.tanggalKontrak),
         akhirKontrak: formatDateForInput(project.akhirKontrak),
+        tanggalSpmk: formatDateForInput(project.tanggalSpmk),
         pembayaranTerakhir: project.pembayaranTerakhir || '',
       })
     }
@@ -266,6 +252,8 @@ export default function ProjectDetailPage() {
 
   const refreshActivities = () => {
     queryClient.invalidateQueries({ queryKey: ['activities', 'list', projectId] })
+    queryClient.invalidateQueries({ queryKey: ['action-plan-schedules'] })
+    queryClient.invalidateQueries({ queryKey: ['schedules'] })
   }
 
   const tabs = [
@@ -274,7 +262,6 @@ export default function ProjectDetailPage() {
     'Data Teknis',
     'Jadwal',
     'Action Plan',
-    'Material Flow',
     'Analisa Kebutuhan',
     'Resource Flow',
   ]
@@ -526,6 +513,14 @@ export default function ProjectDetailPage() {
                           fieldName="nomorKontrak"
                         />
                         <AutoSaveField
+                          label="Jumlah Minggu"
+                          value={projectData.numberOfWeeks}
+                          onChange={(value: string) => updateField('numberOfWeeks', value)}
+                          projectId={projectId}
+                          fieldName="numberOfWeeks"
+                          type="number"
+                        />
+                        <AutoSaveField
                           label="SPMK"
                           value={projectData.spmk}
                           onChange={(value: string) => updateField('spmk', value)}
@@ -533,11 +528,12 @@ export default function ProjectDetailPage() {
                           fieldName="spmk"
                         />
                         <AutoSaveField
-                          label="Masa Kontrak"
-                          value={projectData.masaKontrak}
-                          onChange={(value: string) => updateField('masaKontrak', value)}
+                          label="Tanggal SPMK"
+                          value={projectData.tanggalSpmk}
+                          onChange={(value: string) => updateField('tanggalSpmk', value)}
                           projectId={projectId}
-                          fieldName="masaKontrak"
+                          fieldName="tanggalSpmk"
+                          type="date"
                         />
                       </div>
                       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
@@ -558,12 +554,19 @@ export default function ProjectDetailPage() {
                           type="date"
                         />
                         <AutoSaveField
+                          label="Masa Kontrak"
+                          value={projectData.masaKontrak}
+                          onChange={(value: string) => updateField('masaKontrak', value)}
+                          projectId={projectId}
+                          fieldName="masaKontrak"
+                        />
+                        {/* <AutoSaveField
                           label="Pembayaran Terakhir"
                           value={projectData.pembayaranTerakhir}
                           onChange={(value: string) => updateField('pembayaranTerakhir', value)}
                           projectId={projectId}
                           fieldName="pembayaranTerakhir"
-                        />
+                        /> */}
                       </div>
                     </div>
                   </section>
@@ -635,49 +638,6 @@ export default function ProjectDetailPage() {
               {/* Jadwal Tab Content */}
               {activeTab === 'Jadwal' && (
                 <div className="space-y-6">
-                  {/* Real-time Status Indicator */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1">
-                        <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-                        <span className="text-xs font-medium text-green-700">
-                          Real-time monitoring aktif (refresh setiap 5 detik)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {!monitoringError ? (
-                          <Wifi className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <WifiOff className="h-4 w-4 text-red-500" />
-                        )}
-                        <span
-                          className={`text-xs ${!monitoringError ? 'text-green-500' : 'text-red-500'}`}
-                        >
-                          {!monitoringError ? 'Live' : 'Offline'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <Button
-                        onClick={refreshAll}
-                        disabled={monitoringLoading}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2"
-                      >
-                        <RefreshCw
-                          className={`h-4 w-4 ${monitoringLoading ? 'animate-spin' : ''}`}
-                        />
-                        Refresh
-                      </Button>
-
-                      <div className="text-xs text-gray-500">
-                        Last updated: {new Date().toLocaleTimeString('id-ID')}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Metrics Cards */}
                   <div>
                     <h2 className="mb-4 text-sm font-medium text-gray-900">Progress Overview</h2>
@@ -686,8 +646,8 @@ export default function ProjectDetailPage() {
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="flex flex-col gap-6 xl:col-span-2">
-                      <MonitoringMetrics projectId={projectId} />
-                      <SCurveChart projectId={projectId} type="activity" />
+                      <MonitoringMetrics projectId={projectId} isActionPlanTable={false} />
+                      <SCurveChart projectId={projectId} isActionPlanTable={false} />
                     </div>
                     <div className="flex flex-col">
                       <AIInsights />
@@ -697,7 +657,7 @@ export default function ProjectDetailPage() {
                   {/* Activity Schedule Table */}
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-gray-900">Activity Schedule</h2>
+                      <h2 className="text-sm font-medium text-gray-900">Jadwal Kontrak</h2>
                       <Button
                         onClick={() => setCsvImportModalOpen(true)}
                         variant="outline"
@@ -708,81 +668,38 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActivityScheduleTableNew projectId={projectId} />
+                    <ScheduleTable 
+                      projectId={projectId} 
+                      calculatedData={calculatedData}
+                    />
                   </div>
                 </div>
               )}
               {/* Action Plan Content */}
               {activeTab === 'Action Plan' && (
                 <div className="space-y-6">
-                  {/* Real-time Status Indicator */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1">
-                        <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-                        <span className="text-xs font-medium text-green-700">
-                          Real-time monitoring aktif (refresh setiap 5 detik)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {!monitoringError ? (
-                          <Wifi className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <WifiOff className="h-4 w-4 text-red-500" />
-                        )}
-                        <span
-                          className={`text-xs ${!monitoringError ? 'text-green-500' : 'text-red-500'}`}
-                        >
-                          {!monitoringError ? 'Live' : 'Offline'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <Button
-                        onClick={refreshAll}
-                        disabled={monitoringLoading}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2"
-                      >
-                        <RefreshCw
-                          className={`h-4 w-4 ${monitoringLoading ? 'animate-spin' : ''}`}
-                        />
-                        Refresh
-                      </Button>
-
-                      <div className="text-xs text-gray-500">
-                        Last updated: {new Date().toLocaleTimeString('id-ID')}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Metrics Cards */}
                   <div>
                     <h2 className="mb-4 text-sm font-medium text-gray-900">Progress Overview</h2>
-                    <ActionPlanMetrics
-                      projectId={projectId}
-                      onNavigateToMap={() => setActiveTab('Peta Pekerjaan')}
-                    />
                   </div>
 
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <div className="flex flex-col xl:col-span-2">
-                      <SCurveChart projectId={projectId} type="actionPlan" />
+                    <div className="flex flex-col gap-6 xl:col-span-2">
+                      <MonitoringMetrics projectId={projectId} isActionPlanTable={true} />
+                      <SCurveChart projectId={projectId} isActionPlanTable={true} />
                     </div>
                     <div className="flex flex-col">
                       <AIInsights />
                     </div>
                   </div>
 
-                  {/* Action Plan Schedule Table */}
+                  {/* Activity Schedule Table */}
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-medium text-gray-900">Action Plan Schedule</h2>
+                      <h2 className="text-sm font-medium text-gray-900">Jadwal Action Plan</h2>
                       <Button
-                        onClick={() => setActionPlanCsvImportModalOpen(true)}
+                        onClick={() => setCsvImportModalOpen(true)}
                         variant="outline"
                         size="sm"
                         className="flex items-center gap-2"
@@ -791,7 +708,10 @@ export default function ProjectDetailPage() {
                         Import CSV
                       </Button>
                     </div>
-                    <ActionPlanScheduleTableNew projectId={projectId} />
+                    <ActionPlanTable 
+                      projectId={projectId} 
+                      calculatedData={calculatedData}
+                    />
                   </div>
                 </div>
               )}
@@ -802,72 +722,6 @@ export default function ProjectDetailPage() {
                   <div className="relative">
                     <ProjectWorkMap projectId={projectId} />
                   </div>
-                </div>
-              )}
-
-              {/* Material Flow Tab Content */}
-              {activeTab === 'Material Flow' && (
-                <div className="space-y-6">
-                  {/* Header Section */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                      <h2 className="text-lg font-medium text-gray-900">Daftar Material</h2>
-
-                      {/* Material Dropdown */}
-                      <div className="relative">
-                        <select
-                          value={selectedMaterial}
-                          onChange={e => setSelectedMaterial(e.target.value)}
-                          aria-label="Pilih jenis material"
-                          className="appearance-none rounded-lg border border-gray-200 bg-gray-100 px-4 py-1.5 pr-8 text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          {materials && materials.length > 0 ? (
-                            materials.map(material => (
-                              <option key={material.id} value={material.jenisMaterial}>
-                                {material.jenisMaterial}
-                              </option>
-                            ))
-                          ) : (
-                            <option value="">Belum ada material</option>
-                          )}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                      </div>
-                    </div>
-
-                    {/* Add Material Button */}
-                    <Button
-                      onClick={() => setAddMaterialModalOpen(true)}
-                      className="flex items-center gap-2 bg-[#ffc928] text-[#364878] hover:bg-[#ffc928]/90"
-                    >
-                      <Plus className="h-5 w-5" />
-                      Tambah Material
-                    </Button>
-                  </div>
-
-                  {/* Material Flow Table */}
-                  {materials && materials.length > 0 ? (
-                    <MaterialFlowTable
-                      materials={materials}
-                      selectedMaterial={selectedMaterial}
-                      onMaterialChange={setSelectedMaterial}
-                    />
-                  ) : (
-                    <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-                      <p className="text-gray-500">
-                        Belum ada data material. Silakan tambah material terlebih dahulu.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Material Chart */}
-                  {materials && materials.length > 0 && (
-                    <MaterialChart
-                      materials={materials}
-                      selectedMaterial={selectedMaterial}
-                      onMaterialChange={setSelectedMaterial}
-                    />
-                  )}
                 </div>
               )}
 
@@ -890,7 +744,6 @@ export default function ProjectDetailPage() {
               {activeTab !== 'Data Teknis' &&
                 activeTab !== 'Jadwal' &&
                 activeTab !== 'Action Plan' &&
-                activeTab !== 'Material Flow' &&
                 activeTab !== 'Peta Pekerjaan' && (
                   <div className="py-12 text-center">
                     <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
@@ -927,13 +780,6 @@ export default function ProjectDetailPage() {
           onClose={() => setActionPlanCsvImportModalOpen(false)}
           projectId={String(params.id)}
           onSuccess={refreshActivities}
-        />
-
-        {/* Add Material Modal */}
-        <AddMaterialModal
-          isOpen={addMaterialModalOpen}
-          onClose={() => setAddMaterialModalOpen(false)}
-          projectId={String(params.id)}
         />
       </div>
     </div>

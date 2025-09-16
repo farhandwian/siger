@@ -4,13 +4,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useCallback } from 'react'
 
 export interface MonitoringData {
-  progress: {
-    current: number
-    total: number
-    deviation: number
-    addendumCount: number
-    lastUpdated: string
-  }
   sCurveData: {
     weeks: number[]
     planned: number[]
@@ -38,6 +31,7 @@ export interface MonitoringData {
 export function useMonitoringData() {
   const queryClient = useQueryClient()
 
+<<<<<<< HEAD
   // Progress data query
   const progressQuery = useQuery({
     queryKey: ['monitoring', 'progress'],
@@ -52,6 +46,8 @@ export function useMonitoringData() {
     gcTime: 30000, // Keep in cache for 30 seconds
   })
 
+=======
+>>>>>>> 429199f1443e44db632f821434a2da6a9614eb38
   // S-Curve data query
   const sCurveQuery = useQuery({
     queryKey: ['monitoring', 's-curve'],
@@ -163,11 +159,10 @@ export function useMonitoringData() {
   }, [refreshAllData])
 
   return {
-    progress: progressQuery,
     sCurve: sCurveQuery,
     aiInsights: aiInsightsQuery,
     refreshAll: refreshAllData,
-    isLoading: progressQuery.isLoading || sCurveQuery.isLoading || aiInsightsQuery.isLoading,
-    isError: progressQuery.isError || sCurveQuery.isError || aiInsightsQuery.isError,
+    isLoading: sCurveQuery.isLoading || aiInsightsQuery.isLoading,
+    isError: sCurveQuery.isError || aiInsightsQuery.isError,
   }
 }

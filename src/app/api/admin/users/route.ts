@@ -3,18 +3,22 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { createProtectedHandler, getUserFromRequest, ApiErrors } from '@/lib/api-auth'
+import { UserRole } from '@prisma/client'
+
+// Force Node.js runtime for this API route to support bcryptjs
+export const runtime = 'nodejs'
 
 /**
  * Admin Users API
  * Provides CRUD operations for user management
- * Only accessible by ADMIN role users
+ * Only accessible by ADMIN_SISTEM role users
  */
 
 const QuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(10),
   search: z.string().optional(),
-  role: z.enum(['ADMIN', 'MANAGER', 'USER', 'VIEWER']).optional(),
+  role: z.nativeEnum(UserRole).optional(),
   isActive: z.enum(['true', 'false', 'all']).default('all'),
 })
 
@@ -23,8 +27,7 @@ const CreateUserSchema = z.object({
   email: z.string().email('Valid email is required'),
   username: z.string().min(3, 'Username must be at least 3 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['ADMIN', 'MANAGER', 'USER', 'VIEWER']).default('USER'),
-  phoneNumber: z.string().optional(),
+  role: z.nativeEnum(UserRole).default(UserRole.PPK),
   isActive: z.boolean().default(true),
 })
 
@@ -32,8 +35,7 @@ const UpdateUserSchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),
   email: z.string().email('Valid email is required').optional(),
   username: z.string().min(3, 'Username must be at least 3 characters').optional(),
-  role: z.enum(['ADMIN', 'MANAGER', 'USER', 'VIEWER']).optional(),
-  phoneNumber: z.string().optional(),
+  role: z.nativeEnum(UserRole).optional(),
   isActive: z.boolean().optional(),
   password: z.string().min(6, 'Password must be at least 6 characters').optional(),
 })
@@ -43,7 +45,7 @@ const UpdateUserSchema = z.object({
  * Retrieve users with filtering and pagination
  */
 export const GET = createProtectedHandler(
-  ['ADMIN'], // Only admins can view users
+  ['ADMIN_SISTEM'], // Only system admins can view users
   async (req: NextRequest) => {
     const { searchParams } = new URL(req.url)
     const query = QuerySchema.parse(Object.fromEntries(searchParams))
@@ -77,7 +79,6 @@ export const GET = createProtectedHandler(
             email: true,
             username: true,
             role: true,
-            phoneNumber: true,
             isActive: true,
             lastLoginAt: true,
             createdAt: true,
@@ -112,7 +113,7 @@ export const GET = createProtectedHandler(
  * Create a new user
  */
 export const POST = createProtectedHandler(
-  ['ADMIN'], // Only admins can create users
+  ['ADMIN_SISTEM'], // Only system admins can create users
   async (req: NextRequest, user) => {
     try {
       const body = await req.json()
@@ -151,7 +152,6 @@ export const POST = createProtectedHandler(
           email: true,
           username: true,
           role: true,
-          phoneNumber: true,
           isActive: true,
           createdAt: true,
         },
@@ -185,7 +185,7 @@ export const POST = createProtectedHandler(
 export async function PATCH(req: NextRequest) {
   const user = getUserFromRequest(req)
 
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || user.role !== UserRole.ADMIN_SISTEM) {
     return NextResponse.json(ApiErrors.forbidden, { status: 403 })
   }
 

@@ -3,32 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { CreateDailySubActivitySchema } from '@/lib/schemas'
 import { z } from 'zod'
 
-// Helper function to get week number from date
-function getWeekInfo(dateString: string) {
-  const date = new Date(dateString)
-  const year = date.getFullYear()
-  const month = date.getMonth() + 1
-
-  // Get the first Monday of the month
-  const firstDay = new Date(year, month - 1, 1)
-  const firstMonday = new Date(firstDay)
-
-  // Find the first Monday
-  const daysToMonday = (8 - firstDay.getDay()) % 7
-  firstMonday.setDate(1 + daysToMonday)
-
-  // Calculate week number
-  const diffTime = date.getTime() - firstMonday.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-  const week = Math.floor(diffDays / 7) + 1
-
-  return {
-    year,
-    month,
-    week: Math.max(1, Math.min(6, week)), // Ensure week is between 1-6
-  }
-}
-
 /**
  * PUT endpoint to create or update daily sub-activity progress
  *
@@ -47,18 +21,18 @@ export async function PUT(request: NextRequest) {
     // Validate request body using Zod schema
     const validatedData = CreateDailySubActivitySchema.parse(body)
     const {
-      sub_activities_id,
-      user_id,
+      subActivityId,
+      userId,
       koordinat,
-      catatan_kegiatan,
-      tanggal_progres,
-      progres_realisasi_per_hari,
+      catatanKegiatan,
+      tanggalProgres,
+      progresRealisasiPerHari,
       files,
     } = validatedData
 
     // Check if sub activity exists
     const subActivity = await prisma.subActivity.findUnique({
-      where: { id: sub_activities_id },
+      where: { id: subActivityId },
     })
 
     if (!subActivity) {
@@ -67,7 +41,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if user exists
     const user = await prisma.user.findUnique({
-      where: { id: user_id },
+      where: { id: userId },
     })
 
     if (!user) {
@@ -78,99 +52,45 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'User is not active' }, { status: 400 })
     }
 
-    // Get week information from the date
-    const weekInfo = getWeekInfo(tanggal_progres)
-
-    // Start transaction to update both daily activity and weekly schedule
-    // This ensures data consistency between daily records and weekly aggregates
+    // Start transaction to update daily activity
+    // This ensures data consistency
     const result = await prisma.$transaction(async tx => {
       // 1. Get the existing daily activity record (if any) to track previous progress
       // This is needed to calculate the net change in progress for weekly updates
-      const existingDailyActivity = await tx.dailySubActivity.findUnique({
+      const existingDailyActivity = await tx.dailyReport.findUnique({
         where: {
           subActivityId_tanggalProgres_userId: {
-            subActivityId: sub_activities_id,
-            tanggalProgres: tanggal_progres,
-            userId: user_id,
+            subActivityId: subActivityId,
+            tanggalProgres: tanggalProgres,
+            userId: userId,
           },
         },
       })
 
       // 2. Create or update daily sub activity record using upsert
       // The unique constraint (subActivityId, tanggalProgres, userId) ensures only one record per date per user
-      const dailyActivity = await tx.dailySubActivity.upsert({
+      const dailyActivity = await tx.dailyReport.upsert({
         where: {
           subActivityId_tanggalProgres_userId: {
-            subActivityId: sub_activities_id,
-            tanggalProgres: tanggal_progres,
-            userId: user_id,
+            subActivityId: subActivityId,
+            tanggalProgres: tanggalProgres,
+            userId: userId,
           },
         },
         update: {
           koordinat: koordinat ? JSON.parse(JSON.stringify(koordinat)) : undefined,
-          catatanKegiatan: catatan_kegiatan || null,
+          catatanKegiatan: catatanKegiatan || null,
           file: files ? JSON.parse(JSON.stringify(files)) : undefined,
-          progresRealisasiPerHari: progres_realisasi_per_hari,
+          progresRealisasiPerHari: progresRealisasiPerHari,
         },
         create: {
-          subActivityId: sub_activities_id,
-          userId: user_id,
+          subActivityId: subActivityId,
+          userId: userId,
           koordinat: koordinat ? JSON.parse(JSON.stringify(koordinat)) : undefined,
-          catatanKegiatan: catatan_kegiatan || null,
+          catatanKegiatan: catatanKegiatan || null,
           file: files ? JSON.parse(JSON.stringify(files)) : undefined,
-          progresRealisasiPerHari: progres_realisasi_per_hari,
-          tanggalProgres: tanggal_progres,
-        },
-      })
-
-      // 3. Get existing weekly schedule
-      const existingSchedule = await tx.activitySchedule.findUnique({
-        where: {
-          subActivityId_month_year_week: {
-            subActivityId: sub_activities_id,
-            month: weekInfo.month,
-            year: weekInfo.year,
-            week: weekInfo.week,
-          },
-        },
-      })
-
-      // 4. Calculate new weekly progress properly handling updates
-      const currentWeeklyProgress = existingSchedule?.actualPercentage || 0
-      let newWeeklyProgress: number
-
-      if (existingDailyActivity) {
-        // Update case: subtract old progress, then add new progress
-        const oldDailyProgress = existingDailyActivity.progresRealisasiPerHari || 0
-        newWeeklyProgress = Math.max(
-          0,
-          Math.min(100, currentWeeklyProgress - oldDailyProgress + progres_realisasi_per_hari)
-        )
-      } else {
-        // Create case: just add new progress to weekly total
-        newWeeklyProgress = Math.min(currentWeeklyProgress + progres_realisasi_per_hari, 100)
-      }
-
-      // 5. Update or create the weekly schedule record
-      await tx.activitySchedule.upsert({
-        where: {
-          subActivityId_month_year_week: {
-            subActivityId: sub_activities_id,
-            month: weekInfo.month,
-            year: weekInfo.year,
-            week: weekInfo.week,
-          },
-        },
-        update: {
-          actualPercentage: newWeeklyProgress,
-        },
-        create: {
-          subActivityId: sub_activities_id,
-          month: weekInfo.month,
-          year: weekInfo.year,
-          week: weekInfo.week,
-          planPercentage: 0, // Default plan percentage
-          actualPercentage: Math.min(progres_realisasi_per_hari, 100),
+          progresRealisasiPerHari: progresRealisasiPerHari,
+          tanggalProgres: tanggalProgres,
         },
       })
 

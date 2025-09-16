@@ -3,6 +3,10 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { createProtectedHandler, ApiErrors } from '@/lib/api-auth'
+import { UserRole } from '@prisma/client'
+
+// Force Node.js runtime for this API route to support bcryptjs
+export const runtime = 'nodejs'
 
 /**
  * Individual User Management API
@@ -14,8 +18,7 @@ const UpdateUserSchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),
   email: z.string().email('Valid email is required').optional(),
   username: z.string().min(3, 'Username must be at least 3 characters').optional(),
-  role: z.enum(['ADMIN', 'MANAGER', 'USER', 'VIEWER']).optional(),
-  phoneNumber: z.string().optional(),
+  role: z.nativeEnum(UserRole).optional(),
   isActive: z.boolean().optional(),
   password: z.string().min(6, 'Password must be at least 6 characters').optional(),
 })
@@ -29,7 +32,7 @@ interface RouteContext {
  * Get single user details
  */
 export const GET = createProtectedHandler(
-  ['ADMIN'],
+  ['ADMIN_SISTEM'],
   async (req: NextRequest, user, context: RouteContext) => {
     const { id } = context.params
 
@@ -42,7 +45,6 @@ export const GET = createProtectedHandler(
           email: true,
           username: true,
           role: true,
-          phoneNumber: true,
           isActive: true,
           lastLoginAt: true,
           createdAt: true,
@@ -70,7 +72,7 @@ export const GET = createProtectedHandler(
  * Update single user
  */
 export const PATCH = createProtectedHandler(
-  ['ADMIN'],
+  ['ADMIN_SISTEM'],
   async (req: NextRequest, user, context: RouteContext) => {
     const { id } = context.params
 
@@ -133,7 +135,6 @@ export const PATCH = createProtectedHandler(
           email: true,
           username: true,
           role: true,
-          phoneNumber: true,
           isActive: true,
           lastLoginAt: true,
           updatedAt: true,
@@ -163,7 +164,7 @@ export const PATCH = createProtectedHandler(
  * Delete single user
  */
 export const DELETE = createProtectedHandler(
-  ['ADMIN'],
+  ['ADMIN_SISTEM'],
   async (req: NextRequest, user, context: RouteContext) => {
     const { id } = context.params
 
@@ -195,10 +196,10 @@ export const DELETE = createProtectedHandler(
       }
 
       // Check if this is the last admin (prevent system lockout)
-      if (existingUser.role === 'ADMIN') {
+      if (existingUser.role === UserRole.ADMIN_SISTEM) {
         const adminCount = await prisma.user.count({
           where: {
-            role: 'ADMIN',
+            role: UserRole.ADMIN_SISTEM,
             isActive: true,
           },
         })

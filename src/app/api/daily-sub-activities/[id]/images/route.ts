@@ -119,12 +119,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // Get total count for pagination
-    const total = await prisma.dailySubActivity.count({
+    const total = await prisma.dailyReport.count({
       where: whereClause,
     })
 
     // Fetch daily activities with files
-    const activities = await prisma.dailySubActivity.findMany({
+    const activities = await prisma.dailyReport.findMany({
       where: whereClause,
       select: {
         id: true,

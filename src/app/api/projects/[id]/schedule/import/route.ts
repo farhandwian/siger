@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
           console.log('🗑️ Replace mode: Deleting all existing project data...')
 
           // Delete in correct order (foreign key constraints)
-          const deletedSchedules = await tx.activitySchedule.deleteMany({
+          const deletedSchedules = await tx.schedulePlan.deleteMany({
             where: {
               subActivity: {
                 activity: {
@@ -176,9 +176,68 @@ export async function POST(request: NextRequest) {
           ).length
         }
 
-        // Second pass: Create sub-activities and schedules
+        // Second pass: Create sub-activities and schedules in batches
         const subActivitiesData = activities.filter(a => a.type === 'subActivity')
 
+        // Prepare batch data for sub-activities
+        const subActivitiesToCreate: Array<{
+          activityId: string
+          name: string
+          satuan?: string
+          volume?: number
+          weight: number
+          order: number
+        }> = []
+        
+        const subActivitiesToUpdate: Array<{
+          id: string
+          satuan?: string
+          volume?: number
+          weight: number
+        }> = []
+
+        const schedulePlansToUpsert: Array<{
+          subActivityId: string
+          month: number
+          year: number
+          week: number
+          percentage: number
+        }> = []
+
+        const realizationsToUpsert: Array<{
+          subActivityId: string
+          month: number
+          year: number
+          week: number
+          percentage: number
+        }> = []
+
+        // First, get existing sub-activities for updates
+        const existingSubActivities = await tx.subActivity.findMany({
+          where: {
+            activity: {
+              projectId: projectId
+            }
+          },
+          select: {
+            id: true,
+            name: true,
+            activityId: true,
+            activity: {
+              select: {
+                name: true
+              }
+            }
+          }
+        })
+
+        const existingSubActivityMap = new Map<string, string>()
+        existingSubActivities.forEach(sub => {
+          const key = `${sub.activity.name}:${sub.name}`
+          existingSubActivityMap.set(key, sub.id)
+        })
+
+        // Process each sub-activity and prepare batch data
         for (const activityData of subActivitiesData) {
           const parentActivityId = activityData.parentActivity
             ? activityMap.get(activityData.parentActivity)
@@ -188,76 +247,161 @@ export async function POST(request: NextRequest) {
             throw new Error(`Parent activity not found: ${activityData.parentActivity}`)
           }
 
-          // Check if sub-activity already exists
-          let subActivity = await tx.subActivity.findFirst({
-            where: {
+          const subActivityKey = `${activityData.parentActivity}:${activityData.name}`
+          const existingSubActivityId = existingSubActivityMap.get(subActivityKey)
+
+          if (!existingSubActivityId) {
+            // Prepare for creation
+            subActivitiesToCreate.push({
               activityId: parentActivityId,
               name: activityData.name,
-            },
-          })
-
-          if (!subActivity) {
-            subActivity = await tx.subActivity.create({
-              data: {
-                activityId: parentActivityId,
-                name: activityData.name,
-                satuan: activityData.satuan,
-                volumeKontrak: activityData.volumeKontrak,
-                volumeMC0: activityData.volumeMC0,
-                bobotMC0: activityData.bobotMC0,
-                weight: activityData.bobotMC0 || 0, // Use bobotMC0 as weight
-                order: subActivityCount,
-              },
+              satuan: activityData.satuan,
+              volume: activityData.volumeKontrak,
+              weight: activityData.bobotMC0 || 0,
+              order: subActivityCount++,
             })
-            subActivityCount++
           } else {
-            // Update existing sub-activity with new data
-            subActivity = await tx.subActivity.update({
-              where: { id: subActivity.id },
-              data: {
-                satuan: activityData.satuan,
-                volumeKontrak: activityData.volumeKontrak,
-                volumeMC0: activityData.volumeMC0,
-                bobotMC0: activityData.bobotMC0,
-                weight: activityData.bobotMC0 || 0,
-              },
+            // Prepare for update
+            subActivitiesToUpdate.push({
+              id: existingSubActivityId,
+              satuan: activityData.satuan,
+              volume: activityData.volumeKontrak,
+              weight: activityData.bobotMC0 || 0,
             })
             updatedSubActivities++
           }
+        }
 
-          // Process schedules using simpler upsert approach to avoid conflicts
+        // Batch create new sub-activities
+        const createdSubActivities: { id: string; name: string; activityId: string }[] = []
+        if (subActivitiesToCreate.length > 0) {
+          // Process in chunks to avoid query size limits
+          const chunkSize = 100
+          for (let i = 0; i < subActivitiesToCreate.length; i += chunkSize) {
+            const chunk = subActivitiesToCreate.slice(i, i + chunkSize)
+            const created = await tx.subActivity.createManyAndReturn({
+              data: chunk
+            })
+            createdSubActivities.push(...created)
+          }
+          subActivityCount += createdSubActivities.length
+        }
+
+        // Batch update existing sub-activities
+        if (subActivitiesToUpdate.length > 0) {
+          for (const updateData of subActivitiesToUpdate) {
+            await tx.subActivity.update({
+              where: { id: updateData.id },
+              data: {
+                satuan: updateData.satuan,
+                volume: updateData.volume,
+                weight: updateData.weight,
+              },
+            })
+          }
+        }
+
+        // Update sub-activity mapping with newly created ones
+        createdSubActivities.forEach((sub, index) => {
+          const originalData = subActivitiesToCreate[index]
+          const parentActivityName = Object.keys(activityMap).find(
+            key => activityMap.get(key) === originalData.activityId
+          )
+          if (parentActivityName) {
+            const key = `${parentActivityName}:${originalData.name}`
+            existingSubActivityMap.set(key, sub.id)
+          }
+        })
+
+        // Now prepare schedule and realization data using the complete sub-activity mapping
+        for (const activityData of subActivitiesData) {
+          const subActivityKey = `${activityData.parentActivity}:${activityData.name}`
+          const subActivityId = existingSubActivityMap.get(subActivityKey)
+
+          if (!subActivityId) {
+            // Skip missing sub-activity and continue
+            continue
+          }
+
+          // Process schedules and prepare batch data
           for (const scheduleData of activityData.scheduleData) {
             // Skip if both plan and actual are 0
             if (scheduleData.planPercentage === 0 && scheduleData.actualPercentage === 0) {
               continue
             }
 
-            try {
-              await tx.activitySchedule.upsert({
+            // Prepare schedule plan data
+            if (scheduleData.planPercentage > 0) {
+              schedulePlansToUpsert.push({
+                subActivityId,
+                month: scheduleData.month,
+                year: scheduleData.year,
+                week: scheduleData.week,
+                percentage: scheduleData.planPercentage,
+              })
+            }
+
+            // Prepare realization data
+            if (scheduleData.actualPercentage > 0) {
+              realizationsToUpsert.push({
+                subActivityId,
+                month: scheduleData.month,
+                year: scheduleData.year,
+                week: scheduleData.week,
+                percentage: scheduleData.actualPercentage,
+              })
+            }
+          }
+        }
+
+        // Batch upsert schedule plans
+        if (schedulePlansToUpsert.length > 0) {
+          const chunkSize = 50 // Smaller chunks for upsert operations
+          for (let i = 0; i < schedulePlansToUpsert.length; i += chunkSize) {
+            const chunk = schedulePlansToUpsert.slice(i, i + chunkSize)
+            
+            // Delete existing records first, then create new ones
+            for (const schedule of chunk) {
+              await tx.schedulePlan.upsert({
                 where: {
                   subActivityId_month_year_week: {
-                    subActivityId: subActivity.id,
-                    month: scheduleData.month,
-                    year: scheduleData.year,
-                    week: scheduleData.week,
+                    subActivityId: schedule.subActivityId,
+                    month: schedule.month,
+                    year: schedule.year,
+                    week: schedule.week,
                   },
                 },
                 update: {
-                  planPercentage: scheduleData.planPercentage,
-                  actualPercentage: scheduleData.actualPercentage,
+                  percentage: schedule.percentage,
                 },
-                create: {
-                  subActivityId: subActivity.id,
-                  month: scheduleData.month,
-                  year: scheduleData.year,
-                  week: scheduleData.week,
-                  planPercentage: scheduleData.planPercentage,
-                  actualPercentage: scheduleData.actualPercentage,
-                },
+                create: schedule,
               })
-              scheduleCount++
-            } catch (error: any) {
-              console.error('Failed to upsert schedule:', error)
+            }
+          }
+          scheduleCount += schedulePlansToUpsert.length
+        }
+
+        // Batch upsert realizations
+        if (realizationsToUpsert.length > 0) {
+          const chunkSize = 50 // Smaller chunks for upsert operations
+          for (let i = 0; i < realizationsToUpsert.length; i += chunkSize) {
+            const chunk = realizationsToUpsert.slice(i, i + chunkSize)
+            
+            for (const realization of chunk) {
+              await tx.realization.upsert({
+                where: {
+                  subActivityId_month_year_week: {
+                    subActivityId: realization.subActivityId,
+                    month: realization.month,
+                    year: realization.year,
+                    week: realization.week,
+                  },
+                },
+                update: {
+                  percentage: realization.percentage,
+                },
+                create: realization,
+              })
             }
           }
         }
@@ -266,6 +410,7 @@ export async function POST(request: NextRequest) {
           activityCount,
           subActivityCount,
           scheduleCount,
+          realizationCount: realizationsToUpsert.length,
           updatedActivities,
           updatedSubActivities,
           updatedSchedules,
@@ -274,8 +419,8 @@ export async function POST(request: NextRequest) {
         }
       },
       {
-        maxWait: 120000, // 120 seconds - much longer for large imports
-        timeout: 180000, // 180 seconds - 3 minutes timeout
+        maxWait: 300000, // 5 minutes - increased for large imports
+        timeout: 600000, // 10 minutes timeout for very large CSV files
       }
     )
 
@@ -305,6 +450,7 @@ export async function POST(request: NextRequest) {
           activities: result.activityCount,
           subActivities: result.subActivityCount,
           schedules: result.scheduleCount,
+          realizations: result.realizationCount,
         },
         updated: {
           activities: result.updatedActivities,
@@ -353,7 +499,7 @@ export async function GET(request: NextRequest) {
       include: {
         subActivities: {
           include: {
-            schedules: true,
+            schedulePlans: true,
           },
         },
       },
@@ -370,7 +516,7 @@ export async function GET(request: NextRequest) {
           subActivities: activities.reduce((sum, a) => sum + a.subActivities.length, 0),
           schedules: activities.reduce(
             (sum, a) =>
-              sum + a.subActivities.reduce((subSum, sa) => subSum + sa.schedules.length, 0),
+              sum + a.subActivities.reduce((subSum: number, sa) => subSum + sa.schedulePlans.length, 0),
             0
           ),
         },

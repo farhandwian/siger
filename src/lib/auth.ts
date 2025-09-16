@@ -5,8 +5,15 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 
-// User role enum to match Prisma schema
-export type UserRole = 'USER' | 'ADMIN' | 'MANAGER' | 'VIEWER'
+// Enhanced user role enum to match new Prisma schema
+export type UserRole = 
+  | 'ADMIN_SISTEM'   // Global system administrator
+  | 'ADMIN_BALAI'    // Balai-level administrator  
+  | 'DIRJEN_SDA'     // Director General (read-only oversight)
+  | 'KABALAI'        // Head of Balai (read-only)
+  | 'SATKER'         // Budget execution unit (satker-level CRUD)
+  | 'PPK'            // Project commitment officer (assigned projects CRUD)
+  | 'VENDOR'         // Contractor/vendor (progress updates only)
 
 // Validation schema for login credentials
 const LoginSchema = z.object({
@@ -21,6 +28,9 @@ declare module 'next-auth' {
       email: string
       name: string
       role: UserRole
+      balaiId?: string
+      satkerId?: string
+      projectIds?: string[]
     }
   }
 
@@ -29,6 +39,19 @@ declare module 'next-auth' {
     email: string
     name: string
     role: UserRole
+    balaiId?: string
+    satkerId?: string
+    projectIds?: string[]
+  }
+}
+
+declare module 'next-auth' {
+  interface JWT {
+    userId: string
+    role: UserRole
+    balaiId?: string
+    satkerId?: string
+    projectIds?: string[]
   }
 }
 
@@ -55,13 +78,13 @@ export const authConfig: NextAuthConfig = {
           const validatedFields = LoginSchema.safeParse(credentials)
           
           if (!validatedFields.success) {
-            console.log('Validation failed:', validatedFields.error.issues)
+            // Invalid credentials format
             return null
           }
 
           const { email, password } = validatedFields.data
 
-          // Find user in database
+          // Find user in database with enhanced organizational context
           const user = await prisma.user.findUnique({
             where: { email },
             select: {
@@ -71,11 +94,21 @@ export const authConfig: NextAuthConfig = {
               password: true,
               role: true,
               isActive: true,
+              balaiId: true,
+              satkerId: true,
+              // Include project assignments for PPK and VENDOR users
+              projectAssignments: {
+                where: { isActive: true },
+                select: {
+                  projectId: true,
+                  role: true
+                }
+              }
             },
           })
 
           if (!user || !user.isActive) {
-            console.log('User not found or inactive:', email)
+            // User not found or inactive
             return null
           }
 
@@ -83,7 +116,7 @@ export const authConfig: NextAuthConfig = {
           const isValidPassword = await bcrypt.compare(password, user.password)
           
           if (!isValidPassword) {
-            console.log('Invalid password for user:', email)
+            // Invalid password
             return null
           }
 
@@ -93,15 +126,21 @@ export const authConfig: NextAuthConfig = {
             data: { lastLoginAt: new Date() },
           })
 
-          // Return user object (password excluded)
+          // Extract project IDs for PPK and VENDOR users
+          const projectIds = user.projectAssignments?.map(assignment => assignment.projectId) || []
+
+          // Return user object (password excluded) with organizational context
           return {
             id: user.id,
             email: user.email,
             name: user.name,
             role: user.role as UserRole,
+            balaiId: user.balaiId || undefined,
+            satkerId: user.satkerId || undefined,
+            projectIds: projectIds.length > 0 ? projectIds : undefined,
           }
         } catch (error) {
-          console.error('Auth error:', error)
+          // Authentication error occurred
           return null
         }
       },
@@ -116,18 +155,24 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // Include user info in JWT token
+      // Include user info and organizational context in JWT token
       if (user) {
         token.userId = user.id
         token.role = user.role
+        token.balaiId = user.balaiId
+        token.satkerId = user.satkerId
+        token.projectIds = user.projectIds
       }
       return token
     },
     async session({ session, token }) {
-      // Include user info in session
+      // Include user info and organizational context in session
       if (token && session.user) {
         session.user.id = token.userId as string
         session.user.role = token.role as UserRole
+        session.user.balaiId = token.balaiId as string | undefined
+        session.user.satkerId = token.satkerId as string | undefined
+        session.user.projectIds = token.projectIds as string[] | undefined
       }
       return session
     },
@@ -158,8 +203,8 @@ export const authConfig: NextAuthConfig = {
       },
     },
   },
-  // Enable debug in development
-  debug: process.env.NODE_ENV === 'development',
+  // Only enable debug in explicit development mode, not in production or when NODE_ENV is undefined
+  debug: process.env.NODE_ENV === 'development' && !process.env.NEXTAUTH_URL?.includes('production'),
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)

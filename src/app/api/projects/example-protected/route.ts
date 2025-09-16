@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { createProtectedHandler, getUserFromRequest, ApiErrors } from '@/lib/api-auth'
+import { UserRole } from '@prisma/client'
 
 /**
  * Protected Projects API Example
@@ -33,7 +34,7 @@ const CreateProjectSchema = z.object({
  * Retrieve projects with role-based filtering
  */
 export const GET = createProtectedHandler(
-  ['ADMIN', 'MANAGER', 'USER', 'VIEWER'], // All authenticated users can view projects
+  ['ADMIN_SISTEM', 'ADMIN_BALAI', 'KABALAI', 'SATKER', 'PPK', 'VENDOR'], // All authenticated users can view projects
   async (req: NextRequest, user) => {
     const { searchParams } = new URL(req.url)
     const query = QuerySchema.parse(Object.fromEntries(searchParams))
@@ -51,16 +52,21 @@ export const GET = createProtectedHandler(
 
     // Role-based data filtering
     switch (user.role) {
-      case 'VIEWER':
-        // Viewers can only see projects with progress > 0
+      case UserRole.VENDOR:
+        // Vendors can only see projects with progress > 0
         where.fisikProgress = { gt: 0 }
         break
-      case 'USER':
-        // Regular users see all active projects
+      case UserRole.PPK:
+        // PPK see all assigned projects
         break
-      case 'MANAGER':
-      case 'ADMIN':
-        // Managers and admins see everything
+      case UserRole.SATKER:
+      case UserRole.ADMIN_BALAI:
+      case UserRole.ADMIN_SISTEM:
+        // SATKER, Balai admins and system admins see everything
+        break
+      case UserRole.KABALAI:
+      case UserRole.DIRJEN_SDA:
+        // Read-only roles see all projects
         break
     }
 
@@ -100,8 +106,8 @@ export const GET = createProtectedHandler(
         },
         meta: {
           userRole: user.role,
-          canEdit: ['ADMIN', 'MANAGER'].includes(user.role),
-          canDelete: user.role === 'ADMIN',
+          canEdit: user.role === UserRole.ADMIN_SISTEM || user.role === UserRole.ADMIN_BALAI || user.role === UserRole.SATKER,
+          canDelete: user.role === UserRole.ADMIN_SISTEM,
         },
       })
     } catch (error) {
@@ -113,10 +119,10 @@ export const GET = createProtectedHandler(
 
 /**
  * POST /api/projects
- * Create new project (Manager and Admin only)
+ * Create new project (SATKER and Admins only)
  */
 export const POST = createProtectedHandler(
-  ['ADMIN', 'MANAGER'], // Only managers and admins can create projects
+  ['ADMIN_SISTEM', 'ADMIN_BALAI', 'SATKER'], // Only SATKER and admins can create projects
   async (req: NextRequest, user) => {
     try {
       const body = await req.json()

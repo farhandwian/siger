@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { CreateUserSchema, UserQuerySchema } from '@/lib/schemas'
 import { z } from 'zod'
+import bcrypt from 'bcryptjs'
+
+// Force Node.js runtime for this API route to support bcryptjs
+export const runtime = 'nodejs'
 
 // GET /api/users - Get all users with pagination and filtering
 export async function GET(request: NextRequest) {
@@ -51,7 +55,6 @@ export async function GET(request: NextRequest) {
         email: true,
         name: true,
         role: true,
-        phoneNumber: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -108,15 +111,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(validatedData.password, 12)
+
     const user = await prisma.user.create({
-      data: validatedData,
+      data: {
+        ...validatedData,
+        password: hashedPassword,
+      },
       select: {
         id: true,
         username: true,
         email: true,
         name: true,
         role: true,
-        phoneNumber: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,

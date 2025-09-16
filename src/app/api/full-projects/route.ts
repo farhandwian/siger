@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
                   id: true,
                   name: true,
                   satuan: true,
-                  volumeKontrak: true,
+                  volume: true,
                   weight: true,
                   order: true,
                 },

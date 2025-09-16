@@ -5,6 +5,9 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@/lib/auth'
 
+// Force Node.js runtime for this API route to support bcryptjs and jsonwebtoken
+export const runtime = 'nodejs'
+
 /**
  * Mobile Login API
  * Provides JWT token authentication for mobile applications
@@ -27,7 +30,7 @@ export async function POST(req: NextRequest) {
     const validatedData = MobileLoginSchema.parse(body)
     const { email, password, deviceInfo } = validatedData
 
-    // Find and validate user
+    // Find and validate user with organizational context
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -37,6 +40,46 @@ export async function POST(req: NextRequest) {
         password: true,
         role: true,
         isActive: true,
+        balaiId: true,
+        satkerId: true,
+        // Include project assignments for PPK and VENDOR users
+        projectAssignments: {
+          where: { isActive: true },
+          select: {
+            projectId: true,
+            role: true,
+            project: {
+              select: {
+                id: true,
+                pekerjaan: true,
+                lokasiProyek: true
+              }
+            }
+          }
+        },
+        // Include balai info if user belongs to one
+        balai: {
+          select: {
+            id: true,
+            name: true,
+            code: true
+          }
+        },
+        // Include satker info if user belongs to one
+        satker: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            balai: {
+              select: {
+                id: true,
+                name: true,
+                code: true
+              }
+            }
+          }
+        }
       },
     })
 
@@ -56,25 +99,38 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Generate JWT token for mobile
+    // Generate JWT token for mobile with organizational context
     if (!process.env.NEXTAUTH_SECRET) {
       throw new Error('NEXTAUTH_SECRET environment variable is not set')
     }
+
+    // Extract project IDs for PPK and VENDOR users
+    const projectIds = user.projectAssignments?.map(assignment => assignment.projectId) || []
+
+    // Set token expiration based on role (shorter for vendors)
+    const expiresIn = user.role === 'VENDOR' ? '24h' : '30d'
 
     const token = jwt.sign(
       {
         userId: user.id,
         email: user.email,
         role: user.role,
+        balaiId: user.balaiId,
+        satkerId: user.satkerId,
+        projectIds: projectIds.length > 0 ? projectIds : undefined,
       },
       process.env.NEXTAUTH_SECRET,
-      { expiresIn: '30d' }
+      { expiresIn }
     )
 
-    // Update last login timestamp
+    // Update last login and mobile sync timestamps
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() },
+      data: { 
+        lastLoginAt: new Date(),
+        lastMobileSync: new Date(),
+        deviceInfo: deviceInfo || undefined
+      },
     })
 
     // Log device info if provided (for audit purposes)
@@ -82,23 +138,40 @@ export async function POST(req: NextRequest) {
       console.log('Mobile login:', {
         userId: user.id,
         email: user.email,
+        role: user.role,
         deviceInfo,
         timestamp: new Date().toISOString(),
       })
     }
 
+    // Prepare response with organizational context
+    const responseData = {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        balaiId: user.balaiId,
+        satkerId: user.satkerId,
+        projectIds: projectIds.length > 0 ? projectIds : undefined,
+      },
+      expiresIn: user.role === 'VENDOR' ? 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000, // 24h for vendor, 30d for others
+      organizational: {
+        balai: user.balai,
+        satker: user.satker,
+        projects: user.projectAssignments?.map(assignment => ({
+          id: assignment.project.id,
+          name: assignment.project.pekerjaan,
+          location: assignment.project.lokasiProyek,
+          assignmentRole: assignment.role
+        })) || []
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      data: {
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        },
-        expiresIn: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-      },
+      data: responseData,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

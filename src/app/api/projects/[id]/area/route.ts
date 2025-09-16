@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
+    const { id } = await params
     const project = await prisma.project.findUnique({
       where: { id: id },
       select: { petaPekerjaan: true },
@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Update project with new polygon coordinates
-    const { id } = params
+    const { id } = await params
     // If params is a function or a promise in Next.js, ensure it's awaited by the framework; we still extract id here
     const updatedProject = await prisma.project.update({
       where: { id },
@@ -82,7 +82,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
+    const { id } = await params
     // Remove polygon data from project
     await prisma.project.update({
       where: { id },

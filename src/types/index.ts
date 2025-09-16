@@ -5,7 +5,7 @@ export interface User {
   name: string
   email: string
   role: 'admin' | 'operator' | 'viewer'
-  department?: string
+  satker?: string
   createdAt: Date
   updatedAt: Date
 }
@@ -79,7 +79,7 @@ export interface FilterOptions {
     start: Date
     end: Date
   }
-  department?: string[]
+  satker?: string[]
   region?: string[]
   category?: string[]
   status?: string[]

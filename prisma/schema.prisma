@@ -7,44 +7,78 @@ datasource db {
   url      = env("POSTGRES_URL")
 }
 
+model Balai {
+  id          String       @id @default(cuid())
+  name        String       @map("name")
+  code        String       @unique @map("code")
+  description String?      @map("description")
+  address     String?      @map("address")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  satkers     Satker[]
+  users       User[]
+
+  @@map("balai")
+}
+
+model Satker {
+  id          String    @id @default(cuid())
+  name        String    @map("name")
+  code        String    @map("code")
+  description String?   @map("description")
+  balaiId     String    @map("balai_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  balai       Balai     @relation(fields: [balaiId], references: [id], onDelete: Cascade)
+  projects    Project[]
+  users       User[]
+
+  @@unique([balaiId, code])
+  @@map("satkers")
+}
+
 model Project {
-  id                 String            @id @default(cuid())
-  penyediaJasa       String?           @map("penyedia_jasa")
+  id                 String              @id @default(cuid())
   pekerjaan          String?
-  jenisPaket         String?           @map("jenis_paket")
-  jenisPengadaan     String?           @map("jenis_pengadaan")
-  paguAnggaran       String?           @map("pagu_anggaran")
-  nilaiKontrak       String?           @map("nilai_kontrak")
-  nomorKontrak       String?           @map("nomor_kontrak")
   spmk               String?
-  masaKontrak        String?           @map("masa_kontrak")
-  tanggalKontrak     String?           @map("tanggal_kontrak")
-  akhirKontrak       String?           @map("akhir_kontrak")
-  pembayaranTerakhir String?           @map("pembayaran_terakhir")
-  fisikProgress      Float?            @default(0) @map("fisik_progress")
-  fisikDeviasi       Float?            @default(0) @map("fisik_deviasi")
-  fisikTarget        Float?            @default(100) @map("fisik_target")
-  saluranProgress    Float?            @default(0) @map("saluran_progress")
-  saluranDeviasi     Float?            @default(0) @map("saluran_deviasi")
-  saluranTarget      Float?            @default(0) @map("saluran_target")
-  bangunanProgress   Float?            @default(0) @map("bangunan_progress")
-  bangunanDeviasi    Float?            @default(0) @map("bangunan_deviasi")
-  bangunanTarget     Float?            @default(0) @map("bangunan_target")
-  keuanganProgress   Float?            @default(0) @map("keuangan_progress")
-  keuanganDeviasi    Float?            @default(0) @map("keuangan_deviasi")
-  keuanganTarget     Float?            @default(0) @map("keuangan_target")
-  outputData         Json?             @map("output_data")
-  tenagaKerjaData    Json?             @map("tenaga_kerja_data")
-  alatData           Json?             @map("alat_data")
-  materialData       Json?             @map("material_data")
-  createdAt          DateTime          @default(now()) @map("created_at")
-  updatedAt          DateTime          @updatedAt @map("updated_at")
-  tanggalSpmk        String?           @map("tanggal_spmk")
-  lokasiProyek       String?           @map("lokasi_proyek")
-  petaPekerjaan      Json?             @map("peta_pekerjaan")
+  akhirKontrak       String?             @map("akhir_kontrak")
+  alatData           Json?               @map("alat_data")
+  bangunanDeviasi    Float?              @default(0) @map("bangunan_deviasi")
+  bangunanProgress   Float?              @default(0) @map("bangunan_progress")
+  bangunanTarget     Float?              @default(0) @map("bangunan_target")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  fisikDeviasi       Float?              @default(0) @map("fisik_deviasi")
+  fisikProgress      Float?              @default(0) @map("fisik_progress")
+  fisikTarget        Float?              @default(100) @map("fisik_target")
+  jenisPaket         String?             @map("jenis_paket")
+  jenisPengadaan     String?             @map("jenis_pengadaan")
+  keuanganDeviasi    Float?              @default(0) @map("keuangan_deviasi")
+  keuanganProgress   Float?              @default(0) @map("keuangan_progress")
+  keuanganTarget     Float?              @default(0) @map("keuangan_target")
+  masaKontrak        String?             @map("masa_kontrak")
+  materialData       Json?               @map("material_data")
+  nilaiKontrak       String?             @map("nilai_kontrak")
+  nomorKontrak       String?             @map("nomor_kontrak")
+  numberOfWeeks      Int?                @map("number_of_weeks")
+  outputData         Json?               @map("output_data")
+  paguAnggaran       String?             @map("pagu_anggaran")
+  pembayaranTerakhir String?             @map("pembayaran_terakhir")
+  penyediaJasa       String?             @map("penyedia_jasa")
+  saluranDeviasi     Float?              @default(0) @map("saluran_deviasi")
+  saluranProgress    Float?              @default(0) @map("saluran_progress")
+  saluranTarget      Float?              @default(0) @map("saluran_target")
+  tanggalKontrak     String?             @map("tanggal_kontrak")
+  tenagaKerjaData    Json?               @map("tenaga_kerja_data")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  lokasiProyek       String?             @map("lokasi_proyek")
+  petaPekerjaan      Json?               @map("peta_pekerjaan")
+  tanggalSpmk        String?             @map("tanggal_spmk")
+  satkerId           String?             @map("satker_id")
   activities         Activity[]
-  materials          Material[]
+  assignments        ProjectAssignment[]
+  addendums          Addendums[]
   auditLogs          ProjectAuditLog[]
+  satker             Satker?         @relation(fields: [satkerId], references: [id])
 
   @@map("projects")
 }
@@ -61,191 +95,99 @@ model ProjectAuditLog {
   @@map("project_audit_logs")
 }
 
+model Addendums {
+  id                 String    @id @default(cuid())
+  projectId          String    @map("project_id")
+  addendumNumber     String    @map("addendum_number")
+  title              String    @map("title")
+  description        String?   @map("description")
+  oldValue           String?   @map("old_value")
+  newValue           String?   @map("new_value")
+  changeType         String    @map("change_type") // TIME_EXTENSION, VALUE_CHANGE, SCOPE_CHANGE, etc.
+  effectiveDate      DateTime? @map("effective_date")
+  documentPath       String?   @map("document_path")
+  approvedBy         String?   @map("approved_by")
+  approvedAt         DateTime? @map("approved_at")
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("addendums")
+}
+
 model Activity {
-  id            String             @id @default(cuid())
-  projectId     String             @map("project_id")
-  name          String             @map("name")
-  order         Int                @default(0) @map("order")
-  createdAt     DateTime           @default(now()) @map("created_at")
-  updatedAt     DateTime           @updatedAt @map("updated_at")
-  project       Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  schedules     ActivitySchedule[]
-  subActivities SubActivity[]
-  actionPlanSchedules ActionPlanSchedule[] // Relation to ActionPlanSchedule
+  id                  String               @id @default(cuid())
+  projectId           String               @map("project_id")
+  name                String               @map("name")
+  order               Int                  @default(0) @map("order")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  project             Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subActivities       SubActivity[]
 
   @@map("activities")
 }
 
 model SubActivity {
-  id                String               @id @default(cuid())
-  activityId        String               @map("activity_id")
-  name              String               @map("name")
-  satuan            String?              @map("satuan")
-  volumeKontrak     Float?               @map("volume_kontrak")
-  volumeMC0         Float?               @map("volume_mc0")
-  bobotMC0          Float?               @map("bobot_mc0")
-  weight            Float                @map("weight")
-  order             Int                  @default(0) @map("order")
-  createdAt         DateTime             @default(now()) @map("created_at")
-  updatedAt         DateTime             @updatedAt @map("updated_at")
-  schedules         ActivitySchedule[]
-  dailyActivities   DailySubActivity[]
+  id                  String               @id @default(cuid())
+  activityId          String               @map("activity_id")
+  name                String               @map("name")
+  weight              Float                @map("weight")
+  order               Int                  @default(0) @map("order")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  satuan              String?              @map("satuan")
+  volume              Float?               @map("volume")
+  
+  schedules           Schedule[]
+  dailyReports        DailyReport[]
   analisaKebutuhan  AnalisaKebutuhan[]
-  actionPlanSchedules ActionPlanSchedule[] // Opposite relation for ActionPlanSchedule
-  activity          Activity             @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  activity            Activity             @relation(fields: [activityId], references: [id], onDelete: Cascade)
 
   @@map("sub_activities")
 }
 
-model ActivitySchedule {
-  id               String       @id @default(cuid())
-  activityId       String?      @map("activity_id")
-  subActivityId    String?      @map("sub_activity_id")
-  month            Int          @map("month")
-  year             Int          @map("year")
-  week             Int          @map("week")
-  planPercentage   Float?       @default(0) @map("plan_percentage")
-  actualPercentage Float?       @default(0) @map("actual_percentage")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  activity         Activity?    @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  subActivity      SubActivity? @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+model Schedule {
+  id                 String      @id @default(cuid())
+  subActivityId      String      @map("sub_activity_id")
+  weekNumber         Int         @map("week_number")
+  plan               Float?      @default(0) @map("plan")
+  actionPlan         Float?      @default(0) @map("action_plan")
+  realization        Float?      @default(0) @map("realization")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
 
-  @@unique([activityId, month, year, week])
-  @@unique([subActivityId, month, year, week])
-  @@map("activity_schedules")
-}
+  subActivity        SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
 
-model ActionPlanSchedule {
-  id               String       @id @default(cuid())
-  activityId       String?      @map("activity_id")
-  subActivityId    String?      @map("sub_activity_id")
-  month            Int          @map("month")
-  year             Int          @map("year")
-  week             Int          @map("week")
-  planPercentage   Float?       @default(0) @map("plan_percentage")
-  actualPercentage Float?       @default(0) @map("actual_percentage")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  activity         Activity?    @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  subActivity      SubActivity? @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
-
-  @@unique([activityId, month, year, week])
-  @@unique([subActivityId, month, year, week])
-  @@map("action_plan_schedules")
-}
-
-model Material {
-  id             String             @id @default(cuid())
-  projectId      String             @map("project_id")
-  jenisMaterial  String             @map("jenis_material")
-  volumeSatuan   String             @default("m3") @map("volume_satuan")
-  volumeTarget   Float?             @default(0) @map("volume_target")
-  tanggalMulai   String?            @map("tanggal_mulai")
-  tanggalSelesai String?            @map("tanggal_selesai")
-  waktuSelesai   Int?               @map("waktu_selesai")
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @updatedAt @map("updated_at")
-  schedules      MaterialSchedule[]
-  project        Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@map("materials")
-}
-
-model MaterialSchedule {
-  id                 String   @id @default(cuid())
-  materialId         String   @map("material_id")
-  date               String   @map("date")
-  rencana            Float?   @default(0) @map("rencana")
-  rencanaKumulatif   Float?   @default(0) @map("rencana_kumulatif")
-  realisasi          Float?   @default(0) @map("realisasi")
-  realisasiKumulatif Float?   @default(0) @map("realisasi_kumulatif")
-  tercapai           String?  @default("Y") @map("tercapai")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-  material           Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
-
-  @@unique([materialId, date])
-  @@map("material_schedules")
-}
-
-model ActivityProposal {
-  id                 String              @id @default(cuid())
-  tahun              String              @map("tahun")
-  prioritas          String              @map("prioritas")
-  kategoriKegiatan   String              @map("kategori_kegiatan")
-  jenisDaerahIrigasi String?             @map("jenis_daerah_irigasi")
-  daerahIrigasi      String?             @map("daerah_irigasi")
-  outcome            Float?              @default(0) @map("outcome")
-  kebutuhanAnggaran  Float?              @default(0) @map("kebutuhan_anggaran")
-  anggaranPerHektar  Float?              @default(0) @map("anggaran_per_hektar")
-  ipExisting         Float?              @default(0) @map("ip_existing")
-  ipRencana          Float?              @default(0) @map("ip_rencana")
-  status             String              @default("Draft") @map("status")
-  readinessLevel     String              @default("0%") @map("readiness_level")
-  submittedBy        String?             @map("submitted_by")
-  reviewedBy         String?             @map("reviewed_by")
-  approvedBy         String?             @map("approved_by")
-  reviewNotes        String?             @map("review_notes")
-  submittedAt        DateTime?           @map("submitted_at")
-  reviewedAt         DateTime?           @map("reviewed_at")
-  approvedAt         DateTime?           @map("approved_at")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  lingkupUsulan      LingkupUsulan[]
-  readinessCriteria  ReadinessCriteria[]
-
-  @@map("activity_proposals")
-}
-
-model LingkupUsulan {
-  id                String           @id @default(cuid())
-  proposalId        String           @map("proposal_id")
-  namaLingkupUsulan String           @map("nama_lingkup_usulan")
-  nomenkaltur       String?          @map("nomenkaltur")
-  koordinatGeoJson  Json?            @map("koordinat_geojson")
-  perimeter         Float?           @map("perimeter")
-  area              Float?           @map("area")
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
-  proposal          ActivityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-
-  @@map("lingkup_usulan")
-}
-
-model ReadinessCriteria {
-  id          String           @id @default(cuid())
-  proposalId  String           @map("proposal_id")
-  dokumenType String           @map("dokumen_type")
-  keterangan  String?          @map("keterangan")
-  fileName    String?          @map("file_name")
-  filePath    String?          @map("file_path")
-  fileSize    Int?             @map("file_size")
-  uploadedAt  DateTime?        @map("uploaded_at")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  proposal    ActivityProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-
-  @@map("readiness_criteria")
+  @@unique([subActivityId, weekNumber])
+  @@map("schedules")
 }
 
 model User {
-  id              String             @id @default(cuid())
-  username        String             @unique @map("username")
-  email           String             @unique @map("email")
-  name            String             @map("name")
-  password        String             @map("password")
-  role            UserRole           @default(USER) @map("role")
-  phoneNumber     String?            @map("phone_number")
-  isActive        Boolean            @default(true) @map("is_active")
-  lastLoginAt     DateTime?          @map("last_login_at")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
-  
-  // NextAuth.js required fields
-  accounts        Account[]
-  sessions        Session[]
-  dailyActivities DailySubActivity[]
+  id                 String              @id @default(cuid())
+  username           String              @unique @map("username")
+  email              String              @unique @map("email")
+  name               String              @map("name")
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  lastLoginAt        DateTime?           @map("last_login_at")
+  password           String              @map("password")
+  role               UserRole            @default(PPK) @map("role")
+  balaiId            String?             @map("balai_id")
+  satkerId           String?             @map("satker_id")
+  deviceInfo         Json?               @map("device_info")
+  lastMobileSync     DateTime?           @map("last_mobile_sync")
+
+  accounts           Account[]
+  dailyReport        DailyReport[]
+  projectAssignments ProjectAssignment[]
+  sessions           Session[]
+  balai              Balai?              @relation(fields: [balaiId], references: [id])
+  satker             Satker?         @relation(fields: [satkerId], references: [id])
 
   @@map("users")
 }
@@ -256,15 +198,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String  @map("provider_account_id")
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -289,14 +230,25 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-enum UserRole {
-  USER
-  ADMIN
-  MANAGER
-  VIEWER
+model ProjectAssignment {
+  id         String                @id @default(cuid())
+  userId     String                @map("user_id")
+  projectId  String                @map("project_id")
+  role       ProjectAssignmentRole @map("role")
+  assignedAt DateTime              @default(now()) @map("assigned_at")
+  assignedBy String?               @map("assigned_by")
+  isActive   Boolean               @default(true) @map("is_active")
+  notes      String?               @map("notes")
+  createdAt  DateTime              @default(now()) @map("created_at")
+  updatedAt  DateTime              @updatedAt @map("updated_at")
+  project    Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId, role])
+  @@map("project_assignments")
 }
 
-model DailySubActivity {
+model DailyReport {
   id                      String      @id @default(cuid())
   subActivityId           String      @map("sub_activity_id")
   userId                  String      @map("user_id")
@@ -307,6 +259,7 @@ model DailySubActivity {
   tanggalProgres          String      @map("tanggal_progres")
   createdAt               DateTime    @default(now()) @map("created_at")
   updatedAt               DateTime    @updatedAt @map("updated_at")
+  
   subActivity             SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
   user                    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -379,4 +332,19 @@ model ResourceFlowSchedule {
 
   @@unique([analisaKebutuhanId, tanggal])
   @@map("resource_flow_schedules")
+}
+
+enum UserRole {
+  ADMIN_SISTEM
+  ADMIN_BALAI
+  DIRJEN_SDA
+  KABALAI
+  SATKER
+  PPK
+  VENDOR
+}
+
+enum ProjectAssignmentRole {
+  PPK
+  VENDOR
 }

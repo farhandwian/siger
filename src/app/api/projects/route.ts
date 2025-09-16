@@ -3,6 +3,88 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { ProjectListQuerySchema } from '@/lib/schemas'
 import { z } from 'zod'
+import { UserRole } from '@/lib/auth'
+
+// Force Node.js runtime for this API route to support bcryptjs and jsonwebtoken
+export const runtime = 'nodejs'
+
+/**
+ * Enhanced Projects API with Role-Based Access Control
+ * Supports organizational scope filtering based on user roles
+ */
+
+// Helper function to get user info from request headers (set by middleware)
+function getUserFromHeaders(request: NextRequest) {
+  return {
+    id: request.headers.get('x-user-id'),
+    email: request.headers.get('x-user-email'),
+    role: request.headers.get('x-user-role') as UserRole,
+    balaiId: request.headers.get('x-user-balai-id'),
+    satkerId: request.headers.get('x-user-satker-id'),
+    projectIds: request.headers.get('x-user-project-ids') 
+      ? JSON.parse(request.headers.get('x-user-project-ids')!) 
+      : undefined
+  }
+}
+
+// Helper function to build where clause based on user role and scope
+function buildProjectWhereClause(user: ReturnType<typeof getUserFromHeaders>, search?: string) {
+  let where: Prisma.ProjectWhereInput = {}
+
+  // Apply search filter if provided
+  if (search) {
+    where.OR = [
+      { pekerjaan: { contains: search, mode: 'insensitive' } },
+      { penyediaJasa: { contains: search, mode: 'insensitive' } },
+      { lokasiProyek: { contains: search, mode: 'insensitive' } },
+      { nomorKontrak: { contains: search, mode: 'insensitive' } }
+    ]
+  }
+
+  // Apply role-based filtering
+  switch (user.role) {
+    case 'ADMIN_SISTEM':
+    case 'DIRJEN_SDA':
+      // Can see all projects
+      break
+
+    case 'ADMIN_BALAI':
+    case 'KABALAI':
+      // Can see projects in their balai
+      if (user.balaiId) {
+        where.satker = {
+          balaiId: user.balaiId
+        }
+      }
+      break
+
+    case 'SATKER':
+      // Can see projects in their satker
+      if (user.satkerId) {
+        where.satkerId = user.satkerId
+      }
+      break
+
+    case 'PPK':
+    case 'VENDOR':
+      // Can only see assigned projects
+      if (user.projectIds && user.projectIds.length > 0) {
+        where.id = {
+          in: user.projectIds
+        }
+      } else {
+        // If no projects assigned, return empty result
+        where.id = 'non-existent-id'
+      }
+      break
+
+    default:
+      // Unknown role, deny access
+      where.id = 'non-existent-id'
+  }
+
+  return where
+}
 
 // Schema for creating a new project
 const CreateProjectSchema = z.object({
@@ -40,6 +122,16 @@ const CreateProjectSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    // Get user info from middleware headers
+    const user = getUserFromHeaders(request)
+    
+    if (!user.id || !user.role) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
 
     // Extract and validate query parameters
@@ -49,87 +141,76 @@ export async function GET(request: NextRequest) {
       search: searchParams.get('search') || undefined,
     }
 
-    // Validate query parameters using Zod
     const validatedParams = ProjectListQuerySchema.parse(queryParams)
     const { page, limit, search } = validatedParams
 
     const skip = (page - 1) * limit
 
-    // Build where clause for search
-    const where: Prisma.ProjectWhereInput = search
-      ? {
-          OR: [
-            { pekerjaan: { contains: search, mode: 'insensitive' } },
-            { penyediaJasa: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {}
+    // Build where clause with role-based filtering
+    const where = buildProjectWhereClause(user, search)
 
-    // Get projects with pagination
-    const [projects, total] = await Promise.all([
+    // Get projects with pagination and role-based filtering
+    const [projects, totalCount] = await Promise.all([
       prisma.project.findMany({
         where,
+        include: {
+          satker: {
+            include: {
+              balai: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true
+                }
+              }
+            }
+          },
+          // Include assignment info for PPK/VENDOR users
+          assignments: user.role === 'PPK' || user.role === 'VENDOR' ? {
+            where: { userId: user.id },
+            select: {
+              role: true,
+              assignedAt: true,
+              notes: true
+            }
+          } : false
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          lokasiProyek: true,
-          pekerjaan: true,
-          penyediaJasa: true,
-          nilaiKontrak: true,
-          fisikProgress: true,
-          fisikDeviasi: true,
-          fisikTarget: true,
-          createdAt: true,
-          updatedAt: true,
-        },
       }),
-      prisma.project.count({ where }),
+      prisma.project.count({ where })
     ])
 
-    // Transform data to match the expected format with validation
-    const transformedProjects = projects.map(project => {
-      const transformed = {
-        id: project.id,
-        title: project.pekerjaan || '',
-        location: project.lokasiProyek || '',
-        budget: project.nilaiKontrak || '',
-        status: getProjectStatus(project.fisikProgress || 0, project.fisikDeviasi || 0),
-        progress: project.fisikProgress || 0,
-        deviation: project.fisikDeviasi || 0,
-        target: project.fisikTarget || 100,
-      }
+    const totalPages = Math.ceil(totalCount / limit)
 
-      // Validate transformed data
-      try {
-        return {
-          id: z.string().parse(transformed.id),
-          title: z.string().parse(transformed.title),
-          location: z.string().parse(transformed.location),
-          budget: z.string().parse(transformed.budget),
-          status: z.enum(['on-track', 'at-risk', 'delayed']).parse(transformed.status),
-          progress: z.number().min(0).max(100).parse(transformed.progress),
-          deviation: z.number().parse(transformed.deviation),
-          target: z.number().min(0).max(100).parse(transformed.target),
-        }
-      } catch (validationError) {
-        console.error('Data transformation validation error:', validationError)
-        // Return safe defaults if validation fails
-        return {
-          id: project.id,
-          title: project.pekerjaan || 'Unknown Project',
-          location: 'Sumatra',
-          budget: project.nilaiKontrak || 'Rp0',
-          status: 'on-track' as const,
-          progress: Math.max(0, Math.min(100, project.fisikProgress || 0)),
-          deviation: project.fisikDeviasi || 0,
-          target: Math.max(0, Math.min(100, project.fisikTarget || 100)),
-        }
+    // Transform projects to match ProjectListItemSchema
+    const transformedProjects = projects.map(project => {
+      // Calculate status based on progress and deviation
+      const progress = project.fisikProgress || 0
+      const deviation = project.fisikDeviasi || 0
+      const target = project.fisikTarget || 0
+      
+      const status = getProjectStatus(progress, deviation)
+
+      return {
+        id: project.id,
+        title: project.pekerjaan || 'Unnamed Project',
+        location: project.lokasiProyek || 'Unknown Location',
+        budget: project.nilaiKontrak || 'Rp0',
+        status,
+        progress,
+        deviation,
+        target,
+        // Add access level info based on user role
+        accessLevel: user.role === 'VENDOR' ? 'progress_update_only' : 
+                     user.role === 'PPK' ? 'full_management' :
+                     ['DIRJEN_SDA', 'KABALAI'].includes(user.role) ? 'read_only' : 'full_access',
+        userAssignment: project.assignments?.[0] || null
       }
     })
-
-    const totalPages = Math.ceil(total / limit)
 
     return NextResponse.json({
       success: true,
@@ -138,34 +219,28 @@ export async function GET(request: NextRequest) {
         pagination: {
           page,
           limit,
-          total,
+          total: totalCount,
           totalPages,
         },
-      },
+        userContext: {
+          role: user.role,
+          balaiId: user.balaiId,
+          satkerId: user.satkerId,
+          assignedProjectsCount: user.projectIds?.length || 0
+        }
+      }
     })
   } catch (error) {
-    console.error('Error fetching projects:', error)
-
-    // Handle Zod validation errors
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid query parameters',
-          details: error.errors.map(err => ({
-            field: err.path.join('.'),
-            message: err.message,
-          })),
-        },
+        { success: false, error: 'Invalid query parameters', details: error.errors },
         { status: 400 }
       )
     }
 
+    console.error('Projects API error:', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch projects',
-      },
+      { success: false, error: 'Failed to fetch projects' },
       { status: 500 }
     )
   }

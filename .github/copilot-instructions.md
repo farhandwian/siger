@@ -1,460 +1,322 @@
-## 1) Project Context & Priorities
+## Technical Stack Requirements
 
-**Always prefer this stack (choose in this order, only fall back if truly impossible):**
+**Frontend Technology Stack:**
+- Framework: Next.js 15 (App Router + Server Components)
+- Language: TypeScript 5.6+ (strictly typed)
+- Styling: Tailwind CSS 4.0 + CSS Modules
+- UI Components: shadcn/ui (primary), Headless UI (fallback), custom (last resort)
+- Charts: Recharts (default) → Chart.js 4.4 → D3.js/Observable Plot
+- Maps: Mapbox GL JS + React Map GL + Turf.js
+- Animations: Framer Motion + Lottie React
+- Icons: Lucide React + Heroicons
+- PWA: Next-PWA + Workbox
 
-- **Frontend**
-  - Framework: **Next.js 15** (App Router + Server Components)
-  - Language: **TypeScript 5.6+**
-  - Styling: **Tailwind CSS 4.0** + CSS Modules
-  - UI Library: **shadcn/ui** (first), then Headless UI, then custom components
-  - **Charts: Recharts → Chart.js 4.4 → D3.js / Observable Plot** (use Recharts by default)
-  - Maps: Mapbox GL JS + React Map GL (+ Turf.js for geospatial ops)
-  - Animations: Framer Motion (+ Lottie React as needed)
-  - Icons: Lucide React (+ Heroicons if needed)
-  - PWA: Next-PWA + Workbox
+**Backend Technology Stack:**
+- Runtime: Node.js 20+ LTS
+- Framework: Next.js 15 Route Handlers (REST API)
+- Database: PostgreSQL + Prisma ORM
+- Authentication: NextAuth.js (JWT + Sessions)
+- Authorization: Role-based access control (RBAC)
+- Validation: Zod (all inputs/outputs)
+- Documentation: OpenAPI 3.1
+- Express.js: Only for separate microservices (with Helmet, CORS, Rate Limiting)
 
-- **Backend**
-  - Runtime: Node.js 20+ LTS
-  - Framework: Next.js 15 **Route Handlers** (REST) + optional Express.js microservices
-  - Database: **PostgreSQL**
-  - ORM: **Prisma**
-  - Language: TypeScript
-  - API Standard: **REST** (+ WebSocket if needed)
-  - Validation: **Zod** (and **express-validator** only for Express routes)
-  - Documentation: OpenAPI 3.1
-  - Middleware (Express only): Helmet + CORS + Rate Limiting + Compression
+**Code Standards:**
+- Write clean, composable, reusable, strongly-typed code
+- Always prefer shadcn/ui over custom components
+- Add clear comments explaining functionality
 
-**Coding style:** Clean code, composable, reusable, strongly typed.  
-**UI first-choice:** **Use shadcn/ui** before writing custom components.
+## Design System & Responsive Guidelines
 
----
-
-## 2) Visual Baseline & Responsiveness
-
-**Match typography, spacing, and content ratios to these files** (treat them as the design source of truth):
-
+**Design Reference Files (match these exactly):**
 - `src/app/monitoring-evaluasi/page.tsx`
 - `src/components/monitoring/project-list.tsx`
 - `src/components/monitoring/summary-cards.tsx`
 
-**Responsive rules** (Tailwind breakpoints):
-- **Mobile:** `< 640px` (base, no prefix)
-- **Tablet:** `sm:` (≥ 640 and < 1024)
-- **Laptop:** `lg:` (≥ 1024 and < 1280)
-- **Desktop:** `xl:` (≥ 1280)
-
-Prefer Tailwind tokens consistent with those files (e.g., `text-sm/base/lg`, `p-4/6`, `gap-4/6`, `rounded-2xl`, `shadow-sm`). Keep card density and font scale aligned.
-
----
-
-## 3) State & Data — TanStack React Query
-
-**Provider (App Router):**
-```tsx
-// src/app/providers.tsx
-'use client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactNode, useState } from 'react'
-
-export default function Providers({ children }: { children: ReactNode }) {
-  const [client] = useState(() => new QueryClient())
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>
-}
-```
-
-```tsx
-// src/app/layout.tsx
-import Providers from './providers'
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body><Providers>{children}</Providers></body>
-    </html>
-  )
-}
-```
-
-**Fetching pattern (validate responses with Zod before caching):**
-```ts
-// src/lib/http.ts
-export async function json<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { cache: 'no-store', ...init })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json() as Promise<T>
-}
-```
-
----
-
-## 4) Validation — Zod Everywhere
-
-**Validate:**
-- API **request bodies**, **query params**, **route params**
-- **Server responses** before they enter React Query cache
-- **Form inputs** (via `react-hook-form` + `@hookform/resolvers/zod`)
-
-**Example project schema:**
-```ts
-// src/lib/schemas/project.ts
-import { z } from 'zod'
-
-export const ProjectSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  location: z.string(),
-  budget: z.number(),
-  status: z.enum(['on-track', 'at-risk', 'delayed']),
-  progress: z.number().min(0).max(100),
-  deviation: z.number(),
-  target: z.number(),
-})
-
-export type Project = z.infer<typeof ProjectSchema>
-
-export const ProjectsResponseSchema = z.object({
-  success: z.literal(true),
-  data: z.array(ProjectSchema),
-  pagination: z.object({
-    page: z.number(),
-    limit: z.number(),
-    total: z.number(),
-    totalPages: z.number(),
-  }),
-})
-```
-
----
-
-## 5) API — Next.js 15 Route Handlers (REST with Zod)
-
-```ts
-// src/app/api/projects/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { prisma } from '@/server/prisma'
-
-const QuerySchema = z.object({
-  page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(10),
-  search: z.string().optional(),
-})
-
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const parsed = QuerySchema.parse(Object.fromEntries(searchParams))
-  const where = parsed.search ? { title: { contains: parsed.search, mode: 'insensitive' } } : {}
-
-  const [data, total] = await Promise.all([
-    prisma.project.findMany({ where, skip: (parsed.page - 1) * parsed.limit, take: parsed.limit }),
-    prisma.project.count({ where }),
-  ])
-
-  return NextResponse.json({
-    success: true,
-    data,
-    pagination: { page: parsed.page, limit: parsed.limit, total, totalPages: Math.ceil(total / parsed.limit) },
-  })
-}
-```
-
----
-
-## 6) Database — PostgreSQL & Prisma
-
-**Environment variable** (use your URL):
-```
-# .env.local
-POSTGRES_URL=postgres://postgres:yoontae93@127.0.0.1:5432/siger
-```
-
-**Prisma datasource:**
-```prisma
-// prisma/schema.prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("POSTGRES_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-model Project {
-  id        String   @id @default(cuid())
-  title     String
-  location  String
-  budget    Float
-  status    String
-  progress  Int
-  deviation Float
-  target    Float
-  logs      ProjectProgress[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ProjectProgress {
-  id        String   @id @default(cuid())
-  project   Project  @relation(fields: [projectId], references: [id])
-  projectId String
-  at        DateTime @default(now())
-  progress  Int
-}
-```
-
-**Client singleton:**
-```ts
-// src/server/prisma.ts
-import { PrismaClient } from '@prisma/client'
-export const prisma = globalThis.prisma || new PrismaClient()
-if (process.env.NODE_ENV !== 'production') (globalThis as any).prisma = prisma
-```
-
----
-
-## 7) UI — shadcn/ui First, Reusable Components
-
-**Summary card:**
-```tsx
-// src/components/monitoring/summary-cards.tsx
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-
-export function SummaryCard({ title, value, hint }: { title: string; value: string; hint?: string }) {
-  return (
-    <Card className="rounded-2xl">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="text-2xl sm:text-3xl lg:text-4xl font-semibold">{value}</div>
-        {hint ? <p className="text-muted-foreground text-xs sm:text-sm mt-1">{hint}</p> : null}
-      </CardContent>
-    </Card>
-  )
-}
-```
-
-**Form with Zod + react-hook-form:**
-```tsx
-// src/components/forms/project-form.tsx
-'use client'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-
-const FormSchema = z.object({ title: z.string().min(1), budget: z.coerce.number().min(0) })
-type FormValues = z.infer<typeof FormSchema>
-
-export function ProjectForm({ onSubmit }: { onSubmit: (v: FormValues) => void }) {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(FormSchema) })
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-      <div>
-        <Input placeholder="Title" {...register('title')} />
-        {errors.title && <p className="text-xs text-destructive mt-1">{errors.title.message}</p>}
-      </div>
-      <div>
-        <Input type="number" placeholder="Budget" {...register('budget')} />
-        {errors.budget && <p className="text-xs text-destructive mt-1">{errors.budget.message}</p>}
-      </div>
-      <Button type="submit" className="w-full sm:w-auto">Save</Button>
-    </form>
-  )
-}
-```
-
----
-
-## 8) Charts — **Recharts by Default**
-
-**Zod for time-series:**
-```ts
-// src/lib/schemas/series.ts
-import { z } from 'zod'
-export const TimePointSchema = z.object({ label: z.string(), value: z.number() })
-export const SeriesSchema = z.object({ id: z.string(), label: z.string(), points: z.array(TimePointSchema) })
-export const SeriesResponseSchema = z.object({ success: z.literal(true), data: z.array(SeriesSchema) })
-export type Series = z.infer<typeof SeriesSchema>
-```
-
-**API route for progress:**
-```ts
-// src/app/api/projects/[id]/progress/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/server/prisma'
-import { z } from 'zod'
-
-const ParamsSchema = z.object({ id: z.string() })
-
-export async function GET(_: NextRequest, ctx: { params: { id: string } }) {
-  const { id } = ParamsSchema.parse(ctx.params)
-  const logs = await prisma.projectProgress.findMany({
-    where: { projectId: id },
-    orderBy: { at: 'asc' },
-    select: { at: true, progress: true },
-  })
-  const data = [{ id: 'progress', label: 'Progress', points: logs.map(l => ({ label: l.at.toISOString().slice(0,10), value: l.progress })) }]
-  return NextResponse.json({ success: true, data })
-}
-```
-
-**React Query hook:**
-```ts
-// src/hooks/useProjectProgress.ts
-import { useQuery } from '@tanstack/react-query'
-import { SeriesResponseSchema } from '@/lib/schemas/series'
-
-export function useProjectProgress(projectId: string) {
-  return useQuery({
-    queryKey: ['project-progress', projectId],
-    queryFn: async () => {
-      const res = await fetch(`/api/projects/${projectId}/progress`, { cache: 'no-store' })
-      const json = await res.json()
-      return SeriesResponseSchema.parse(json).data
-    },
-    enabled: !!projectId,
-    staleTime: 30_000,
-  })
-}
-```
-
-**Recharts component (responsive heights + shadcn Card):**
-```tsx
-// src/components/charts/ProgressTrend.tsx
-'use client'
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useProjectProgress } from '@/hooks/useProjectProgress'
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-
-export function ProgressTrend({ projectId, title = 'Progress Trend' }: { projectId: string; title?: string }) {
-  const { data, isLoading, isError, error } = useProjectProgress(projectId)
-
-  if (isLoading) {
-    return (
-      <Card className="rounded-2xl">
-        <CardHeader><CardTitle className="text-base sm:text-lg">{title}</CardTitle></CardHeader>
-        <CardContent><Skeleton className="h-64 sm:h-72 lg:h-80 xl:h-96 w-full rounded-xl" /></CardContent>
-      </Card>
-    )
-  }
-
-  if (isError || !data?.length || !data[0].points.length) {
-    return (
-      <Card className="rounded-2xl">
-        <CardHeader><CardTitle className="text-base sm:text-lg">{title}</CardTitle></CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertTitle>Unable to load chart</AlertTitle>
-            <AlertDescription>{(error as Error)?.message ?? 'No data available'}</AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const points = data[0].points.map(p => ({ name: p.label, value: p.value }))
-
-  return (
-    <Card className="rounded-2xl">
-      <CardHeader><CardTitle className="text-base sm:text-lg">{title}</CardTitle></CardHeader>
-      <CardContent>
-        <div className="h-64 sm:h-72 lg:h-80 xl:h-96">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={points} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="value" stroke="currentColor" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-```
-
-> **Fallback rule:** If Recharts cannot meet a requirement, use Chart.js 4.4. Only use D3/Observable Plot when low-level control is required.
-
----
-
-## 9) Maps — Mapbox + React Map GL (+ Turf)
-
-```tsx
-// src/components/maps/ProjectMap.tsx
-'use client'
-import Map, { Marker } from 'react-map-gl'
-
-export function ProjectMap({ coords }: { coords: [number, number][] }) {
-  return (
-    <div className="h-64 sm:h-80 lg:h-96 rounded-2xl overflow-hidden">
-      <Map
-        mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-        initialViewState={{ longitude: 106.8, latitude: -6.2, zoom: 9 }}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
-      >
-        {coords.map(([lng, lat], i) => <Marker key={i} longitude={lng} latitude={lat} />)}
-      </Map>
-    </div>
-  )
-}
-```
-
----
-
-## 10) Animations — Framer Motion
-
-Use subtle entrance transitions for cards/lists. Keep durations short (120–240ms) and respect reduced motion preferences.
-
----
-
-## 11) PWA — Next-PWA + Workbox
-
-Provide offline for static assets and safe caching for idempotent GET APIs (e.g., `/api/projects`). Avoid caching authenticated mutations.
-
----
-
-## 12) Error, Loading & Empty States
-
-Every data view must implement:
-- **Loading:** shadcn `Skeleton`
-- **Error:** shadcn `Alert` (destructive)
-- **Empty:** clear message with call-to-action (button)
-
----
-
-## 13) Accessibility & i18n
-
-- All interactive elements require accessible names.
-- Charts must have `aria-label` or be described nearby.
-- Keep copy in English by default; store text in constants for future i18n.
-
----
-
-## 14) File/Folder Conventions
-
-- Routes: `src/app/**` (Server Components by default). Use `'use client'` only where needed.
-- Reusable components: `src/components/**` (prefer composition).
-- Schemas: `src/lib/schemas/**`
-- Hooks: `src/hooks/**`
-- Use `@/*` alias to `src/*` (configure in `tsconfig.json`).
-
----
-
-## 15) Security & Middleware (Express only)
-
-When using Express microservices:
-- Enable **Helmet**, **CORS**, **Compression**
-- Add a modest **rate limiter** on public endpoints
-- Mirror the same **Zod** schemas for validation
+**Responsive Breakpoints:**
+- Mobile: `< 640px` (base, no prefix)
+- Tablet: `sm:` (≥ 640px and < 1024px)
+- Laptop: `lg:` (≥ 1024px and < 1280px)
+- Desktop: `xl:` (≥ 1280px)
+
+**Typography & Spacing Standards:**
+- Use Tailwind tokens: `text-sm/base/lg`, `p-4/6`, `gap-4/6`, `rounded-2xl`, `shadow-sm`
+- Match card density and font scale from reference files
+- Maintain consistent visual hierarchy
+
+## State Management & Data Fetching
+
+**React Query Provider Setup:**
+- Use TanStack React Query for all client-side data fetching
+- Configure provider in `src/app/providers.tsx` with QueryClient
+- Wrap root layout with Providers component
+
+**Data Fetching Pattern:**
+- Create custom hooks for each API endpoint
+- Validate all server responses with Zod before caching
+- Use stable query keys for consistent caching
+- Handle loading, error, and empty states consistently
+
+**Query Configuration:**
+- Set appropriate `staleTime` for data freshness
+- Use `enabled` flag for conditional queries
+- Implement optimistic updates for mutations
+
+## Data Validation with Zod
+
+**Validation Requirements:**
+- Validate ALL API request bodies, query params, and route params
+- Validate ALL server responses before entering React Query cache
+- Validate ALL form inputs using react-hook-form + @hookform/resolvers/zod
+
+**Schema Organization:**
+- Store schemas in `src/lib/schemas/**`
+- Export both schema and inferred TypeScript types
+- Create response schemas with success flags and pagination
+- Use `.parse()` for strict validation, `.safeParse()` for error handling
+
+**API Response Structure:**
+- Always return `{ success: boolean, data: T, pagination?: PaginationData }`
+- Use `z.literal(true)` for success responses
+- Include error schemas for failure cases
+
+## API Development Standards
+
+**Next.js 15 Route Handlers:**
+- Use `src/app/api/**` for REST endpoints
+- Validate all inputs with Zod schemas
+- Return consistent response format: `{ success, data, pagination? }`
+- Handle errors gracefully with appropriate HTTP status codes
+
+**Database Integration:**
+- Use Prisma ORM for all database operations
+- Create singleton Prisma client in `src/server/prisma.ts`
+- Use transactions for complex operations
+- Implement proper error handling and logging
+
+**API Structure:**
+- GET: Support pagination, search, and filtering
+- POST: Validate request body, return created resource
+- PATCH/PUT: Validate partial/full updates
+- DELETE: Return success confirmation
+
+## API Authentication & Authorization
+
+**Authentication Setup:**
+- Use NextAuth.js for session management
+- Configure JWT tokens for API authentication
+- Implement session-based auth for web UI
+- Support bearer token authentication for mobile APIs
+
+**Route Protection Middleware:**
+- Create `src/lib/auth-middleware.ts` for route protection
+- Validate JWT tokens in API route handlers
+- Check user permissions before data access
+- Return 401 for unauthenticated, 403 for unauthorized requests
+
+**Authorization Patterns:**
+- Role-based access control (RBAC) with user roles
+- Resource-based permissions (project ownership)
+- Implement permission checks in database queries
+- Use Prisma `where` clauses for data filtering
+
+**Protected API Implementation:**
+- Wrap protected routes with authentication middleware
+- Validate user session/token in every protected endpoint
+- Filter data based on user permissions and ownership
+- Log security events for audit trails
+
+**Security Headers:**
+- Implement CSRF protection for state-changing operations
+- Add rate limiting per user/IP for API endpoints
+- Use secure HTTP headers (CORS, Content-Type validation)
+- Sanitize and validate all user inputs with Zod
+
+**Error Handling:**
+- Never expose sensitive information in error messages
+- Return generic error responses for security violations
+- Log detailed security errors server-side only
+- Implement proper error boundaries for auth failures
+
+## Database Configuration
+
+**Environment Setup:**
+- PostgreSQL connection: `POSTGRES_URL=postgres://postgres:yoontae93@127.0.0.1:5432/siger`
+- Configure Prisma datasource in `prisma/schema.prisma`
+- Generate Prisma client after schema changes
+
+**Prisma Best Practices:**
+- Use proper model relationships with foreign keys
+- Implement cascading deletes where appropriate
+- Add indexes for frequently queried fields
+- Use `@default()` for auto-generated fields like timestamps
+
+**Client Management:**
+- Create singleton Prisma client to avoid connection issues
+- Handle database errors with proper try-catch blocks
+- Use environment-specific connection pooling
+
+## UI Component Standards
+
+**Component Hierarchy:**
+1. **Primary:** shadcn/ui components (Card, Button, Input, etc.)
+2. **Secondary:** Headless UI for complex interactions
+3. **Last Resort:** Custom components with Tailwind CSS
+
+**Component Structure:**
+- Use shadcn/ui Card wrapper for all data displays
+- Implement consistent spacing with `p-4/6`, `gap-4/6`
+- Apply responsive text sizing: `text-sm sm:text-base lg:text-lg`
+- Use `rounded-2xl` for card borders, `shadow-sm` for elevation
+
+**Form Components:**
+- Integrate react-hook-form with Zod validation
+- Display field errors with `text-xs text-destructive`
+- Use shadcn/ui Input, Button, and form components
+- Implement proper accessibility with labels and ARIA attributes
+
+## Chart Implementation Guidelines
+
+**Chart Library Priority:**
+1. **Recharts** (default choice for most visualizations)
+2. **Chart.js 4.4** (fallback for specific requirements)
+3. **D3.js/Observable Plot** (only for complex custom visualizations)
+
+**Chart Structure:**
+- Wrap all charts in shadcn/ui Card components
+- Use responsive heights: `h-64 sm:h-72 lg:h-80 xl:h-96`
+- Implement proper loading states with Skeleton
+- Handle error states with Alert components
+- Validate chart data with Zod schemas
+
+**Data Integration:**
+- Create dedicated React Query hooks for chart data
+- Use time-series schemas for temporal data
+- Implement proper error boundaries
+- Cache chart data with appropriate staleTime
+
+**Responsive Design:**
+- Use ResponsiveContainer for automatic sizing
+- Adjust font sizes for different breakpoints
+- Maintain consistent margin and padding
+
+## Map Integration Standards
+
+**Mapbox Configuration:**
+- Use Mapbox GL JS with React Map GL wrapper
+- Configure with `NEXT_PUBLIC_MAPBOX_TOKEN` environment variable
+- Apply responsive container heights: `h-64 sm:h-80 lg:h-96`
+- Use `rounded-2xl overflow-hidden` for consistent styling
+
+**Geospatial Operations:**
+- Use Turf.js for spatial calculations and analysis
+- Implement proper coordinate validation
+- Handle map loading states and errors
+- Support marker clustering for dense data sets
+
+**Map Components:**
+- Create reusable map wrapper components
+- Implement proper TypeScript interfaces for coordinates
+- Handle map interactions (zoom, pan, click events)
+- Integrate with project location data from database
+
+## Animation Guidelines
+
+**Framer Motion Implementation:**
+- Use subtle entrance transitions for cards and lists
+- Keep animation durations short (120-240ms)
+- Respect user's reduced motion preferences
+- Apply consistent easing functions across components
+
+**Lottie Integration:**
+- Use Lottie React for complex illustrations and micro-interactions
+- Optimize animation files for web performance
+- Implement proper loading states for animations
+- Provide fallback static images when needed
+
+## PWA Configuration
+
+**Next-PWA Setup:**
+- Configure service worker for offline functionality
+- Cache static assets for improved performance
+- Implement safe caching for idempotent GET APIs
+- Avoid caching authenticated mutations and sensitive data
+
+**Workbox Integration:**
+- Use workbox strategies for different content types
+- Implement proper cache versioning and updates
+- Handle offline/online state transitions
+- Provide user feedback for offline functionality
+
+## Error Handling & State Management
+
+**Required States for All Data Views:**
+- **Loading:** Use shadcn Skeleton components
+- **Error:** Use shadcn Alert components with destructive variant
+- **Empty:** Provide clear message with actionable call-to-action button
+
+**Error Boundaries:**
+- Implement React error boundaries for component-level errors
+- Use try-catch blocks in API routes and async functions
+- Provide meaningful error messages to users
+- Log errors appropriately for debugging
+
+**Loading State Patterns:**
+- Show skeleton loaders that match content structure
+- Use appropriate loading spinners for actions
+- Implement progressive loading for large datasets
+- Maintain UI responsiveness during data fetching
+
+## Accessibility & Internationalization
+
+**Accessibility Requirements:**
+- All interactive elements must have accessible names
+- Charts require `aria-label` or descriptive text nearby
+- Implement proper focus management and keyboard navigation
+- Use semantic HTML elements and ARIA attributes
+- Ensure color contrast meets WCAG guidelines
+
+**Content Management:**
+- Keep copy in English by default
+- Store text strings in constants for future internationalization
+- Use consistent terminology across the application
+- Implement proper pluralization for dynamic content
+
+## File Organization & Conventions
+
+**Project Structure:**
+- Routes: `src/app/**` (Server Components by default, use `'use client'` only when needed)
+- Reusable components: `src/components/**` (prefer composition over inheritance)
+- Data schemas: `src/lib/schemas/**` (export schema and inferred types)
+- Custom hooks: `src/hooks/**` (one hook per file with descriptive names)
+- Utilities: `src/lib/**` (pure functions and shared utilities)
+
+**Import Aliases:**
+- Use `@/*` alias pointing to `src/*` (configured in `tsconfig.json`)
+- Prefer absolute imports over relative paths
+- Group imports: external packages, internal modules, relative imports
+
+**Naming Conventions:**
+- Components: PascalCase (`ProjectCard.tsx`)
+- Hooks: camelCase with `use` prefix (`useProjectData.ts`)
+- Utilities: camelCase (`formatCurrency.ts`)
+- Constants: UPPER_SNAKE_CASE (`API_ENDPOINTS`)
+
+## Security & Performance Standards
+
+**Express.js Microservices (when used):**
+- Enable Helmet for security headers
+- Configure CORS for cross-origin requests
+- Implement rate limiting on public endpoints
+- Add compression middleware for response optimization
+- Mirror Zod validation schemas from Next.js routes
+
+**Next.js Performance:**
+- Use Server Components by default for better performance
+- Implement proper caching strategies with React Query
+- Optimize images with Next.js Image component
+- Minimize client-side JavaScript bundles
+- Use dynamic imports for code splitting when appropriate
 
 ---
 
@@ -481,14 +343,27 @@ When using Express microservices:
 - Don’t bypass Zod or push untyped JSON to caches.
 - Don’t fetch in Server Components when you need rapid client revalidation—use React Query.
 
----
+## Development Guidelines
 
-## 18) Environment
+**Always Do:**
+- Prefer shadcn/ui components before building custom solutions
+- Use TanStack React Query for all client-side data fetching with stable query keys
+- Validate all inputs and outputs with Zod schemas before caching
+- Match typography and spacing patterns from monitoring reference files
+- Add clear, descriptive comments explaining functionality
+- Implement proper loading, error, and empty states for all data views
+- Protect all API routes with authentication middleware
+- Validate user permissions before data access
+- Filter data based on user ownership and roles
 
-```
-POSTGRES_URL=postgres://postgres:yoontae93@127.0.0.1:5432/siger
-NEXT_PUBLIC_MAPBOX_TOKEN=YOUR_TOKEN
-```
+**Never Do:**
+- Create ad-hoc styles that diverge from established monitoring component patterns
+- Bypass Zod validation or store untyped JSON in React Query cache
+- Use Server Components for rapid client-side data revalidation (use React Query instead)
+- Create README files or comprehensive implementation summaries (focus on code with comments)
+- Create documentation outside of code comments.
+- Expose sensitive data in API responses without proper authorization
+- Return detailed error messages that could reveal system information
 
 
 ## 19) Additional
@@ -497,3 +372,10 @@ mapping:
 -on the ui proyek but on the db is project
 - on the ui pekerjaan but on the db is activity
 - on the ui kegiatan but on the db is sub_activity
+**Code Quality Standards:**
+- Write clean, composable, and strongly-typed TypeScript code
+- Prefer composition over inheritance for component architecture
+- Use descriptive naming conventions across files and functions
+- Implement proper error handling with meaningful user feedback
+- Maintain consistent visual hierarchy and responsive design patterns
+- Follow security-first principles in all API implementations
