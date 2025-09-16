@@ -1,4 +1,10 @@
 -- CreateEnum
+CREATE TYPE "public"."ReportStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "public"."ProjectStatus" AS ENUM ('DRAFT', 'KONTRAK', 'DRAFT_ADDENDUM');
+
+-- CreateEnum
 CREATE TYPE "public"."UserRole" AS ENUM ('ADMIN_SISTEM', 'ADMIN_BALAI', 'DIRJEN_SDA', 'KABALAI', 'SATKER', 'PPK', 'VENDOR');
 
 -- CreateEnum
@@ -40,6 +46,7 @@ CREATE TABLE "public"."projects" (
     "bangunan_deviasi" DOUBLE PRECISION DEFAULT 0,
     "bangunan_progress" DOUBLE PRECISION DEFAULT 0,
     "bangunan_target" DOUBLE PRECISION DEFAULT 0,
+    "status" "public"."ProjectStatus" NOT NULL DEFAULT 'DRAFT',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "fisik_deviasi" DOUBLE PRECISION DEFAULT 0,
     "fisik_progress" DOUBLE PRECISION DEFAULT 0,
@@ -53,6 +60,7 @@ CREATE TABLE "public"."projects" (
     "material_data" JSONB,
     "nilai_kontrak" TEXT,
     "nomor_kontrak" TEXT,
+    "number_of_weeks" INTEGER,
     "output_data" JSONB,
     "pagu_anggaran" TEXT,
     "pembayaran_terakhir" TEXT,
@@ -74,11 +82,11 @@ CREATE TABLE "public"."projects" (
 -- CreateTable
 CREATE TABLE "public"."project_audit_logs" (
     "id" TEXT NOT NULL,
-    "changed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "field_name" TEXT NOT NULL,
-    "new_value" TEXT,
-    "old_value" TEXT,
     "project_id" TEXT NOT NULL,
+    "field_name" TEXT NOT NULL,
+    "old_value" TEXT,
+    "new_value" TEXT,
+    "changed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "project_audit_logs_pkey" PRIMARY KEY ("id")
 );
@@ -87,17 +95,14 @@ CREATE TABLE "public"."project_audit_logs" (
 CREATE TABLE "public"."addendums" (
     "id" TEXT NOT NULL,
     "project_id" TEXT NOT NULL,
-    "addendum_number" TEXT NOT NULL,
+    "addendum_number" INTEGER NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
-    "old_value" TEXT,
-    "new_value" TEXT,
-    "change_type" TEXT NOT NULL,
-    "effective_date" TIMESTAMP(3),
-    "document_path" TEXT,
+    "effective_date" TIMESTAMP(3) NOT NULL,
+    "week_number" INTEGER NOT NULL,
+    "modified_by" TEXT NOT NULL,
     "approved_by" TEXT,
     "approved_at" TIMESTAMP(3),
-    "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -220,6 +225,7 @@ CREATE TABLE "public"."project_assignments" (
 CREATE TABLE "public"."daily_sub_activities" (
     "id" TEXT NOT NULL,
     "sub_activity_id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
     "koordinat" JSONB,
     "catatan_kegiatan" TEXT,
     "file" JSONB,
@@ -227,7 +233,6 @@ CREATE TABLE "public"."daily_sub_activities" (
     "tanggal_progres" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
-    "user_id" TEXT NOT NULL,
 
     CONSTRAINT "daily_sub_activities_pkey" PRIMARY KEY ("id")
 );
@@ -240,11 +245,114 @@ CREATE TABLE "public"."wilayah" (
     CONSTRAINT "wilayah_pkey" PRIMARY KEY ("kode")
 );
 
+-- CreateTable
+CREATE TABLE "public"."kategori_kebutuhan" (
+    "id" TEXT NOT NULL,
+    "nama" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "kategori_kebutuhan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."kebutuhan" (
+    "id" TEXT NOT NULL,
+    "kategori_kebutuhan_id" TEXT NOT NULL,
+    "nama" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "kebutuhan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."analisa_kebutuhan" (
+    "id" TEXT NOT NULL,
+    "sub_activity_id" TEXT NOT NULL,
+    "kebutuhan_id" TEXT NOT NULL,
+    "koefisien" DOUBLE PRECISION NOT NULL,
+    "hasil" DOUBLE PRECISION DEFAULT 0,
+    "satuan_hasil" TEXT,
+    "hasil_analisa_kebutuhan" DOUBLE PRECISION DEFAULT 0,
+    "satuan_hasil_analisa_kebutuhan" TEXT,
+    "stok_harian" DOUBLE PRECISION DEFAULT 0,
+    "terpasang" DOUBLE PRECISION DEFAULT 0,
+    "total_sisa_stok_hari_ini" DOUBLE PRECISION DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "analisa_kebutuhan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."resource_flow_schedules" (
+    "id" TEXT NOT NULL,
+    "analisa_kebutuhan_id" TEXT NOT NULL,
+    "tanggal" TEXT NOT NULL,
+    "realisasi" DOUBLE PRECISION DEFAULT 0,
+    "file" JSONB,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "resource_flow_schedules_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."weekly_reports" (
+    "id" TEXT NOT NULL,
+    "project_id" TEXT NOT NULL,
+    "week_number" INTEGER NOT NULL,
+    "start_date" DATE NOT NULL,
+    "end_date" DATE NOT NULL,
+    "file_path" TEXT,
+    "file_url" TEXT,
+    "status" "public"."ReportStatus" NOT NULL DEFAULT 'PUBLISHED',
+    "satker" TEXT,
+    "kegiatan" TEXT,
+    "proyek_pekerjaan" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "weekly_reports_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."weekly_report_activities" (
+    "id" TEXT NOT NULL,
+    "weekly_report_id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "sat" TEXT,
+    "volume" DOUBLE PRECISION DEFAULT 0,
+    "weight" DOUBLE PRECISION DEFAULT 0,
+    "realisasi_minggulalu_volume" DOUBLE PRECISION DEFAULT 0,
+    "realisasi_minggulalu_bobot" DOUBLE PRECISION DEFAULT 0,
+    "target_minggu_ini" DOUBLE PRECISION DEFAULT 0,
+    "realisasi_minggu_ini" DOUBLE PRECISION DEFAULT 0,
+    "status" TEXT,
+    "kumulatif_minggu_ini_volume" DOUBLE PRECISION DEFAULT 0,
+    "kumulatif_minggu_ini_bobot" DOUBLE PRECISION DEFAULT 0,
+    "persentase_item_pekerjaan" DOUBLE PRECISION DEFAULT 0,
+    "persentase_grafik_progress" DOUBLE PRECISION DEFAULT 0,
+    "persentase_rencana_kumulatif" DOUBLE PRECISION DEFAULT 0,
+    "status_kumulatif" TEXT,
+    "persentase_seluruh_pekerjaan" DOUBLE PRECISION DEFAULT 0,
+    "parent_activity_id" TEXT,
+    "display_order" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "weekly_report_activities_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "balai_code_key" ON "public"."balai"("code");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "satkers_balai_id_code_key" ON "public"."satkers"("balai_id", "code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "addendums_project_id_addendum_number_key" ON "public"."addendums"("project_id", "addendum_number");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "schedules_sub_activity_id_week_number_key" ON "public"."schedules"("sub_activity_id", "week_number");
@@ -275,6 +383,39 @@ CREATE UNIQUE INDEX "daily_sub_activities_sub_activity_id_tanggal_progres_user_i
 
 -- CreateIndex
 CREATE INDEX "wilayah_nama_idx" ON "public"."wilayah"("nama");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "kategori_kebutuhan_nama_key" ON "public"."kategori_kebutuhan"("nama");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "analisa_kebutuhan_sub_activity_id_kebutuhan_id_key" ON "public"."analisa_kebutuhan"("sub_activity_id", "kebutuhan_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "resource_flow_schedules_analisa_kebutuhan_id_tanggal_key" ON "public"."resource_flow_schedules"("analisa_kebutuhan_id", "tanggal");
+
+-- CreateIndex
+CREATE INDEX "weekly_reports_project_id_idx" ON "public"."weekly_reports"("project_id");
+
+-- CreateIndex
+CREATE INDEX "weekly_reports_week_number_idx" ON "public"."weekly_reports"("week_number");
+
+-- CreateIndex
+CREATE INDEX "weekly_reports_start_date_end_date_idx" ON "public"."weekly_reports"("start_date", "end_date");
+
+-- CreateIndex
+CREATE INDEX "weekly_reports_status_idx" ON "public"."weekly_reports"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "weekly_reports_project_id_week_number_start_date_end_date_key" ON "public"."weekly_reports"("project_id", "week_number", "start_date", "end_date");
+
+-- CreateIndex
+CREATE INDEX "weekly_report_activities_weekly_report_id_idx" ON "public"."weekly_report_activities"("weekly_report_id");
+
+-- CreateIndex
+CREATE INDEX "weekly_report_activities_parent_activity_id_idx" ON "public"."weekly_report_activities"("parent_activity_id");
+
+-- CreateIndex
+CREATE INDEX "weekly_report_activities_display_order_idx" ON "public"."weekly_report_activities"("display_order");
 
 -- AddForeignKey
 ALTER TABLE "public"."satkers" ADD CONSTRAINT "satkers_balai_id_fkey" FOREIGN KEY ("balai_id") REFERENCES "public"."balai"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -320,3 +461,24 @@ ALTER TABLE "public"."daily_sub_activities" ADD CONSTRAINT "daily_sub_activities
 
 -- AddForeignKey
 ALTER TABLE "public"."daily_sub_activities" ADD CONSTRAINT "daily_sub_activities_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."kebutuhan" ADD CONSTRAINT "kebutuhan_kategori_kebutuhan_id_fkey" FOREIGN KEY ("kategori_kebutuhan_id") REFERENCES "public"."kategori_kebutuhan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."analisa_kebutuhan" ADD CONSTRAINT "analisa_kebutuhan_sub_activity_id_fkey" FOREIGN KEY ("sub_activity_id") REFERENCES "public"."sub_activities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."analisa_kebutuhan" ADD CONSTRAINT "analisa_kebutuhan_kebutuhan_id_fkey" FOREIGN KEY ("kebutuhan_id") REFERENCES "public"."kebutuhan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."resource_flow_schedules" ADD CONSTRAINT "resource_flow_schedules_analisa_kebutuhan_id_fkey" FOREIGN KEY ("analisa_kebutuhan_id") REFERENCES "public"."analisa_kebutuhan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."weekly_reports" ADD CONSTRAINT "weekly_reports_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."weekly_report_activities" ADD CONSTRAINT "weekly_report_activities_weekly_report_id_fkey" FOREIGN KEY ("weekly_report_id") REFERENCES "public"."weekly_reports"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."weekly_report_activities" ADD CONSTRAINT "weekly_report_activities_parent_activity_id_fkey" FOREIGN KEY ("parent_activity_id") REFERENCES "public"."weekly_report_activities"("id") ON DELETE SET NULL ON UPDATE CASCADE;
