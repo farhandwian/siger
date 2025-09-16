@@ -1,10 +1,10 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useExecutionSummary } from '@/hooks/useExecutionSummary'
 import { useProjectsList, type ComponentProjectData } from '@/hooks/useProjectsList'
-import { SCurveChart } from '@/components/monitoring/SCurveChartNew'
+import { SCurveChart } from '@/components/monitoring/s-curve-chart'
 import { AIInsights } from '@/components/monitoring/ai-insights'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -68,7 +68,7 @@ function SummaryCard({
 function ProgressPekerjaanSection() {
   return (
     <div className="h-full">
-      <SCurveChart projectId="1" type="activity" aggregateAllProjects={true} />
+      <SCurveChart projectId="1" isActionPlanTable={false} />
     </div>
   )
 }

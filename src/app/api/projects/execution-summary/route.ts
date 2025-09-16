@@ -36,11 +36,6 @@ export async function GET() {
         saluranDeviasi: true,
         keuanganProgress: true,
         keuanganDeviasi: true,
-        activities: {
-          include: {
-            schedules: true,
-          },
-        },
       },
     })
 
@@ -105,7 +100,14 @@ export async function GET() {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error fetching execution summary:', error)
+    // Log error for debugging
+    if (error instanceof Error) {
+      // Handle known error types
+      return NextResponse.json(
+        { success: false, error: 'Failed to fetch execution summary' },
+        { status: 500 }
+      )
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to fetch execution summary' },
       { status: 500 }

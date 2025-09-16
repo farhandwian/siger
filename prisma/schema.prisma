@@ -78,8 +78,8 @@ model Project {
   assignments        ProjectAssignment[]
   addendums          Addendums[]
   auditLogs          ProjectAuditLog[]
-  weeklyReports      WeeklyReport[]
   satker             Satker?         @relation(fields: [satkerId], references: [id])
+  weeklyReports      WeeklyReport[]
 
   @@map("projects")
 }
@@ -273,6 +273,33 @@ model Wilayah {
 
   @@index([nama])
   @@map("wilayah")
+}
+
+model WeeklyReport {
+  id         String       @id @default(cuid())
+  projectId  String       @map("project_id")
+  weekNumber Int          @map("week_number")
+  startDate  DateTime     @map("start_date") @db.Date
+  endDate    DateTime     @map("end_date") @db.Date
+  filePath   String?      @map("file_path")
+  fileUrl    String?      @map("file_url")
+  status     ReportStatus @default(PUBLISHED)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, weekNumber, startDate, endDate])
+  @@index([projectId])
+  @@index([weekNumber])
+  @@index([startDate, endDate])
+  @@index([status])
+  @@map("weekly_reports")
+}
+
+enum ReportStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 enum UserRole {

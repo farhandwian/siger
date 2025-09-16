@@ -6,11 +6,10 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { AlertTriangle, BarChart3, Map } from 'lucide-react'
+import { Map } from 'lucide-react'
 import { UsulanSection } from '@/components/dashboard/UsulanSection'
-import { PelaksanaanComprehensive, PelaksanaanSection } from '@/components/pelaksanaan'
+import { PelaksanaanComprehensive } from '@/components/pelaksanaan'
 import { PelaksanaanMap } from '@/components/dashboard/PelaksanaanMap'
-import { LiveUpdates } from '@/components/dashboard/LiveUpdates'
 import { useAuth } from '@/hooks/useAuth'
 
 // Loading components
