@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useRef } from 'react'
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -91,6 +91,11 @@ export function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: st
   const Icon = toastIcons[toast.type]
   const colors = toastColors[toast.type]
 
+  const handleRemove = useCallback(() => {
+    setIsVisible(false)
+    setTimeout(() => onRemove(toast.id), 300) // Wait for exit animation
+  }, [toast.id, onRemove])
+
   React.useEffect(() => {
     // Trigger entrance animation
     const timer = setTimeout(() => setIsVisible(true), 10)
@@ -112,12 +117,7 @@ export function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: st
     }, 100)
 
     return () => clearInterval(interval)
-  }, [duration])
-
-  const handleRemove = useCallback(() => {
-    setIsVisible(false)
-    setTimeout(() => onRemove(toast.id), 300) // Wait for exit animation
-  }, [toast.id, onRemove])
+  }, [duration, handleRemove])
 
   return (
     <div
@@ -179,9 +179,11 @@ export function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: st
 // Toast Provider Component
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const toastIdCounter = useRef(0)
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = Math.random().toString(36).substring(2, 15)
+    // Use a counter instead of Math.random to prevent hydration mismatches
+    const id = `toast-${++toastIdCounter.current}`
     setToasts(prev => [...prev, { ...toast, id }])
   }, [])
 
