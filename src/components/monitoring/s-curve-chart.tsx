@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCalculatedData } from '@/hooks/useCalculatedData'
@@ -30,26 +31,49 @@ export function SCurveChart({ projectId, isActionPlanTable = false }: SCurveChar
     const maxWeeks = project.numberOfWeeks || 20
     const data = []
 
+    // Calculate current week based on contract start date
+    const currentDate = new Date()
+    const contractStart = project.tanggalKontrak ? new Date(project.tanggalKontrak) : new Date()
+    const weeksPassed = Math.max(
+      0,
+      Math.floor((currentDate.getTime() - contractStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+    )
+    const currentWeek = Math.min(weeksPassed + 1, maxWeeks) // +1 because week 1 starts immediately
+
     for (let week = 1; week <= maxWeeks; week++) {
       if (isActionPlanTable) {
         // For Action Plan tab: show Action Plan vs Realization
         data.push({
           week,
           'Action Plan': getCalculatedValueForWeek(week, 'cumulative-action-plan'),
-          'Realization': getCalculatedValueForWeek(week, 'cumulative-realization'),
+          'Realization': week <= currentWeek ? getCalculatedValueForWeek(week, 'cumulative-realization') : null,
         })
       } else {
         // For Schedule tab: show Plan vs Realization
         data.push({
           week,
           'Plan': getCalculatedValueForWeek(week, 'cumulative-plan'),
-          'Realization': getCalculatedValueForWeek(week, 'cumulative-realization'),
+          'Realization': week <= currentWeek ? getCalculatedValueForWeek(week, 'cumulative-realization') : null,
         })
       }
     }
 
     return data
   }, [project, getCalculatedValueForWeek, isActionPlanTable])
+
+  // Calculate current week for reference line
+  const currentWeek = useMemo(() => {
+    if (!project) return 0
+
+    const currentDate = new Date()
+    const contractStart = project.tanggalKontrak ? new Date(project.tanggalKontrak) : new Date()
+    const weeksPassed = Math.max(
+      0,
+      Math.floor((currentDate.getTime() - contractStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+    )
+    const maxWeeks = project.numberOfWeeks || 20
+    return Math.min(weeksPassed + 1, maxWeeks) // +1 because week 1 starts immediately
+  }, [project])
 
   // Show loading skeleton while data is being fetched
   if (isLoading) {
@@ -152,6 +176,19 @@ export function SCurveChart({ projectId, isActionPlanTable = false }: SCurveChar
                 }}
                 labelFormatter={(label) => `Week ${label}`}
                 formatter={(value: number) => [`${value.toFixed(2)}%`, '']}
+              />
+              
+              {/* Current week reference line */}
+              <ReferenceLine 
+                x={currentWeek} 
+                stroke="#ef4444" 
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                label={{ 
+                  value: "Minggu ini", 
+                  position: "top",
+                  style: { fontSize: '10px', fill: '#ef4444' }
+                }}
               />
               
               {isActionPlanTable ? (

@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import * as React from 'react'
-import { APIProvider, Map, Marker, InfoWindow } from '@vis.gl/react-google-maps'
+import { APIProvider, Map, Marker, InfoWindow, useMap } from '@vis.gl/react-google-maps'
 import { MapPin, Loader2, Eye, Image as ImageIcon } from 'lucide-react'
 import { GOOGLE_MAPS_OPTIONS, PROJECT_WORK_MAP_OPTIONS } from '@/constants/map-config'
 import { ProjectAreaBaseLayer } from './project-area-base-layer'
 import {
   useLatestDailySubActivities,
-  LatestDailySubActivity,
 } from '@/hooks/useLatestDailySubActivities'
 import { useSubActivityImages } from '@/hooks/useSubActivityImages'
 
@@ -35,6 +34,36 @@ interface ProjectWorkMapProps {
 
 export function ProjectWorkMap({ projectId, isEditable = true }: ProjectWorkMapProps) {
   const [selectedLocation, setSelectedLocation] = useState<WorkLocation | null>(null)
+  const [mapCenter, setMapCenter] = useState({
+    lat: PROJECT_WORK_MAP_OPTIONS.lat,
+    lng: PROJECT_WORK_MAP_OPTIONS.lng,
+  })
+  const [mapZoom, setMapZoom] = useState(PROJECT_WORK_MAP_OPTIONS.zoom)
+
+  // Load saved map state
+  useEffect(() => {
+    const loadMapState = async () => {
+      try {
+        const response = await fetch(`/api/projects/${projectId}/map-state`)
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.data) {
+            setMapCenter(result.data.center)
+            setMapZoom(result.data.zoom)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading map state:', error)
+      }
+    }
+
+    loadMapState()
+  }, [projectId])
+
+  // Update map view when mapCenter or mapZoom changes
+  useEffect(() => {
+    // This will be handled by the MapEventHandler component
+  }, [mapCenter, mapZoom])
   const [imagePreview, setImagePreview] = useState<{
     isOpen: boolean
     images: Array<{ fileName: string; filePath: string; url?: string; uploadedAt: string }>
@@ -44,6 +73,76 @@ export function ProjectWorkMap({ projectId, isEditable = true }: ProjectWorkMapP
     images: [],
     currentIndex: 0,
   })
+
+  // Save map center and zoom to API
+  const saveMapState = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/map-state`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          center: mapCenter,
+          zoom: mapZoom,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save map state')
+      }
+    } catch (error) {
+      console.error('Error saving map state:', error)
+    }
+  }, [projectId, mapCenter, mapZoom])
+
+  // Map event handler component
+  const MapEventHandler = () => {
+    const map = useMap()
+    
+    useEffect(() => {
+      if (!map) return
+      
+      // Set initial map view based on loaded state
+      map.setCenter(new google.maps.LatLng(mapCenter.lat, mapCenter.lng))
+      map.setZoom(mapZoom)
+      
+      const handleIdle = () => {
+        const center = map.getCenter()
+        if (center) {
+          setMapCenter({
+            lat: center.lat(),
+            lng: center.lng(),
+          })
+        }
+        setMapZoom(map.getZoom() || PROJECT_WORK_MAP_OPTIONS.zoom)
+      }
+      
+      // Add event listener
+      const idleListener = map.addListener('idle', handleIdle)
+      
+      // Cleanup listener
+      return () => {
+        google.maps.event.removeListener(idleListener)
+      }
+    }, [map, mapCenter, mapZoom])
+    
+    return null
+  }
+  
+  // Remove the unused handleMapIdle function
+  
+
+  // Handle polygon save and refresh - use full page reload for reliability
+  const handlePolygonSave = () => {
+    // Save map state before reload
+    saveMapState()
+    
+    // Force full page reload to ensure clean state
+    setTimeout(() => {
+      window.location.reload()
+    }, 500) // Small delay to ensure save completes
+  }
 
   // Fetch latest daily sub activities from API
   const {
@@ -247,11 +346,8 @@ export function ProjectWorkMap({ projectId, isEditable = true }: ProjectWorkMapP
         <Map
           className="h-full w-full"
           {...GOOGLE_MAPS_OPTIONS}
-          defaultCenter={{
-            lat: PROJECT_WORK_MAP_OPTIONS.lat,
-            lng: PROJECT_WORK_MAP_OPTIONS.lng,
-          }}
-          defaultZoom={PROJECT_WORK_MAP_OPTIONS.zoom}
+          defaultCenter={mapCenter}
+          defaultZoom={mapZoom}
           mapTypeId="satellite"
           // Disable interactions when not editable
           draggable={isEditable}
@@ -264,9 +360,7 @@ export function ProjectWorkMap({ projectId, isEditable = true }: ProjectWorkMapP
           <ProjectAreaBaseLayer
             projectId={projectId}
             editable={isEditable}
-            onPolygonSave={async coordinates => {
-              console.log('Polygon saved successfully:', coordinates)
-            }}
+            onPolygonSave={handlePolygonSave}
           />
 
           {/* Work Location Markers */}
@@ -409,6 +503,9 @@ export function ProjectWorkMap({ projectId, isEditable = true }: ProjectWorkMapP
               </div>
             </InfoWindow>
           )}
+          
+          {/* Map Event Handler */}
+          <MapEventHandler />
         </Map>
 
         {/* Map Legend */}
@@ -472,6 +569,20 @@ function ImagePreviewModal({
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
 
+  // Add event listener for keyboard navigation
+  React.useEffect(() => {
+    if (!isOpen) return
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft' && images[currentIndex - 1]) onPrevious()
+      if (e.key === 'ArrowRight' && images[currentIndex + 1]) onNext()
+    }
+    
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, currentIndex, onClose, onPrevious, onNext, images])
+
   if (!isOpen || !images[currentIndex]) return null
 
   const currentImage = images[currentIndex]
@@ -495,22 +606,9 @@ function ImagePreviewModal({
 
       window.URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Download failed:', error)
+      // Silently handle download error
     }
   }
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') onClose()
-    if (e.key === 'ArrowLeft' && canGoPrevious) onPrevious()
-    if (e.key === 'ArrowRight' && canGoNext) onNext()
-  }
-
-  // Add event listener for keyboard navigation
-  React.useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [currentIndex, canGoPrevious, canGoNext])
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm">

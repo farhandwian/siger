@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Upload, X, FileText, AlertCircle, CheckCircle, Calendar } from 'lucide-react'
+import { Upload, X, FileText, AlertCircle, CheckCircle } from 'lucide-react'
 import { useProject } from '@/hooks/useActivityQueries'
 
 interface CSVImportModalProps {
@@ -13,22 +13,20 @@ interface CSVImportModalProps {
   onSuccess?: () => void
 }
 
+interface ScheduleData {
+  weekNumber: number
+  plan: number
+  realization: number
+  actionPlan: number
+}
 interface ParsedActivity {
   name: string
   type: 'activity' | 'subActivity'
   parentActivity?: string
   satuan?: string
-  volumeKontrak?: number
-  bobotMC0?: number
-  volumeMC0?: number
-  scheduleData: Array<{
-    period: string
-    month: number
-    year: number
-    week: number
-    planPercentage: number
-    actualPercentage: number
-  }>
+  volume?: number
+  bobot?: number
+  scheduleData: ScheduleData[]
 }
 
 export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImportModalProps) {
@@ -49,12 +47,6 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
   // Use the project hook to get SPMK date
   const { data: project } = useProject(projectId)
   const spmkDate = project?.tanggalSpmk || null
-
-  useEffect(() => {
-    if (project?.tanggalSpmk) {
-      console.log('📅 SPMK date from hook:', project.tanggalSpmk)
-    }
-  }, [project?.tanggalSpmk])
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
@@ -95,7 +87,6 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     }
 
     const delimiter = detectDelimiter(csvText)
-    console.log(`📄 CSV delimiter detected: "${delimiter}"`)
 
     // Proper CSV parsing that respects quoted fields
     const parseCSVLine = (line: string, delimiter: string): string[] => {
@@ -137,245 +128,9 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     return lines.map(line => parseCSVLine(line, delimiter))
   }
 
-  const parseMonthName = (monthName: string): number => {
-    const monthMap: { [key: string]: number } = {
-      JANUARI: 1,
-      JAN: 1,
-      FEBRUARI: 2,
-      FEB: 2,
-      MARET: 3,
-      MAR: 3,
-      APRIL: 4,
-      APR: 4,
-      MEI: 5,
-      MAY: 5,
-      JUNI: 6,
-      JUN: 6,
-      JULY: 7,
-      JUL: 7,
-      JULI: 7,
-      AGUSTUS: 8,
-      AGU: 8,
-      AUG: 8,
-      SEPTEMBER: 9,
-      SEP: 9,
-      SEPT: 9,
-      OKTOBER: 10,
-      OKT: 10,
-      OCT: 10,
-      NOVEMBER: 11,
-      NOV: 11,
-      DESEMBER: 12,
-      DES: 12,
-      DEC: 12,
-    }
-    return monthMap[monthName.toUpperCase()] || 1
-  }
-
-  const parseDateRange = (dateRange: string): { startDay: number; endDay: number } => {
-    const match = dateRange.match(/(\d{1,2})\s*-\s*(\d{1,2})/)
-    if (match) {
-      return {
-        startDay: parseInt(match[1]),
-        endDay: parseInt(match[2]),
-      }
-    }
-    return { startDay: 1, endDay: 7 }
-  }
-
-  // Build week-based period mapping from SPMK date
-  const buildWeekBasedMapping = (
-    spmkDate: string | null,
-    totalWeeks: number = 20
-  ): Array<{ month: number; year: number; week: number }> => {
-    if (!spmkDate) {
-      console.log('⚠️ No SPMK date available, using fallback mapping')
-      // Fallback mapping starting from last week of May 2025 (May 26, 2025)
-      const fallbackStart = new Date('2025-05-26')
-      return generateWeekMapping(fallbackStart, totalWeeks)
-    }
-
-    try {
-      let startDate: Date
-
-      // Handle Indonesian date format like "22 Mei 2025"
-      const indonesianMonths: { [key: string]: string } = {
-        januari: '01',
-        februari: '02',
-        maret: '03',
-        april: '04',
-        mei: '05',
-        juni: '06',
-        juli: '07',
-        agustus: '08',
-        september: '09',
-        oktober: '10',
-        november: '11',
-        desember: '12',
-      }
-
-      // Check if it's Indonesian format (contains month names)
-      const indonesianPattern = /(\d{1,2})\s+(\w+)\s+(\d{4})/i
-      const indonesianMatch = spmkDate.match(indonesianPattern)
-
-      if (indonesianMatch) {
-        const [, day, monthName, year] = indonesianMatch
-        const monthNum = indonesianMonths[monthName.toLowerCase()]
-        if (monthNum) {
-          const formattedDate = `${year}-${monthNum}-${day.padStart(2, '0')}`
-          startDate = new Date(formattedDate)
-          console.log('📅 Parsed Indonesian SPMK date:', spmkDate, '->', formattedDate)
-        } else {
-          throw new Error('Unknown Indonesian month name')
-        }
-      }
-      // Handle standard formats
-      else if (spmkDate.includes('-')) {
-        // Check if it's YYYY-MM-DD or DD-MM-YYYY
-        const parts = spmkDate.split('-')
-        if (parts[0].length === 4) {
-          // YYYY-MM-DD format
-          startDate = new Date(spmkDate)
-        } else {
-          // DD-MM-YYYY format
-          startDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
-        }
-      } else if (spmkDate.includes('/')) {
-        // DD/MM/YYYY format
-        const parts = spmkDate.split('/')
-        startDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
-      } else {
-        throw new Error('Unsupported date format')
-      }
-
-      if (isNaN(startDate.getTime())) {
-        throw new Error('Invalid date')
-      }
-
-      console.log('📅 Using SPMK date as start:', startDate.toISOString())
-      return generateWeekMapping(startDate, totalWeeks)
-    } catch (error) {
-      console.error('❌ Error parsing SPMK date:', spmkDate, error)
-      // Fallback to May 26, 2025 - should align with CSV Period 1 in last week of May
-      const fallbackStart = new Date('2025-05-26')
-      return generateWeekMapping(fallbackStart, totalWeeks)
-    }
-  }
-
-  // Generate week mapping from start date
-  const generateWeekMapping = (
-    startDate: Date,
-    totalWeeks: number
-  ): Array<{ month: number; year: number; week: number }> => {
-    const periods: Array<{ month: number; year: number; week: number }> = []
-
-    console.log('📅 Generating week mapping starting from:', startDate.toISOString())
-
-    for (let weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
-      // Calculate the actual date for this week (7 days per week)
-      const weekDate = new Date(startDate)
-      weekDate.setDate(startDate.getDate() + weekIndex * 7)
-
-      // Find the Monday and Thursday of the week containing this date
-      const monday = getMonday(weekDate)
-      const thursday = new Date(monday)
-      thursday.setDate(monday.getDate() + 3)
-
-      // Use Thursday's month and year (Thursday ownership rule)
-      const month = thursday.getMonth() + 1
-      const year = thursday.getFullYear()
-
-      // Calculate week number within that month
-      // Find all Mondays in the month that have Thursday in the same month
-      let week = 1
-      const firstDayOfMonth = new Date(year, month - 1, 1)
-      let currentMonday = getMonday(firstDayOfMonth)
-
-      while (currentMonday <= thursday) {
-        const currentThursday = new Date(currentMonday)
-        currentThursday.setDate(currentMonday.getDate() + 3)
-
-        // If this Thursday belongs to our target month
-        if (currentThursday.getMonth() === month - 1 && currentThursday.getFullYear() === year) {
-          if (currentMonday.getTime() === monday.getTime()) {
-            break // Found our week number
-          }
-          week++
-        }
-
-        currentMonday.setDate(currentMonday.getDate() + 7)
-      }
-
-      periods.push({ month, year, week })
-
-      console.log(
-        `📅 Week ${weekIndex + 1}: ${weekDate.toISOString().slice(0, 10)} -> ${year}-${month.toString().padStart(2, '0')}-W${week} (Monday: ${monday.toISOString().slice(0, 10)}, Thursday: ${thursday.toISOString().slice(0, 10)})`
-      )
-    }
-
-    return periods
-  }
-
-  // Helper function to get the Monday of the week containing the given date
-  const getMonday = (date: Date): Date => {
-    const day = date.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const daysFromMonday = day === 0 ? 6 : day - 1 // Convert Sunday (0) to 6
-    const monday = new Date(date)
-    monday.setDate(date.getDate() - daysFromMonday)
-    return monday
-  }
-
-  // Helper function to get month name
-  const getMonthName = (month: number): string => {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ]
-    return months[month - 1] || 'Unknown'
-  }
-
-  const buildPeriodMapping = (
-    rows: string[][],
-    spmkDate: string | null
-  ): Array<{ month: number; year: number; week: number }> => {
-    console.log('📅 Building week-based period mapping from SPMK date:', spmkDate)
-
-    // Count total data columns to determine how many weeks we need
-    const maxColumns = Math.max(...rows.map(row => row.length))
-    const dataColumnStart = 7 // Schedule data starts from column 7
-    const totalWeeks = Math.max(maxColumns - dataColumnStart, 20) // At least 20 weeks
-
-    console.log(
-      `📅 Detected ${maxColumns} total columns, building ${totalWeeks} weeks from column ${dataColumnStart}`
-    )
-
-    // Use SPMK date-based week mapping
-    return buildWeekBasedMapping(spmkDate, totalWeeks)
-  }
-
-  const mapPeriodToDate = (
-    periodIndex: number,
-    periodMapping: Array<{ month: number; year: number; week: number }>
-  ): { month: number; year: number; week: number } => {
-    return periodMapping[periodIndex] || { month: 1, year: 2025, week: 1 }
-  }
-
   const parseScheduleData = (rows: string[][], headerSkip: number): ParsedActivity[] => {
     // Skip header rows
     const dataRows = rows.slice(headerSkip)
-
-    // Build dynamic period mapping from SPMK date
-    const periodMapping = buildPeriodMapping(rows, spmkDate)
 
     const activities: ParsedActivity[] = []
     const processedActivities = new Set<string>()
@@ -385,14 +140,11 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
     let currentActivity = ''
 
     while (i < dataRows.length) {
-      const row = dataRows[i]
-      if (!row || row.length < 2) {
-        i++
-        continue
-      }
+      const planRow = dataRows[i]
+      const actualRow = dataRows[i + 1] // Next row for actual values
 
-      const firstCol = row[0]?.trim()
-      const secondCol = row[1]?.trim()
+      const firstCol = planRow[0]?.trim()
+      const secondCol = planRow[1]?.trim()
 
       // Check if this is a main activity (has Roman numeral)
       if (firstCol && /^[IVX]+$/.test(firstCol)) {
@@ -414,71 +166,48 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       // Check if this is a sub-activity (no Roman numeral but has content in second column)
       if (!firstCol && secondCol && currentActivity) {
         const subActivityKey = `${currentActivity}::${secondCol}`
+        const startWeekCol = 5 // Schedule data starts from column 5
 
         // Only process if not already processed
         if (!processedSubActivities.has(subActivityKey)) {
-          const satuan = row[2]?.trim()
-          const volumeKontrak = parseFloat(row[3]?.replace(',', '.') || '0')
-          const bobotMC0 = parseFloat(row[4]?.replace(',', '.') || '0')
-          const volumeMC0 = parseFloat(row[5]?.replace(',', '.') || '0')
+          const satuan = planRow[2]?.trim()
+          const volume = parseFloat(planRow[3]?.replace(',', '.') || '0')
+          const bobot = parseFloat(planRow[4]?.replace(',', '.') || '0')
 
-          // Extract plan values (current row) - schedule data starts from column 7
-          const planScheduleData = []
-          for (let colIndex = 7; colIndex < row.length; colIndex++) {
-            const value = parseFloat(row[colIndex]?.replace(',', '.') || '0')
-            const dateInfo = mapPeriodToDate(colIndex - 7, periodMapping)
+          // Extract plan values (current row) - schedule data starts from column 5
+          const scheduleData: ScheduleData[] = []
 
-            if (value > 0 || colIndex < 25) {
-              // Include even 0 values for valid periods
-              planScheduleData.push({
-                period: `${dateInfo.year}-${dateInfo.month.toString().padStart(2, '0')}-W${dateInfo.week}`,
-                month: dateInfo.month,
-                year: dateInfo.year,
-                week: dateInfo.week,
-                planPercentage: value,
-                actualPercentage: 0,
-              })
+          const rowLength = Math.max(planRow.length, actualRow ? actualRow.length : 0)
+
+          for (let colIndex = startWeekCol; colIndex < rowLength; colIndex++) {
+
+            let plan = 0
+            let actual = 0
+
+            if (colIndex < planRow.length) {
+              plan = parseFloat(planRow[colIndex]?.replace(',', '.') || '0')
             }
-          }
 
-          // Check next row for actual values
-          let actualScheduleData = planScheduleData.map(item => ({ ...item, actualPercentage: 0 }))
-          if (i + 1 < dataRows.length) {
-            const nextRow = dataRows[i + 1]
-            if (nextRow && !nextRow[0]?.trim() && !nextRow[1]?.trim()) {
-              // This is the actual values row
-              for (
-                let colIndex = 7;
-                colIndex < nextRow.length && colIndex - 7 < actualScheduleData.length;
-                colIndex++
-              ) {
-                const actualValue = parseFloat(nextRow[colIndex]?.replace(',', '.') || '0')
-                if (actualScheduleData[colIndex - 7]) {
-                  actualScheduleData[colIndex - 7].actualPercentage = actualValue
-                }
-              }
-              i++ // Skip the actual values row
+            if (actualRow && colIndex < actualRow.length) {
+              actual = parseFloat(actualRow[colIndex]?.replace(',', '.') || '0')
             }
-          }
 
-          // Deduplicate schedule data within the same sub-activity
-          const uniqueScheduleData = actualScheduleData.filter(
-            (item, index, self) =>
-              index ===
-              self.findIndex(
-                t => t.period === item.period && t.month === item.month && t.week === item.week
-              )
-          )
+            scheduleData.push({
+              weekNumber: colIndex - startWeekCol + 1,
+              plan,
+              realization: actual,
+              actionPlan: plan,
+            })
+          }
 
           const subActivity: ParsedActivity = {
             name: secondCol,
             type: 'subActivity',
             parentActivity: currentActivity,
             satuan,
-            volumeKontrak,
-            bobotMC0,
-            volumeMC0,
-            scheduleData: uniqueScheduleData,
+            volume,
+            bobot,
+            scheduleData: scheduleData,
           }
 
           activities.push(subActivity)
@@ -508,52 +237,15 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       const text = await file.text()
       const rows = parseCSV(text)
 
-      if (rows.length < 4) {
-        throw new Error('CSV file must have at least 4 rows (3 headers + data)')
+      if (rows.length < 2) {
+        throw new Error('CSV file must have at least 2 rows (1 header + 1 data)')
       }
 
-      // Skip first 3 header rows and parse the data
-      const parsedData = parseScheduleData(rows, 3)
+      // Skip header rows and parse the data
+      const parsedData = parseScheduleData(rows, 1)
       setParseResult(parsedData)
 
-      // Console log the results for now
-      console.log('=== CSV IMPORT RESULTS ===')
-      console.log('Project ID:', projectId)
-      console.log('Total Activities:', parsedData.filter(item => item.type === 'activity').length)
-      console.log(
-        'Total Sub-Activities:',
-        parsedData.filter(item => item.type === 'subActivity').length
-      )
-
-      parsedData.forEach((item, index) => {
-        console.log(`\n${index + 1}. ${item.type.toUpperCase()}: ${item.name}`)
-        if (item.type === 'subActivity') {
-          console.log(`   Parent: ${item.parentActivity}`)
-          console.log(`   Satuan: ${item.satuan}`)
-          console.log(`   Volume Kontrak: ${item.volumeKontrak}`)
-          console.log(`   Bobot MC0: ${item.bobotMC0}%`)
-          console.log(`   Volume MC0: ${item.volumeMC0}`)
-          console.log(`   Schedule Data (${item.scheduleData.length} periods):`)
-          item.scheduleData.forEach(
-            (schedule: {
-              period: string
-              month: number
-              year: number
-              week: number
-              planPercentage: number
-              actualPercentage: number
-            }) => {
-              if (schedule.planPercentage > 0 || schedule.actualPercentage > 0) {
-                console.log(
-                  `     ${schedule.period}: Plan=${schedule.planPercentage}%, Actual=${schedule.actualPercentage}%`
-                )
-              }
-            }
-          )
-        }
-      })
     } catch (err) {
-      console.error('CSV parsing error:', err)
       setError(err instanceof Error ? err.message : 'Failed to parse CSV file')
     } finally {
       setIsProcessing(false)
@@ -575,7 +267,27 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
 
     setIsImporting(true)
     setError(null)
-    setImportProgress({ stage: 'Preparing data...', progress: 0, total: parseResult.length })
+    
+    // Simulate more realistic progress tracking
+    const progressSteps = [
+      { stage: 'Validating data...', progress: 10 },
+      { stage: 'Processing activities...', progress: 30 },
+      { stage: 'Creating sub-activities...', progress: 60 },
+      { stage: 'Importing schedules...', progress: 85 },
+      { stage: 'Finalizing import...', progress: 95 },
+    ]
+
+    let currentStepIndex = 0
+    setImportProgress({ stage: 'Preparing data...', progress: 0, total: 100 })
+
+    // Simulate progress updates during import
+    const progressInterval = setInterval(() => {
+      if (currentStepIndex < progressSteps.length) {
+        const step = progressSteps[currentStepIndex]
+        setImportProgress({ stage: step.stage, progress: step.progress, total: 100 })
+        currentStepIndex++
+      }
+    }, 800) // Update every 800ms
 
     try {
       const response = await fetch(`/api/projects/${projectId}/schedule/import`, {
@@ -586,12 +298,11 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
         body: JSON.stringify({
           projectId,
           activities: parseResult,
-          importMode, // Add import mode to the request
+          importMode,
         }),
       })
 
-      setImportProgress({ stage: 'Processing import...', progress: 50, total: 100 })
-
+      clearInterval(progressInterval)
       const result = await response.json()
 
       if (!response.ok) {
@@ -605,11 +316,17 @@ export function CSVImportModal({ isOpen, onClose, projectId, onSuccess }: CSVImp
       if (onSuccess) {
         onSuccess()
       }
+
+      // Clear progress after 2 seconds
+      setTimeout(() => {
+        setImportProgress(null)
+      }, 2000)
+
     } catch (err) {
+      clearInterval(progressInterval)
       setError(err instanceof Error ? err.message : 'Failed to import to database')
     } finally {
       setIsImporting(false)
-      setImportProgress(null)
     }
   }
 

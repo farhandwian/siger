@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { AddActivityModal } from '@/components/activity/add-activity-modal'
 import { EditActivityModal } from '@/components/activity/edit-activity-modal'
+import { CopyPlanToActionPlanModal } from '@/components/schedule/copy-plan-to-action-plan-modal'
 import { Input } from '@/components/ui/input'
-import { Plus } from 'lucide-react'
+import { Plus, Copy } from 'lucide-react'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 import type { Activity, Schedule } from '@/lib/schemas'
 import { ScheduleValueType, useUpdateScheduleValue } from '@/hooks/useActivityQueries'
@@ -193,6 +194,7 @@ export function UnifiedScheduleTable({
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
   const [editingCell, setEditingCell] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [isCopyModalOpen, setIsCopyModalOpen] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const customScrollbarRef = useRef<HTMLDivElement>(null)
 
@@ -467,6 +469,17 @@ export function UnifiedScheduleTable({
               >
                 <Plus className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
                 Tambah Kegiatan
+              </Button>
+              )}
+              {isActionPlanTable && (
+              <Button
+                aria-label="Salin Rencana ke Rencana Aksi"
+                title="Salin Rencana ke Rencana Aksi"
+                onClick={() => setIsCopyModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border-[#3b82f6] bg-[#3b82f6] px-2 py-1.5 text-[9px] font-medium text-white hover:bg-[#2563eb] lg:gap-2 lg:px-3 lg:py-2 lg:text-[10px] xl:text-xs"
+              >
+                <Copy className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
+                Salin Rencana
               </Button>
               )}
             </div>
@@ -868,6 +881,16 @@ export function UnifiedScheduleTable({
         onClose={() => setIsEditModalOpen(false)}
         activity={selectedActivity}
         projectId={projectId}
+      />
+      
+      <CopyPlanToActionPlanModal
+        isOpen={isCopyModalOpen}
+        onClose={() => setIsCopyModalOpen(false)}
+        projectId={projectId}
+        onConfirm={() => {
+          // Refresh the data after copying
+          window.location.reload();
+        }}
       />
     </div>
   )
