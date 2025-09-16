@@ -12,13 +12,11 @@ import { prisma } from '@/lib/prisma'
 const CreateResourceFlowScheduleSchema = z.object({
   analisaKebutuhanId: z.string().min(1, 'Analisa kebutuhan ID is required'),
   tanggal: z.string().min(1, 'Tanggal is required'),
-  rencana: z.number().optional(),
   realisasi: z.number().optional(),
   file: z.any().nullable().optional(),
 })
 
 const UpdateResourceFlowScheduleSchema = z.object({
-  rencana: z.number().nullable().optional(),
   realisasi: z.number().nullable().optional(),
   file: z.any().nullable().optional(),
 })
@@ -48,14 +46,12 @@ export async function POST(req: NextRequest) {
       },
       update: {
         // Only update the fields that are explicitly provided
-        ...(data.rencana !== undefined && { rencana: data.rencana }),
         ...(data.realisasi !== undefined && { realisasi: data.realisasi }),
         ...(data.file !== undefined && { file: data.file }),
       },
       create: {
         analisaKebutuhanId: data.analisaKebutuhanId,
         tanggal: data.tanggal,
-        rencana: data.rencana ?? 0,
         realisasi: data.realisasi ?? 0,
         file: data.file,
       },
@@ -110,7 +106,6 @@ export async function PUT(req: NextRequest) {
         id: query.id,
       },
       data: {
-        ...(data.rencana !== undefined && { rencana: data.rencana }),
         ...(data.realisasi !== undefined && { realisasi: data.realisasi }),
         ...(data.file !== undefined && { file: data.file }),
       },
