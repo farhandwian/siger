@@ -42,33 +42,9 @@ export function useMonitoringData() {
         actual: [3, 8, 18, 32, 45, 58, 72, 83, 90, 94, 97, 100],
       }
 
-      // Add meaningful variations based on current time to simulate real progress
-      const currentTime = Date.now()
-      const timeBasedVariation = Math.sin(currentTime / 5000) * 3 // ±3% variation over time
-      const randomVariation = (Math.random() - 0.5) * 4 // ±2% random variation
-
-      // Apply variations to both planned and actual values
-      baseData.actual = baseData.actual.map((value, index) => {
-        if (index >= 7) {
-          // Only vary the last 5 weeks to show recent changes
-          const variation = timeBasedVariation + randomVariation
-          return Math.max(0, Math.min(100, value + variation))
-        }
-        return value
-      })
-
-      // Add movement to planned values as well (simulate plan adjustments)
-      const plannedTimeVariation = Math.sin(currentTime / 7000) * 2 // ±2% variation for planned
-      const plannedRandomVariation = (Math.random() - 0.5) * 2 // ±1% random variation
-
-      baseData.planned = baseData.planned.map((value, index) => {
-        if (index >= 8) {
-          // Only vary the last 4 weeks for planned values
-          const variation = plannedTimeVariation + plannedRandomVariation
-          return Math.max(0, Math.min(100, value + variation))
-        }
-        return value
-      })
+      // Use static data to prevent hydration mismatch
+      // Note: Real-time variations are disabled to prevent SSR/client mismatch
+      // In production, this would fetch actual data from the API
 
       return baseData
     },
@@ -85,11 +61,11 @@ export function useMonitoringData() {
         {
           id: '1',
           type: 'milestone' as const,
-          title: 'Milestone Achievement',
-          project: 'D.I Rawa Mesuji - Rehabilitasi',
-          timeAgo: `${Math.floor(Math.random() * 10) + 1} Menit Lalu`,
+          title: 'Milestone Tercapai',
+          project: 'D.I Kalimireng - Rehabilitasi',
+          timeAgo: '10 Menit Lalu',
           description:
-            'Proyek Peningkatan jaringan Tersier Kab P berhasil menyelesaikan kegiatan penggalian tanah 2 minggu lebih cepat dari jadwal.',
+            'Target minggu ke-8 berhasil dicapai tepat waktu. Progress fisik saat ini mencapai 83% sesuai dengan rencana.',
           color: 'green' as const,
         },
         {
@@ -97,7 +73,7 @@ export function useMonitoringData() {
           type: 'acceleration' as const,
           title: 'Akselerasi Progress Terdeteksi',
           project: 'D.I Rawa Mesuji - Rehabilitasi',
-          timeAgo: `${Math.floor(Math.random() * 15) + 5} Menit Lalu`,
+          timeAgo: '12 Menit Lalu',
           description:
             'Rata-rata progress proyek meningkat 15% dalam 2 minggu terakhir. Tren positif ini kemungkinan karena cuaca yang mendukung.',
           color: 'blue' as const,
@@ -107,7 +83,7 @@ export function useMonitoringData() {
           type: 'delay' as const,
           title: 'Prediksi keterlambatan',
           project: 'D.I DIR Rawa Jitu - Pembangunan',
-          timeAgo: `${Math.floor(Math.random() * 20) + 10} Menit Lalu`,
+          timeAgo: '18 Menit Lalu',
           description:
             'Belum ada mobilisasi alat berat. Potensi keterlambatan pada kegiatan galian tanah.',
           color: 'red' as const,
@@ -117,7 +93,7 @@ export function useMonitoringData() {
           type: 'delay' as const,
           title: 'Prediksi keterlambatan',
           project: 'D.I Gilingeng - Pembangunan',
-          timeAgo: `${Math.floor(Math.random() * 30) + 15} Menit Lalu`,
+          timeAgo: '25 Menit Lalu',
           description:
             'Rata-rata progress proyek meningkat 15% dalam 2 minggu terakhir. Tren positif ini kemungkinan karena cuaca yang mendukung dan peningkatan alokasi SDM.',
           color: 'red' as const,
