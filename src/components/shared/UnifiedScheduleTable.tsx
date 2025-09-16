@@ -520,7 +520,7 @@ export function UnifiedScheduleTable({
           <table className="w-full text-[8px] lg:text-[9px] xl:text-[10px]">
             {/* Table Header */}
             <thead>
-              {/* First header row - Month names */}
+              {/* First header row - Week numbers */}
               <tr>
                 <th
                   rowSpan={3}
@@ -552,7 +552,7 @@ export function UnifiedScheduleTable({
                 
               </tr>
 
-              {/* Second header row - Week ranges */}
+              {/* Second header row -  Month names */}
               <tr>
                 {monthGroupsArray.map((monthGroup, monthIndex) => (
                   <th
@@ -568,7 +568,7 @@ export function UnifiedScheduleTable({
                 
               </tr>
 
-              {/* Third header row - Week numbers */}
+              {/* Third header row - Week ranges */}
               <tr>
                 {monthGroupsArray.map((monthGroup, monthIndex) =>
                   monthGroup.weeks.map((week, weekIndex) => (
@@ -617,7 +617,7 @@ export function UnifiedScheduleTable({
                         <td rowSpan={2} className="sub-activity-name-cell">
                           <div className="sub-activity-name">{subActivity.name}</div>
                         </td>
-                        <td rowSpan={2} className="sub-activity-weight-cell">
+                        <td className="sub-activity-weight-cell">
                           {subActivity.weight}
                         </td>
                         {/* for each subActivity.schedules */}
@@ -647,6 +647,20 @@ export function UnifiedScheduleTable({
 
                       {/* Actual Row */}
                       <tr className="border-b border-gray-200">
+                        <td className="sub-activity-weight-cell">
+                          {(() => {
+                            // Frontend calculation: Sum of all realization values for this sub-activity
+                            // TODO: Move this calculation to backend for better performance
+                            const totalRealization = subActivity.schedules?.reduce((sum, schedule) => {
+                              // Handle null/undefined realization values, treat as 0
+                              const realizationValue = schedule.realization ?? 0;
+                              return sum + realizationValue;
+                            }, 0) || 0;
+                            
+                            // Display with 3 decimal places, show '-' for zero values
+                            return totalRealization === 0 ? '-' : totalRealization.toFixed(3);
+                          })()}
+                        </td>
                         {sequentialWeeks.map((week) => {
                           // find schedule for this week from subActivity.schedules
                           const schedule = subActivity.schedules?.find(s => s.weekNumber === week.weekNumber)

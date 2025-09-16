@@ -100,23 +100,29 @@ export function MonitoringMetrics({
 
   const totalWeeks = project.numberOfWeeks || 20
   
-  // Use the last week (most recent completed week)
-  const lastWeek = totalWeeks
+  // Calculate current week based on contract start date
+  const currentDate = new Date()
+  const contractStart = project.tanggalKontrak ? new Date(project.tanggalKontrak) : new Date()
+  const weeksPassed = Math.max(
+    0,
+    Math.floor((currentDate.getTime() - contractStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+  )
+  const currentWeek = Math.min(weeksPassed + 1, totalWeeks) // +1 because week 1 starts immediately
   
   // Get cumulative realization for current progress
-  const currentProgress = getCalculatedValueForWeek(lastWeek, 'cumulative-realization')
+  const currentProgress = getCalculatedValueForWeek(currentWeek, 'cumulative-realization')
   
   // Get final week cumulative plan as total target
   const totalTarget = getCalculatedValueForWeek(totalWeeks, 'cumulative-plan')
   
   // Get deviation based on table type (plan vs action plan)
   const deviation = getCalculatedValueForWeek(
-    lastWeek, 
+    currentWeek, 
     isActionPlanTable ? 'deviation-action-plan' : 'deviation-plan'
   )
   
   // Calculate schedule progress
-  const scheduleProgress = totalWeeks > 0 ? (lastWeek / totalWeeks) * 100 : 0
+  const scheduleProgress = totalWeeks > 0 ? (currentWeek / totalWeeks) * 100 : 0
   
   const progressPercentage = totalTarget > 0 ? ((currentProgress / totalTarget) * 100).toFixed(1) : '0.0'
 
@@ -124,7 +130,7 @@ export function MonitoringMetrics({
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {/* Cumulative Progress Card */}
       <MetricCard
-        title="Progress Kumulatif Aktual"
+        title="Progress"
         value={`${currentProgress.toFixed(1)}%`}
         subtitle={`Target: ${totalTarget.toFixed(1)}% (${progressPercentage}%)`}
         showProgress={true}
@@ -147,9 +153,9 @@ export function MonitoringMetrics({
       <MetricCard
         title="Progres Waktu Kontrak"
         value={`${scheduleProgress.toFixed(1)}%`}
-        subtitle={`Minggu ${lastWeek} dari ${totalWeeks}`}
+        subtitle={`Minggu ${currentWeek} dari ${totalWeeks}`}
         showProgress={true}
-        current={lastWeek}
+        current={currentWeek}
         total={totalWeeks}
         icon={Calendar}
         trend="neutral"

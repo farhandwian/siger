@@ -683,7 +683,7 @@ export default function ProjectDetailPage() {
                   {/* Chart and AI Insights */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="flex flex-col gap-6 xl:col-span-2">
-                      <MonitoringMetrics projectId={projectId} />
+                      <MonitoringMetrics projectId={projectId} isActionPlanTable={true} />
                       <SCurveChart projectId={projectId} isActionPlanTable={true} />
                     </div>
                     <div className="flex flex-col">
