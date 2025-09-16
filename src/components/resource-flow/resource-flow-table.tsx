@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChevronDown, Loader2 } from 'lucide-react'
 import {
   useResourceFlowData,
   useActivitiesForResourceFlow,
   useCreateResourceFlowSchedule,
-  useUpdateResourceFlowSchedule,
   AnalisaKebutuhan,
 } from '@/hooks/useResourceFlowQueries'
+import { useProject } from '@/hooks/useActivityQueries'
 import { cn } from '@/lib/utils'
 
 /**
@@ -19,16 +18,6 @@ import { cn } from '@/lib/utils'
  */
 interface ResourceFlowTableProps {
   projectId: string
-}
-
-/**
- * Editable cell component for numeric input in the table
- */
-interface EditableCellProps {
-  value: number
-  onChange: (value: number) => void
-  isDisabled?: boolean
-  className?: string
 }
 
 /**
@@ -47,55 +36,6 @@ interface SubActivity {
   id: string
   nama: string
   analisa_kebutuhan?: AnalisaKebutuhan[]
-}
-
-const EditableCell = ({ value, onChange, isDisabled = false, className }: EditableCellProps) => {
-  const [localValue, setLocalValue] = useState(value.toString())
-  const [isFocused, setIsFocused] = useState(false)
-
-  useEffect(() => {
-    if (!isFocused) {
-      setLocalValue(value.toString())
-    }
-  }, [value, isFocused])
-
-  const handleBlur = () => {
-    setIsFocused(false)
-    const numValue = parseFloat(localValue) || 0
-    if (numValue !== value) {
-      onChange(numValue)
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleBlur()
-    }
-  }
-
-  if (isDisabled) {
-    return (
-      <div className={cn('py-1.5 text-center text-xs text-gray-700', className)}>
-        {value.toLocaleString()}
-      </div>
-    )
-  }
-
-  return (
-    <input
-      type="number"
-      value={localValue}
-      onChange={e => setLocalValue(e.target.value)}
-      onFocus={() => setIsFocused(true)}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      className={cn(
-        'w-full border-none bg-transparent py-1.5 text-center text-xs outline-none',
-        'focus:bg-blue-50 focus:ring-1 focus:ring-blue-200',
-        className
-      )}
-    />
-  )
 }
 
 export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
@@ -118,14 +58,8 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     isLoading: activitiesLoading,
     error: activitiesError,
   } = useActivitiesForResourceFlow(projectId)
-  const updateSchedule = useUpdateResourceFlowSchedule()
+  const { data: project } = useProject(projectId)
   const createSchedule = useCreateResourceFlowSchedule()
-
-  // Debug logging
-  console.log('Debug - Activities data:', activitiesData)
-  console.log('Debug - Activities loading:', activitiesLoading)
-  console.log('Debug - Activities error:', activitiesError)
-  console.log('Debug - Resource flow data:', resourceFlowData)
 
   // Data processing: Get the selected analisa kebutuhan and its schedules
   const currentAnalisaKebutuhan = resourceFlowData?.find(
@@ -177,23 +111,28 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     }
   }, [selectedSubActivity, selectedActivity, activitiesData])
 
-  // Get current month for display based on selected month/year
-  const currentMonth = new Date(selectedYear, selectedMonth - 1)
-    .toLocaleDateString('id-ID', {
-      month: 'long',
-      year: 'numeric',
-    })
-    .toUpperCase()
-
-  // Generate date range for the selected month
+  // Generate date range for the selected month, constrained by project dates
   const generateDateColumns = () => {
     const monthStart = new Date(selectedYear, selectedMonth - 1, 1)
-    const monthEnd = new Date(selectedYear, selectedMonth, 0) // Last day of month
+    const monthEnd = new Date(selectedYear, selectedMonth, 0)
+
+    // If project has date constraints, apply them
+    let actualStart = monthStart
+    let actualEnd = monthEnd
+
+    if (project?.tanggalSpmk && project?.akhirKontrak) {
+      const projectStart = new Date(project.tanggalSpmk)
+      const projectEnd = new Date(project.akhirKontrak)
+
+      // Constrain the month view to project date boundaries
+      actualStart = new Date(Math.max(monthStart.getTime(), projectStart.getTime()))
+      actualEnd = new Date(Math.min(monthEnd.getTime(), projectEnd.getTime()))
+    }
 
     const dates = []
-    const currentDate = new Date(monthStart)
+    const currentDate = new Date(actualStart)
 
-    while (currentDate <= monthEnd) {
+    while (currentDate <= actualEnd) {
       dates.push({
         date: currentDate.toISOString().split('T')[0],
         display: currentDate.getDate().toString(),
@@ -207,21 +146,72 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
 
   const dateColumns = generateDateColumns()
 
+  // Get display period for header - always show month/year format
+  const getDisplayPeriod = () => {
+    return new Date(selectedYear, selectedMonth - 1)
+      .toLocaleDateString('id-ID', {
+        month: 'long',
+        year: 'numeric',
+      })
+      .toUpperCase()
+  }
+
+  const displayPeriod = getDisplayPeriod()
+
+  // Helper functions to check month navigation constraints
+  const canNavigateToPrevMonth = () => {
+    if (!project?.tanggalSpmk) return true // No constraints if no project dates
+
+    const prevMonthStart = new Date(selectedYear, selectedMonth - 2, 1)
+    const projectStart = new Date(project.tanggalSpmk)
+
+    return prevMonthStart >= new Date(projectStart.getFullYear(), projectStart.getMonth(), 1)
+  }
+
+  const canNavigateToNextMonth = () => {
+    if (!project?.akhirKontrak) return true // No constraints if no project dates
+
+    const nextMonthStart = new Date(selectedYear, selectedMonth, 1)
+    const projectEnd = new Date(project.akhirKontrak)
+
+    return nextMonthStart <= new Date(projectEnd.getFullYear(), projectEnd.getMonth(), 1)
+  }
+
+  // Auto-adjust selected month to be within project bounds when project loads
+  useEffect(() => {
+    if (project?.tanggalSpmk && project?.akhirKontrak) {
+      const projectStart = new Date(project.tanggalSpmk)
+      const projectEnd = new Date(project.akhirKontrak)
+      const currentSelected = new Date(selectedYear, selectedMonth - 1, 1)
+
+      const minAllowedMonth = new Date(projectStart.getFullYear(), projectStart.getMonth(), 1)
+      const maxAllowedMonth = new Date(projectEnd.getFullYear(), projectEnd.getMonth(), 1)
+
+      if (currentSelected < minAllowedMonth) {
+        setSelectedMonth(projectStart.getMonth() + 1)
+        setSelectedYear(projectStart.getFullYear())
+      } else if (currentSelected > maxAllowedMonth) {
+        setSelectedMonth(projectEnd.getMonth() + 1)
+        setSelectedYear(projectEnd.getFullYear())
+      }
+    }
+  }, [project, selectedMonth, selectedYear])
+
   // Calculate cumulative values for a specific date based on current analisa kebutuhan schedules
   const calculateRencanaKumulatif = (targetDate: string) => {
     if (!currentAnalisaKebutuhan?.resourceFlowSchedules) return 0
 
     return currentAnalisaKebutuhan.resourceFlowSchedules
-      .filter((schedule: any) => schedule.tanggal <= targetDate)
-      .reduce((sum: number, schedule: any) => sum + (schedule.rencana || 0), 0)
+      .filter(schedule => schedule.tanggal <= targetDate)
+      .reduce((sum: number, schedule) => sum + (schedule.rencana || 0), 0)
   }
 
   const calculateRealisasiKumulatif = (targetDate: string) => {
     if (!currentAnalisaKebutuhan?.resourceFlowSchedules) return 0
 
     return currentAnalisaKebutuhan.resourceFlowSchedules
-      .filter((schedule: any) => schedule.tanggal <= targetDate)
-      .reduce((sum: number, schedule: any) => sum + (schedule.realisasi || 0), 0)
+      .filter(schedule => schedule.tanggal <= targetDate)
+      .reduce((sum: number, schedule) => sum + (schedule.realisasi || 0), 0)
   }
 
   // Handle cell editing
@@ -243,15 +233,6 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
     const cellId = `${field}-${date}`
     setLoadingCell(cellId)
 
-    console.log('Saving resource flow schedule:', {
-      scheduleId,
-      field,
-      date,
-      analisaKebutuhanId,
-      value,
-      editValue,
-    })
-
     try {
       // Only send the field being updated - API will preserve other fields
       const scheduleData = {
@@ -260,14 +241,11 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
         [field]: value, // Only send the field being updated
       }
 
-      console.log('Schedule data to upsert (field-specific):', scheduleData)
       await createSchedule.mutateAsync(scheduleData)
 
       setEditingCell(null)
       setEditValue('')
-      console.log('Resource flow schedule saved successfully')
     } catch (error) {
-      console.error('Error saving resource flow schedule:', error)
       // Don't reset the cell if there was an error, let user try again
     } finally {
       setLoadingCell(null)
@@ -395,7 +373,7 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                     className="w-full appearance-none border-b border-gray-200 bg-white px-2 py-1 pr-8 text-[9px] text-gray-700 transition-colors focus:border-blue-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 lg:px-2.5 lg:py-1.5 lg:text-[10px] xl:px-3 xl:py-2 xl:text-xs"
                   >
                     <option value="">-- Pilih Analisa Kebutuhan --</option>
-                    {getAnalisaKebutuhanOptions().map((analisa: any) => (
+                    {getAnalisaKebutuhanOptions().map((analisa: AnalisaKebutuhan) => (
                       <option key={analisa.id} value={analisa.id}>
                         {analisa.kebutuhan.nama} - {analisa.kebutuhan.kategoriKebutuhan.nama}
                       </option>
@@ -450,7 +428,7 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
             Tabel Progress {currentAnalisaKebutuhan.kebutuhan.nama}
           </h3>
 
-          {/* Month Picker */}
+          {/* Period Display - Always show month picker with project constraints */}
           <div className="w-48 lg:w-56 xl:w-64">
             <div className="relative">
               <div className="rounded-lg border border-gray-200 bg-white px-2 py-1 shadow-sm lg:px-3 lg:py-1.5 xl:px-4 xl:py-2">
@@ -464,7 +442,8 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                         setSelectedMonth(selectedMonth - 1)
                       }
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    disabled={!canNavigateToPrevMonth()}
+                    className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     <svg
                       className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5"
@@ -495,8 +474,13 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                       />
                     </svg>
                     <span className="text-[9px] text-gray-500 lg:text-[10px] xl:text-sm">
-                      {currentMonth}
+                      {displayPeriod}
                     </span>
+                    {project?.tanggalSpmk && project?.akhirKontrak && (
+                      <span className="text-[8px] text-gray-400 lg:text-[9px] xl:text-xs">
+                        (Kontrak)
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={() => {
@@ -507,7 +491,8 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                         setSelectedMonth(selectedMonth + 1)
                       }
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    disabled={!canNavigateToNextMonth()}
+                    className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     <svg
                       className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5"
@@ -544,7 +529,7 @@ export function ResourceFlowTable({ projectId }: ResourceFlowTableProps) {
                       colSpan={dateColumns.length}
                     >
                       <span className="text-[9px] font-bold text-white lg:text-[10px] xl:text-xs">
-                        {currentMonth.split(' ')[0]}
+                        {displayPeriod.split(' ')[0]}
                       </span>
                     </th>
                   </tr>

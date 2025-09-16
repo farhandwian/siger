@@ -74,19 +74,43 @@ export async function seedResourceFlowSchedules() {
       return
     }
 
-    // Generate date range for current month and next 2 months
-    const currentDate = new Date()
-    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-    const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0)
+    // Get project data to determine date range
+    const projects = await prisma.project.findMany({
+      select: {
+        id: true,
+        pekerjaan: true, // Changed from 'nama' to 'pekerjaan' to match the Prisma schema
+        tanggalSpmk: true,
+        akhirKontrak: true,
+      },
+    })
+
+    console.log(`📋 Found ${projects.length} projects`)
+
+    // Generate date range based on project dates
+    let startDate: Date, endDate: Date
+    if (projects.length > 0 && projects[0].tanggalSpmk && projects[0].akhirKontrak) {
+      // Use the first project's contract dates
+      startDate = new Date(projects[0].tanggalSpmk)
+      endDate = new Date(projects[0].akhirKontrak)
+      console.log(
+        `📅 Using project contract dates: ${projects[0].pekerjaan} (${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]})`
+      )
+    } else {
+      // Fallback to current month and next 2 months
+      const currentDate = new Date()
+      startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+      endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0)
+      console.log(
+        `📅 Using fallback date range: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`
+      )
+    }
 
     const dateRange = generateDateRange(
       startDate.toISOString().split('T')[0],
       endDate.toISOString().split('T')[0]
     )
 
-    console.log(
-      `📅 Generating schedules for ${dateRange.length} days (${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]})`
-    )
+    console.log(`📅 Generating schedules for ${dateRange.length} days from project data`)
 
     let createdCount = 0
 

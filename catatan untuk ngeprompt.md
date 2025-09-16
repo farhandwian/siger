@@ -194,6 +194,8 @@ i want you to get the image from db, and then if user click the image it will sh
 
 =======================
 ANALISIS KEBUTUHAN:
+
+
 please make activity schedule as reference.
 
 please implement this ui, please create exactly same with the figma:
@@ -274,7 +276,11 @@ input field hasil tolong jangan di disabled dan buat kolom hasil pada tabel anal
 
 input field analisa kebutuhan tolong jangan di disabled dan buat kolom hasil_analisa_kebutuhan pada tabel analisa kebutuhan di db untuk menyimpan datanya. tolong buatkan juga input field satuan(string) disampingnya dan disimpan pada kolom satuan_hasil_analisa_kebutuhan pada tabel analisa kebutuhan.
 
-
+--------------------------------
+Adding Categories: Click "Tambah Kategori Kebutuhan" to add a new category section
+Adding Items: Click the small plus button to add more items within the same category
+Category Management: Each card represents one category with multiple items
+Visual Hierarchy: Clear separation between different categories using cards
 
 
 ==============================================
@@ -316,13 +322,11 @@ tabel resource_flow_schedule
 
 
 ==============================================
-Adding Categories: Click "Tambah Kategori Kebutuhan" to add a new category section
-Adding Items: Click the small plus button to add more items within the same category
-Category Management: Each card represents one category with multiple items
-Visual Hierarchy: Clear separation between different categories using cards
--------------------------------------------
+
 
 ==============================================
+RESOURCE FLOW
+
 kode yang ada sekarang ini masih merupakan implementasi dari materials flow walaupun nama file nya sudah resource-flow-table, sekarang ini saya ingin mengubah kode tersebut menjadi resource flow. saya ingin mempertahankan semua ui nya seperti pada materials flow dengan hanya ada perubahan ui sedikit dan perubahan pengambilan datanya. pada materials flow itu menggunakan tabel material sedangkan saya ingin pada resource flow ini menggunakan data pada tabel AnalisaKebutuhan(sudah ada). lalu pada materials flow juga menggunakan tabel materials_schedule untuk tablenya sedangkan untuk resource flow saya ingin menggunakan tabel resource_flow_schedule(belum dibuat). lalu tolong hgapus dropdown material selection nya, ganti dengan dropdown untuk memilih data analisa kebutuhannya dengan membuat dropdown untuk memilih kegiatannya(subactivity) dan dropdown untuk memilih analisis kebutuhannya.
 
 karena tabel resource flow schedule belum ada jadi tolong buatkan dengan attribute seperti ini:
@@ -338,10 +342,15 @@ updated_at
 
 tolong ubah kode tersebut dan tolong juga buat seeder datanya juga supaya saya bisa test end to end di websitenya. jangan mengubah kode materials yang sudah ada seperti schema nya dan file material kerena itu masih digunakan, saya hanya ingin membuat tab baru resource flow yang memiliki tampilan yang mirip dengan material namun ada perbedaan
 -------------------------------------------------
-tolon
+tolong sesuaikan agar range waktu nya itu dimulai dari tanggal spmk pada tabel Project dan berakhir pada akhirKontrak pada tabel Project. tolong sesuiakan juga seeder nya agar sesusai dengan aturan tersebut.
+
+
+pada saat membuat analisa kebtuhuhan saya ingin anda membuat data pada resource flow schedule demgan range waktu seusai dengan aturan sebelumnya, tolong buat data rencananya menggunakan  
+ 
 
 
 
 ==============================================
 
 i got network issue, please continue the procces
+
