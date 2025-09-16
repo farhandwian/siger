@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
+import { useToast } from '@/components/ui/toast'
 import { Settings2, X, Search, ChevronDown, Plus, Trash2, Save } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -55,6 +56,10 @@ interface AnalisaKebutuhanEntry {
   kategoriKebutuhanId: string
   kebutuhanId: string
   koefisien: number
+  hasil: number
+  satuanHasil: string
+  hasilAnalisaKebutuhan: number
+  satuanHasilAnalisaKebutuhan: string
   categoryName: string
   itemName: string
 }
@@ -69,6 +74,12 @@ const AnalisaKebutuhanFormSchema = z.object({
         kategoriKebutuhanId: z.string().min(1, 'Kategori kebutuhan harus dipilih'),
         kebutuhanId: z.string().min(1, 'Kebutuhan harus dipilih'),
         koefisien: z.number().min(0, 'Koefisien harus ≥ 0'),
+        hasil: z.number().min(0, 'Hasil harus ≥ 0'),
+        satuanHasil: z.string().min(1, 'Satuan hasil harus diisi'),
+        hasilAnalisaKebutuhan: z.number().min(0, 'Hasil analisa kebutuhan harus ≥ 0'),
+        satuanHasilAnalisaKebutuhan: z
+          .string()
+          .min(1, 'Satuan hasil analisa kebutuhan harus diisi'),
         categoryName: z.string(),
         itemName: z.string(),
       })
@@ -97,6 +108,7 @@ export function BuatAnalisaKebutuhanModal({
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set())
 
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
   // Fetch data
   const { data: activitiesData } = useQuery<{ success: boolean; data: Activity[] }>({
@@ -143,6 +155,10 @@ export function BuatAnalisaKebutuhanModal({
       subActivityId: string
       kebutuhanId: string
       koefisien: number
+      hasil?: number
+      satuanHasil?: string
+      hasilAnalisaKebutuhan?: number
+      satuanHasilAnalisaKebutuhan?: string
       stokHarian: number
       terpasang: number
       totalSisaStokHariIni: number
@@ -174,6 +190,10 @@ export function BuatAnalisaKebutuhanModal({
           subActivityId: selectedSubActivityId,
           kebutuhanId: entry.kebutuhanId,
           koefisien: entry.koefisien,
+          hasil: entry.hasil,
+          satuanHasil: entry.satuanHasil,
+          hasilAnalisaKebutuhan: entry.hasilAnalisaKebutuhan,
+          satuanHasilAnalisaKebutuhan: entry.satuanHasilAnalisaKebutuhan,
           stokHarian: 0,
           terpasang: 0,
           totalSisaStokHariIni: 0,
@@ -196,16 +216,48 @@ export function BuatAnalisaKebutuhanModal({
       })
 
       const responses = await Promise.all(promises)
+
+      // Check if any requests failed
+      const failedResponses = responses.filter(r => !r.ok)
+      if (failedResponses.length > 0) {
+        const errorDetails = await Promise.all(failedResponses.map(r => r.json()))
+        throw new Error(
+          `Failed to save ${failedResponses.length} entries: ${errorDetails.map(e => e.error).join(', ')}`
+        )
+      }
+
       const results = await Promise.all(responses.map(r => r.json()))
       return results
     },
-    onSuccess: () => {
+    onSuccess: results => {
+      const hasUpdates = results.some((r: any) => existingEntries.some(e => e.id === r.data?.id))
+      const hasCreates = results.some((r: any) => !existingEntries.some(e => e.id === r.data?.id))
+
+      let successMessage = ''
+      if (hasUpdates && hasCreates) {
+        successMessage = 'Analisa kebutuhan berhasil diperbarui dan ditambahkan!'
+      } else if (hasUpdates) {
+        successMessage = 'Analisa kebutuhan berhasil diperbarui!'
+      } else {
+        successMessage = 'Analisa kebutuhan berhasil ditambahkan!'
+      }
+
+      success('Berhasil!', successMessage, 4000)
+
       queryClient.invalidateQueries({ queryKey: ['analisa-kebutuhan-grouped'] })
       queryClient.invalidateQueries({ queryKey: ['existing-analisa-kebutuhan'] })
       onSuccess?.()
       onOpenChange(false)
       reset()
       setSelectedSubActivityId('')
+    },
+    onError: (err: Error) => {
+      console.error('Error updating analisa kebutuhan:', err)
+      error(
+        'Gagal Menyimpan',
+        err.message || 'Terjadi kesalahan saat menyimpan analisa kebutuhan. Silakan coba lagi.',
+        6000
+      )
     },
   })
 
@@ -251,6 +303,10 @@ export function BuatAnalisaKebutuhanModal({
         kategoriKebutuhanId: entry.kebutuhan.kategoriKebutuhanId,
         kebutuhanId: entry.kebutuhanId,
         koefisien: entry.koefisien,
+        hasil: entry.hasil || 0,
+        satuanHasil: entry.satuanHasil || '',
+        hasilAnalisaKebutuhan: entry.hasilAnalisaKebutuhan || 0,
+        satuanHasilAnalisaKebutuhan: entry.satuanHasilAnalisaKebutuhan || '',
         categoryName: entry.kebutuhan.kategoriKebutuhan.nama,
         itemName: entry.kebutuhan.nama,
       }))
@@ -273,6 +329,10 @@ export function BuatAnalisaKebutuhanModal({
             kategoriKebutuhanId: '',
             kebutuhanId: '',
             koefisien: 0,
+            hasil: 0,
+            satuanHasil: '',
+            hasilAnalisaKebutuhan: 0,
+            satuanHasilAnalisaKebutuhan: '',
             categoryName: '',
             itemName: '',
           },
@@ -342,6 +402,10 @@ export function BuatAnalisaKebutuhanModal({
       kategoriKebutuhanId: '',
       kebutuhanId: '',
       koefisien: 0,
+      hasil: 0,
+      satuanHasil: '',
+      hasilAnalisaKebutuhan: 0,
+      satuanHasilAnalisaKebutuhan: '',
       categoryName: '',
       itemName: '',
     })
@@ -354,6 +418,10 @@ export function BuatAnalisaKebutuhanModal({
       kategoriKebutuhanId: '',
       kebutuhanId: '',
       koefisien: 0,
+      hasil: 0,
+      satuanHasil: '',
+      hasilAnalisaKebutuhan: 0,
+      satuanHasilAnalisaKebutuhan: '',
       categoryName: '',
       itemName: '',
     })
@@ -414,7 +482,7 @@ export function BuatAnalisaKebutuhanModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-h-[90vh] max-w-[80vw] gap-0 rounded-2xl p-0">
+      <DialogContent className="max-h-[90vh] max-w-[90vw] gap-0 rounded-2xl p-0">
         {/* Header */}
         <div className="border-b border-gray-200 px-6 py-5">
           <DialogHeader>
@@ -598,14 +666,13 @@ export function BuatAnalisaKebutuhanModal({
                               {categoryEntries.map(({ field, index }, entryIndex) => (
                                 <div key={field.id} className="space-y-3">
                                   {/* Calculation Row */}
-                                  <div className="flex items-end gap-3">
+                                  <div className="flex flex-wrap items-end gap-3 border-[2px] border-r-2 p-2">
                                     {/* Daftar Kebutuhan */}
                                     <div className="w-[200px]">
-                                      {entryIndex === 0 && (
-                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
-                                          Daftar Kebutuhan
-                                        </Label>
-                                      )}
+                                      <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                        Daftar Kebutuhan
+                                      </Label>
+
                                       <Select
                                         value={watch(`entries.${index}.kebutuhanId`)}
                                         onValueChange={value => {
@@ -643,11 +710,10 @@ export function BuatAnalisaKebutuhanModal({
 
                                     {/* Koefisien */}
                                     <div className="w-[162px]">
-                                      {entryIndex === 0 && (
-                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
-                                          Koefisien
-                                        </Label>
-                                      )}
+                                      <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                        Koefisien
+                                      </Label>
+
                                       <Input
                                         type="number"
                                         step="0.01"
@@ -665,11 +731,10 @@ export function BuatAnalisaKebutuhanModal({
 
                                     {/* Volume */}
                                     <div className="w-[162px]">
-                                      {entryIndex === 0 && (
-                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
-                                          Volume
-                                        </Label>
-                                      )}
+                                      <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                        Volume
+                                      </Label>
+
                                       <div className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400">
                                         {calculateVolumePerHari().toFixed(2)}{' '}
                                         {selectedSubActivity.satuan || 'm³'}
@@ -681,34 +746,66 @@ export function BuatAnalisaKebutuhanModal({
                                     </div>
 
                                     {/* Hasil */}
-                                    <div className="w-[125px]">
-                                      {entryIndex === 0 && (
+                                    <div className="flex w-[200px] gap-2">
+                                      <div className="flex-1">
                                         <Label className="mb-1 block text-sm font-medium text-gray-700">
                                           Hasil
                                         </Label>
-                                      )}
-                                      <div className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400">
-                                        {calculateHasil(
-                                          watch(`entries.${index}.koefisien`) || 0
-                                        ).toFixed(2)}{' '}
-                                        unit
+
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          placeholder="0"
+                                          {...register(`entries.${index}.hasil`, {
+                                            valueAsNumber: true,
+                                          })}
+                                          className="bg-white"
+                                        />
+                                      </div>
+                                      <div className="w-[70px]">
+                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                          Satuan
+                                        </Label>
+
+                                        <Input
+                                          type="text"
+                                          placeholder="unit"
+                                          {...register(`entries.${index}.satuanHasil`)}
+                                          className="bg-white text-xs"
+                                        />
                                       </div>
                                     </div>
 
                                     {/* Analisa Kebutuhan */}
-                                    <div className="w-[125px]">
-                                      {entryIndex === 0 && (
+                                    <div className="flex w-[210px] gap-2">
+                                      <div className="flex-1">
                                         <Label className="mb-1 block text-sm font-medium text-gray-700">
                                           Analisa Kebutuhan
                                         </Label>
-                                      )}
-                                      <div className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400">
-                                        {calculateHasil(
-                                          watch(`entries.${index}.koefisien`) || 0
-                                        ).toFixed(2)}{' '}
-                                        {getUnitForCategory(
-                                          watch(`entries.${index}.kategoriKebutuhanId`) || ''
-                                        )}
+
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          placeholder="0"
+                                          {...register(`entries.${index}.hasilAnalisaKebutuhan`, {
+                                            valueAsNumber: true,
+                                          })}
+                                          className="bg-white"
+                                        />
+                                      </div>
+                                      <div className="w-[70px]">
+                                        <Label className="mb-1 block text-sm font-medium text-gray-700">
+                                          Satuan
+                                        </Label>
+
+                                        <Input
+                                          type="text"
+                                          placeholder="unit"
+                                          {...register(
+                                            `entries.${index}.satuanHasilAnalisaKebutuhan`
+                                          )}
+                                          className="bg-white text-xs"
+                                        />
                                       </div>
                                     </div>
 
@@ -737,6 +834,10 @@ export function BuatAnalisaKebutuhanModal({
                                               kategoriKebutuhanId: categoryId || '',
                                               kebutuhanId: '',
                                               koefisien: 0,
+                                              hasil: 0,
+                                              satuanHasil: '',
+                                              hasilAnalisaKebutuhan: 0,
+                                              satuanHasilAnalisaKebutuhan: '',
                                               categoryName: categoryId
                                                 ? categories.find(cat => cat.id === categoryId)
                                                     ?.nama || ''

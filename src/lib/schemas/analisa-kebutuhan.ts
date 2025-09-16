@@ -21,6 +21,10 @@ export const AnalisaKebutuhanSchema = z.object({
   subActivityId: z.string(),
   kebutuhanId: z.string(),
   koefisien: z.number(),
+  hasil: z.number().nullable().default(0),
+  satuanHasil: z.string().nullable(),
+  hasilAnalisaKebutuhan: z.number().nullable().default(0),
+  satuanHasilAnalisaKebutuhan: z.string().nullable(),
   stokHarian: z.number().nullable().default(0),
   terpasang: z.number().nullable().default(0),
   totalSisaStokHariIni: z.number().nullable().default(0),
@@ -46,6 +50,13 @@ export const CreateAnalisaKebutuhanSchema = z.object({
   subActivityId: z.string().min(1, 'Sub activity ID is required'),
   kebutuhanId: z.string().min(1, 'Kebutuhan ID is required'),
   koefisien: z.number().min(0, 'Koefisien must be non-negative'),
+  hasil: z.number().min(0, 'Hasil must be non-negative').default(0),
+  satuanHasil: z.string().optional(),
+  hasilAnalisaKebutuhan: z
+    .number()
+    .min(0, 'Hasil analisa kebutuhan must be non-negative')
+    .default(0),
+  satuanHasilAnalisaKebutuhan: z.string().optional(),
   stokHarian: z.number().min(0, 'Stok harian must be non-negative').default(0),
   terpasang: z.number().min(0, 'Terpasang must be non-negative').default(0),
   totalSisaStokHariIni: z.number().min(0, 'Total sisa stok must be non-negative').default(0),

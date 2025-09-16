@@ -62,9 +62,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
  * PUT /api/analisa-kebutuhan/[id]
  * Update existing analisa kebutuhan entry
  */
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await req.json()
     const validatedData = UpdateAnalisaKebutuhanSchema.parse({ ...body, id })
 
@@ -129,7 +129,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     // Update the entry
-    const { id: _, ...updateData } = validatedData
+    const { id: _, subActivityId, kebutuhanId, ...updateData } = validatedData
     const updatedAnalisaKebutuhan = await prisma.analisaKebutuhan.update({
       where: { id },
       data: updateData,
@@ -179,9 +179,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
  * DELETE /api/analisa-kebutuhan/[id]
  * Delete analisa kebutuhan entry
  */
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // Check if the entry exists
     const existingEntry = await prisma.analisaKebutuhan.findUnique({

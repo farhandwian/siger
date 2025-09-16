@@ -345,18 +345,22 @@ model Kebutuhan {
 }
 
 model AnalisaKebutuhan {
-  id                   String                  @id @default(cuid())
-  subActivityId        String                  @map("sub_activity_id")
-  kebutuhanId          String                  @map("kebutuhan_id")
-  koefisien            Float                   @map("koefisien")
-  stokHarian           Float?                  @default(0) @map("stok_harian")
-  terpasang            Float?                  @default(0) @map("terpasang")
-  totalSisaStokHariIni Float?                  @default(0) @map("total_sisa_stok_hari_ini")
-  createdAt            DateTime                @default(now()) @map("created_at")
-  updatedAt            DateTime                @updatedAt @map("updated_at")
-  subActivity          SubActivity             @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
-  kebutuhan            Kebutuhan               @relation(fields: [kebutuhanId], references: [id], onDelete: Cascade)
-  resourceFlowSchedules ResourceFlowSchedule[]
+  id                              String                  @id @default(cuid())
+  subActivityId                   String                  @map("sub_activity_id")
+  kebutuhanId                     String                  @map("kebutuhan_id")
+  koefisien                       Float                   @map("koefisien")
+  hasil                           Float?                  @default(0) @map("hasil")
+  satuanHasil                     String?                 @map("satuan_hasil")
+  hasilAnalisaKebutuhan          Float?                  @default(0) @map("hasil_analisa_kebutuhan")
+  satuanHasilAnalisaKebutuhan    String?                 @map("satuan_hasil_analisa_kebutuhan")
+  stokHarian                      Float?                  @default(0) @map("stok_harian")
+  terpasang                       Float?                  @default(0) @map("terpasang")
+  totalSisaStokHariIni           Float?                  @default(0) @map("total_sisa_stok_hari_ini")
+  createdAt                       DateTime                @default(now()) @map("created_at")
+  updatedAt                       DateTime                @updatedAt @map("updated_at")
+  subActivity                     SubActivity             @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+  kebutuhan                       Kebutuhan               @relation(fields: [kebutuhanId], references: [id], onDelete: Cascade)
+  resourceFlowSchedules          ResourceFlowSchedule[]
 
   @@unique([subActivityId, kebutuhanId])
   @@map("analisa_kebutuhan")

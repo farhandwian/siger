@@ -268,6 +268,14 @@ the data from db should look like this
 ok diatas table tersebut tolong tambahkan tampilan filter menggunakan tanggal, dan button, seperti pada ui berikut:
 https://www.figma.com/design/b20D1t97KXTnmihl9qnrme/SIGER?node-id=533-23325&m=dev
 
+----------------------------
+input field hasil tolong jangan di disabled dan buat kolom hasil pada tabel analisa kebutuhan di db untuk menyimpan datanya. tolong buatkan juga input field satuan(string) disampingnya dan disimpan pada kolom satuan_hasil pada tabel analisa kebutuhan. 
+
+
+input field analisa kebutuhan tolong jangan di disabled dan buat kolom hasil_analisa_kebutuhan pada tabel analisa kebutuhan di db untuk menyimpan datanya. tolong buatkan juga input field satuan(string) disampingnya dan disimpan pada kolom satuan_hasil_analisa_kebutuhan pada tabel analisa kebutuhan.
+
+
+
 
 ==============================================
 
@@ -315,7 +323,7 @@ Visual Hierarchy: Clear separation between different categories using cards
 -------------------------------------------
 
 ==============================================
-keenos123: kode yang ada sekarang ini masih merupakan implementasi dari materials flow walaupun nama file nya sudah resource-flow-table, sekarang ini saya ingin mengubah kode tersebut menjadi resource flow. saya ingin mempertahankan semua ui nya seperti pada materials flow dengan hanya ada perubahan ui sedikit dan perubahan pengambilan datanya. pada materials flow itu menggunakan tabel material sedangkan saya ingin pada resource flow ini menggunakan data pada tabel AnalisaKebutuhan(sudah ada). lalu pada materials flow juga menggunakan tabel materials_schedule untuk tablenya sedangkan untuk resource flow saya ingin menggunakan tabel resource_flow_schedule(belum dibuat). lalu tolong hgapus dropdown material selection nya, ganti dengan dropdown untuk memilih data analisa kebutuhannya dengan membuat dropdown untuk memilih kegiatannya(subactivity) dan dropdown untuk memilih analisis kebutuhannya.
+kode yang ada sekarang ini masih merupakan implementasi dari materials flow walaupun nama file nya sudah resource-flow-table, sekarang ini saya ingin mengubah kode tersebut menjadi resource flow. saya ingin mempertahankan semua ui nya seperti pada materials flow dengan hanya ada perubahan ui sedikit dan perubahan pengambilan datanya. pada materials flow itu menggunakan tabel material sedangkan saya ingin pada resource flow ini menggunakan data pada tabel AnalisaKebutuhan(sudah ada). lalu pada materials flow juga menggunakan tabel materials_schedule untuk tablenya sedangkan untuk resource flow saya ingin menggunakan tabel resource_flow_schedule(belum dibuat). lalu tolong hgapus dropdown material selection nya, ganti dengan dropdown untuk memilih data analisa kebutuhannya dengan membuat dropdown untuk memilih kegiatannya(subactivity) dan dropdown untuk memilih analisis kebutuhannya.
 
 karena tabel resource flow schedule belum ada jadi tolong buatkan dengan attribute seperti ini:
 id
@@ -329,7 +337,8 @@ updated_at
 
 
 tolong ubah kode tersebut dan tolong juga buat seeder datanya juga supaya saya bisa test end to end di websitenya. jangan mengubah kode materials yang sudah ada seperti schema nya dan file material kerena itu masih digunakan, saya hanya ingin membuat tab baru resource flow yang memiliki tampilan yang mirip dengan material namun ada perbedaan
-
+-------------------------------------------------
+tolon
 
 
 
