@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -8,6 +8,7 @@ import { Eye, Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import { WeeklyReport, Pagination } from '@/lib/schemas/reports'
 import { useDownloadReport } from '@/hooks/useReports'
 import { cn } from '@/lib/utils'
+import { ReportPreviewModal } from './report-preview-modal'
 
 interface ReportTableProps {
   data: WeeklyReport[]
@@ -29,11 +30,13 @@ export function ReportTable({
   onPageChange,
 }: ReportTableProps) {
   const downloadMutation = useDownloadReport()
+  const [selectedReport, setSelectedReport] = useState<WeeklyReport | null>(null)
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
 
   // Handle view report action
   const handleViewReport = (report: WeeklyReport) => {
-    // TODO: Implement report viewing logic (open in modal or navigate to detail page)
-    console.log('View report:', report.id)
+    setSelectedReport(report)
+    setIsPreviewModalOpen(true)
   }
 
   // Handle download report action
@@ -44,7 +47,6 @@ export function ReportTable({
         fileName: `laporan-${report.projectName}-minggu-${report.weekNumber}.pdf`,
       })
     } catch (error) {
-      console.error('Download failed:', error)
       // TODO: Show error toast notification
     }
   }
@@ -217,6 +219,26 @@ export function ReportTable({
       {pagination && pagination.totalPages > 1 && (
         <PaginationComponent pagination={pagination} onPageChange={onPageChange} />
       )}
+
+      {/* Report Preview Modal */}
+      <ReportPreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        report={
+          selectedReport
+            ? {
+                id: selectedReport.id,
+                projectName: selectedReport.projectName,
+                satker: 'Dinas PU Kabupaten Lampung Tengah',
+                kegiatan: 'Irigasi dan Rawa II',
+                proyekPekerjaan: selectedReport.projectName,
+                weekNumber: selectedReport.weekNumber,
+                reportPeriod: selectedReport.reportPeriod,
+                activities: [],
+              }
+            : undefined
+        }
+      />
     </div>
   )
 }
