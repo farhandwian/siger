@@ -303,11 +303,10 @@ model WeeklyReport {
 model WeeklyReportActivity {
   id                              String       @id @default(cuid())
   weeklyReportId                  String       @map("weekly_report_id")
-  no                              Int          @map("no") // 0 for sub-activities, >0 for main activities
-  uraian                          String       @map("uraian")
+  name                            String       @map("name") // Changed from uraian to name for consistency
   sat                             String?      @map("sat")
   volume                          Float?       @default(0) @map("volume")
-  bobot                           Float?       @default(0) @map("bobot")
+  weight                          Float?       @default(0) @map("weight") // Changed from bobot to weight for consistency
   realisasiMinggulalu_volume      Float?       @default(0) @map("realisasi_minggulalu_volume")
   realisasiMinggulalu_bobot       Float?       @default(0) @map("realisasi_minggulalu_bobot")
   targetMingguIni                 Float?       @default(0) @map("target_minggu_ini")
@@ -330,7 +329,6 @@ model WeeklyReportActivity {
   subActivities                   WeeklyReportActivity[] @relation("ActivityHierarchy")
 
   @@index([weeklyReportId])
-  @@index([no])
   @@index([parentActivityId])
   @@index([displayOrder])
   @@map("weekly_report_activities")

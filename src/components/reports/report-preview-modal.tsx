@@ -17,17 +17,22 @@ interface ReportPreviewModalProps {
     proyekPekerjaan: string
     weekNumber: number
     reportPeriod: string
-    activities?: ActivityData[]
+    activities?: ReportActivity[]
   }
 }
 
-interface ActivityData {
+interface ReportActivity {
   id: string
-  no: number
-  uraian: string
+  name: string
+  subActivities?: ReportSubActivity[]
+}
+
+interface ReportSubActivity {
+  id: string
+  name: string
   sat: string
   volume: number
-  bobot: number
+  weight: number
   realisasiMinggulalu: {
     volume: number
     bobot: number
@@ -52,168 +57,126 @@ interface ActivityData {
  */
 export function ReportPreviewModal({ isOpen, onClose, report }: ReportPreviewModalProps) {
   // Sample data for demonstration - replace with actual data
-  const sampleActivities: ActivityData[] = [
+  const sampleActivities: ReportActivity[] = [
     {
       id: '1',
-      no: 1,
-      uraian: 'PEKERJAAN PERSIAPAN',
-      sat: '',
-      volume: 0,
-      bobot: 0,
-      realisasiMinggulalu: { volume: 0, bobot: 0 },
-      targetMingguIni: 0,
-      realisasiMingguIni: 0,
-      status: 'Tercapai',
-      kumulatifMingguIni: { volume: 0, bobot: 0 },
-      persentaseItemPekerjaan: 0,
-      persentaseGrafikProgress: 0,
-      persentaseRencanaKumulatif: 0,
-      statusKumulatif: '',
-      persentaseSeluruhPekerjaan: 0,
-    },
-    {
-      id: '1-1',
-      no: 0,
-      uraian: 'Mobilisasi dan demobilisasi',
-      sat: 'Ls',
-      volume: 1.0,
-      bobot: 1.174,
-      realisasiMinggulalu: { volume: 0, bobot: 0 },
-      targetMingguIni: 0.59,
-      realisasiMingguIni: 0.5,
-      status: 'Tidak Tercapai',
-      kumulatifMingguIni: { volume: 0.5, bobot: 0.59 },
-      persentaseItemPekerjaan: 50.0,
-      persentaseGrafikProgress: 84.7,
-      persentaseRencanaKumulatif: 50.0,
-      statusKumulatif: 'Tercapai',
-      persentaseSeluruhPekerjaan: 0.3,
-    },
-    {
-      id: '1-2',
-      no: 0,
-      uraian: 'Stake out Trasa Saluran',
-      sat: "m'",
-      volume: 84797,
-      bobot: 1.55,
-      realisasiMinggulalu: { volume: 0, bobot: 0 },
-      targetMingguIni: 0,
-      realisasiMingguIni: 84587.58,
-      status: 'Tercapai',
-      kumulatifMingguIni: { volume: 84587.58, bobot: 1.55 },
-      persentaseItemPekerjaan: 99.8,
-      persentaseGrafikProgress: 100.0,
-      persentaseRencanaKumulatif: 99.8,
-      statusKumulatif: 'Tercapai',
-      persentaseSeluruhPekerjaan: 0.8,
-    },
-    {
-      id: '1-3',
-      no: 0,
-      uraian: 'Pasangan Patok',
-      sat: 'Bh',
-      volume: 3.07,
-      bobot: 0.068,
-      realisasiMinggulalu: { volume: 0, bobot: 0 },
-      targetMingguIni: 0,
-      realisasiMingguIni: 1.455,
-      status: 'Tercapai',
-      kumulatifMingguIni: { volume: 1.455, bobot: 0.07 },
-      persentaseItemPekerjaan: 47.4,
-      persentaseGrafikProgress: 100.0,
-      persentaseRencanaKumulatif: 100.0,
-      statusKumulatif: 'Tercapai',
-      persentaseSeluruhPekerjaan: 0.03,
+      name: 'PEKERJAAN PERSIAPAN',
+      subActivities: [
+        {
+          id: '1-1',
+          name: 'Mobilisasi dan demobilisasi',
+          sat: 'Ls',
+          volume: 1.0,
+          weight: 1.174,
+          realisasiMinggulalu: { volume: 0, bobot: 0 },
+          targetMingguIni: 0.59,
+          realisasiMingguIni: 0.5,
+          status: 'Tidak Tercapai',
+          kumulatifMingguIni: { volume: 0.5, bobot: 0.59 },
+          persentaseItemPekerjaan: 50.0,
+          persentaseGrafikProgress: 84.7,
+          persentaseRencanaKumulatif: 50.0,
+          statusKumulatif: 'Tercapai',
+          persentaseSeluruhPekerjaan: 0.3,
+        },
+        {
+          id: '1-2',
+          name: 'Stake out Trasa Saluran',
+          sat: "m'",
+          volume: 84797,
+          weight: 1.55,
+          realisasiMinggulalu: { volume: 0, bobot: 0 },
+          targetMingguIni: 0,
+          realisasiMingguIni: 84587.58,
+          status: 'Tercapai',
+          kumulatifMingguIni: { volume: 84587.58, bobot: 1.55 },
+          persentaseItemPekerjaan: 99.8,
+          persentaseGrafikProgress: 100.0,
+          persentaseRencanaKumulatif: 99.8,
+          statusKumulatif: 'Tercapai',
+          persentaseSeluruhPekerjaan: 0.8,
+        },
+        {
+          id: '1-3',
+          name: 'Pasangan Patok',
+          sat: 'Bh',
+          volume: 3.07,
+          weight: 0.068,
+          realisasiMinggulalu: { volume: 0, bobot: 0 },
+          targetMingguIni: 0,
+          realisasiMingguIni: 1.455,
+          status: 'Tercapai',
+          kumulatifMingguIni: { volume: 1.455, bobot: 0.07 },
+          persentaseItemPekerjaan: 47.4,
+          persentaseGrafikProgress: 100.0,
+          persentaseRencanaKumulatif: 100.0,
+          statusKumulatif: 'Tercapai',
+          persentaseSeluruhPekerjaan: 0.03,
+        },
+      ],
     },
     {
       id: '2',
-      no: 2,
-      uraian: 'SISTEM MANAJEMEN KESELAMATAN KERJA',
-      sat: '',
-      volume: 0,
-      bobot: 0,
-      realisasiMinggulalu: { volume: 0, bobot: 0 },
-      targetMingguIni: 0,
-      realisasiMingguIni: 0,
-      status: 'Tercapai',
-      kumulatifMingguIni: { volume: 0, bobot: 0 },
-      persentaseItemPekerjaan: 0,
-      persentaseGrafikProgress: 0,
-      persentaseRencanaKumulatif: 0,
-      statusKumulatif: '',
-      persentaseSeluruhPekerjaan: 0,
-    },
-    {
-      id: '2-1',
-      no: 0,
-      uraian: 'Sistem Manajemen Keselamatan Kerja',
-      sat: 'Ls',
-      volume: 1.0,
-      bobot: 1.174,
-      realisasiMinggulalu: { volume: 0, bobot: 0 },
-      targetMingguIni: 0.01,
-      realisasiMingguIni: 1.01,
-      status: 'Tercapai',
-      kumulatifMingguIni: { volume: 1.01, bobot: 1.174 },
-      persentaseItemPekerjaan: 100.0,
-      persentaseGrafikProgress: 100.0,
-      persentaseRencanaKumulatif: 100.0,
-      statusKumulatif: 'Tercapai',
-      persentaseSeluruhPekerjaan: 0.6,
+      name: 'SISTEM MANAJEMEN KESELAMATAN KERJA',
+      subActivities: [
+        {
+          id: '2-1',
+          name: 'Sistem Manajemen Keselamatan Kerja',
+          sat: 'Ls',
+          volume: 1.0,
+          weight: 1.174,
+          realisasiMinggulalu: { volume: 0, bobot: 0 },
+          targetMingguIni: 0.01,
+          realisasiMingguIni: 1.01,
+          status: 'Tercapai',
+          kumulatifMingguIni: { volume: 1.01, bobot: 1.174 },
+          persentaseItemPekerjaan: 100.0,
+          persentaseGrafikProgress: 100.0,
+          persentaseRencanaKumulatif: 100.0,
+          statusKumulatif: 'Tercapai',
+          persentaseSeluruhPekerjaan: 0.6,
+        },
+      ],
     },
     {
       id: '3',
-      no: 3,
-      uraian: 'PEKERJAAN NORMALISASI SALURAN',
-      sat: '',
-      volume: 0,
-      bobot: 0,
-      realisasiMinggulalu: { volume: 0, bobot: 0 },
-      targetMingguIni: 0,
-      realisasiMingguIni: 0,
-      status: 'Tercapai',
-      kumulatifMingguIni: { volume: 0, bobot: 0 },
-      persentaseItemPekerjaan: 0,
-      persentaseGrafikProgress: 0,
-      persentaseRencanaKumulatif: 0,
-      statusKumulatif: '',
-      persentaseSeluruhPekerjaan: 0,
-    },
-    {
-      id: '3-1',
-      no: 0,
-      uraian: 'Galian Tanah Manual',
-      sat: 'm³',
-      volume: 125436.5,
-      bobot: 22.876,
-      realisasiMinggulalu: { volume: 0, bobot: 0 },
-      targetMingguIni: 12543.65,
-      realisasiMingguIni: 8562.4,
-      status: 'Tidak Tercapai',
-      kumulatifMingguIni: { volume: 8562.4, bobot: 1.56 },
-      persentaseItemPekerjaan: 6.8,
-      persentaseGrafikProgress: 68.3,
-      persentaseRencanaKumulatif: 10.0,
-      statusKumulatif: 'Tidak Tercapai',
-      persentaseSeluruhPekerjaan: 0.8,
-    },
-    {
-      id: '3-2',
-      no: 0,
-      uraian: 'Galian Tanah Mekanis',
-      sat: 'm³',
-      volume: 89765.2,
-      bobot: 16.432,
-      realisasiMinggulalu: { volume: 0, bobot: 0 },
-      targetMingguIni: 8976.52,
-      realisasiMingguIni: 12543.8,
-      status: 'Tercapai',
-      kumulatifMingguIni: { volume: 12543.8, bobot: 2.29 },
-      persentaseItemPekerjaan: 14.0,
-      persentaseGrafikProgress: 139.7,
-      persentaseRencanaKumulatif: 10.0,
-      statusKumulatif: 'Tercapai',
-      persentaseSeluruhPekerjaan: 1.2,
+      name: 'PEKERJAAN NORMALISASI SALURAN',
+      subActivities: [
+        {
+          id: '3-1',
+          name: 'Galian Tanah Manual',
+          sat: 'm³',
+          volume: 125436.5,
+          weight: 22.876,
+          realisasiMinggulalu: { volume: 0, bobot: 0 },
+          targetMingguIni: 12543.65,
+          realisasiMingguIni: 8562.4,
+          status: 'Tidak Tercapai',
+          kumulatifMingguIni: { volume: 8562.4, bobot: 1.56 },
+          persentaseItemPekerjaan: 6.8,
+          persentaseGrafikProgress: 68.3,
+          persentaseRencanaKumulatif: 10.0,
+          statusKumulatif: 'Tidak Tercapai',
+          persentaseSeluruhPekerjaan: 0.8,
+        },
+        {
+          id: '3-2',
+          name: 'Galian Tanah Mekanis',
+          sat: 'm³',
+          volume: 89765.2,
+          weight: 16.432,
+          realisasiMinggulalu: { volume: 0, bobot: 0 },
+          targetMingguIni: 8976.52,
+          realisasiMingguIni: 12543.8,
+          status: 'Tercapai',
+          kumulatifMingguIni: { volume: 12543.8, bobot: 2.29 },
+          persentaseItemPekerjaan: 14.0,
+          persentaseGrafikProgress: 139.7,
+          persentaseRencanaKumulatif: 10.0,
+          statusKumulatif: 'Tercapai',
+          persentaseSeluruhPekerjaan: 1.2,
+        },
+      ],
     },
   ]
 
@@ -336,7 +299,7 @@ export function ReportPreviewModal({ isOpen, onClose, report }: ReportPreviewMod
                           BOBOT (%)
                         </th>
                         <th
-                          colSpan={6}
+                          colSpan={5}
                           className="border-r border-gray-300 bg-gray-100 px-2 py-2 text-center font-bold"
                         >
                           KEMAJUAN PEKERJAAN
@@ -387,161 +350,192 @@ export function ReportPreviewModal({ isOpen, onClose, report }: ReportPreviewMod
 
                     {/* Table Body */}
                     <tbody>
-                      {activities.map(activity => (
-                        <tr
-                          key={activity.id}
-                          className={cn(
-                            'border-b border-gray-200 hover:bg-gray-50',
-                            activity.no === 0 ? 'bg-gray-25' : 'bg-white'
-                          )}
-                        >
-                          {/* NO */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.no > 0 ? activity.no : 'SUB'}
-                          </td>
+                      {activities?.map(activity => (
+                        <React.Fragment key={activity.id}>
+                          {/* Main Activity Row */}
+                          <tr className="border-b border-gray-200 bg-gray-50">
+                            <td className="border-r border-gray-200 px-2 py-3 text-center font-semibold">
+                              {(() => {
+                                // convert 1..n to Roman numerals (supports up to 3999)
+                                const toRoman = (num: number) => {
+                                  if (num <= 0) return ''
+                                  const map: [string, number][] = [
+                                    ['M', 1000],
+                                    ['CM', 900],
+                                    ['D', 500],
+                                    ['CD', 400],
+                                    ['C', 100],
+                                    ['XC', 90],
+                                    ['L', 50],
+                                    ['XL', 40],
+                                    ['X', 10],
+                                    ['IX', 9],
+                                    ['V', 5],
+                                    ['IV', 4],
+                                    ['I', 1],
+                                  ]
+                                  let n = Math.floor(num)
+                                  let res = ''
+                                  for (const [roman, val] of map) {
+                                    while (n >= val) {
+                                      res += roman
+                                      n -= val
+                                    }
+                                  }
+                                  return res
+                                }
 
-                          {/* URAIAN */}
-                          <td
-                            className={cn(
-                              'border-r border-gray-200 px-3 py-3 text-left',
-                              activity.no === 0
-                                ? 'pl-8 text-sm font-normal'
-                                : 'text-sm font-semibold'
-                            )}
-                          >
-                            {activity.uraian || 'TEST URAIAN'}
-                          </td>
+                                return toRoman(activities.indexOf(activity) + 1)
+                              })()}
+                            </td>
+                            <td className="border-r border-gray-200 px-3 py-3 text-left text-sm font-semibold">
+                              {activity.name}
+                            </td>
+                            <td className="border-r border-gray-200 px-2 py-3 text-center"></td>
+                            <td className="border-r border-gray-200 px-2 py-3 text-center"></td>
+                            <td className="border-r border-gray-200 px-2 py-3 text-center"></td>
+                            {/* Fill remaining 11 columns with empty cells to keep grid aligned */}
+                            {Array.from({ length: 11 }).map((_, idx) => (
+                              <td
+                                key={`empty-${activity.id}-${idx}`}
+                                className="border-r border-gray-200 px-2 py-3 text-center"
+                              ></td>
+                            ))}
+                          </tr>
 
-                          {/* SAT */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.sat}
-                          </td>
+                          {/* Sub Activities - Dynamic rows */}
+                          {activity.subActivities?.map(subActivity => (
+                            <React.Fragment key={subActivity.id}>
+                              {/* First Row - KEMAJUAN PEKERJAAN */}
+                              <tr className="border-b border-gray-200">
+                                <td
+                                  rowSpan={2}
+                                  className="border-r border-gray-200 px-2 py-3 text-center"
+                                >
+                                  {activity.subActivities.indexOf(subActivity) + 1}
+                                </td>
+                                <td
+                                  rowSpan={2}
+                                  className="border-r border-gray-200 px-3 py-3 pl-8 text-left text-sm font-normal"
+                                >
+                                  {subActivity.name}
+                                </td>
+                                <td
+                                  rowSpan={2}
+                                  className="border-r border-gray-200 px-2 py-3 text-center"
+                                >
+                                  {subActivity.sat}
+                                </td>
+                                <td
+                                  rowSpan={2}
+                                  className="border-r border-gray-200 px-2 py-3 text-center"
+                                >
+                                  {subActivity.volume > 0
+                                    ? subActivity.volume.toLocaleString()
+                                    : ''}
+                                </td>
+                                <td
+                                  rowSpan={2}
+                                  className="border-r border-gray-200 px-2 py-3 text-center"
+                                >
+                                  {subActivity.weight > 0 ? subActivity.weight.toFixed(3) : ''}
+                                </td>
 
-                          {/* VOLUME */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.volume > 0 ? activity.volume.toLocaleString() : ''}
-                          </td>
-
-                          {/* BOBOT */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.bobot > 0 ? activity.bobot.toFixed(3) : ''}
-                          </td>
-
-                          {/* REALISASI s/d MINGGU LALU */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.realisasiMinggulalu.volume > 0
-                              ? activity.realisasiMinggulalu.volume.toFixed(2)
-                              : '-'}
-                          </td>
-
-                          {/* TARGET MINGGU INI */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.targetMingguIni > 0
-                              ? activity.targetMingguIni.toFixed(2)
-                              : '-'}
-                          </td>
-
-                          {/* REALISASI MINGGU INI */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.realisasiMingguIni > 0
-                              ? activity.realisasiMingguIni.toFixed(2)
-                              : '-'}
-                          </td>
-
-                          {/* STATUS */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.no > 0 ? (
-                              ''
-                            ) : (
-                              <span
-                                className={cn(
-                                  'rounded px-2 py-1 text-xs font-medium',
-                                  activity.status === 'Tercapai'
-                                    ? 'bg-green-100 text-green-800'
-                                    : activity.status === 'Tidak Tercapai'
-                                      ? 'bg-red-100 text-red-800'
-                                      : 'bg-yellow-100 text-yellow-800'
-                                )}
-                              >
-                                {activity.status}
-                              </span>
-                            )}
-                          </td>
-
-                          {/* KUMULATIF s/d MINGGU INI */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.kumulatifMingguIni.volume > 0
-                              ? activity.kumulatifMingguIni.volume.toFixed(2)
-                              : '-'}
-                          </td>
-
-                          {/* REALISASI s/d MINGGU LALU */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.realisasiMinggulalu.bobot > 0
-                              ? activity.realisasiMinggulalu.bobot.toFixed(2)
-                              : '-'}
-                          </td>
-
-                          {/* ITEM PEKERJAAN */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.persentaseItemPekerjaan > 0
-                              ? activity.persentaseItemPekerjaan.toFixed(1) + '%'
-                              : '-'}
-                          </td>
-
-                          {/* GRAFIK PEMENUHAN PROGRESS */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.persentaseGrafikProgress > 0
-                              ? activity.persentaseGrafikProgress.toFixed(1) + '%'
-                              : '-'}
-                          </td>
-
-                          {/* RENCANA KOMULATIF PEKERJAAN */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.persentaseRencanaKumulatif > 0
-                              ? activity.persentaseRencanaKumulatif.toFixed(1) + '%'
-                              : '-'}
-                          </td>
-
-                          {/* STATUS KOMULATIF */}
-                          <td className="border-r border-gray-200 px-2 py-3 text-center">
-                            {activity.statusKumulatif && activity.no === 0 ? (
-                              <span
-                                className={cn(
-                                  'rounded px-2 py-1 text-xs font-medium',
-                                  activity.statusKumulatif === 'Tercapai'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
-                                )}
-                              >
-                                {activity.statusKumulatif}
-                              </span>
-                            ) : (
-                              '-'
-                            )}
-                          </td>
-
-                          {/* SELURUH PEKERJAAN */}
-                          <td className="px-2 py-3 text-center">
-                            {activity.persentaseSeluruhPekerjaan > 0
-                              ? activity.persentaseSeluruhPekerjaan.toFixed(1) + '%'
-                              : '-'}
-                          </td>
-                        </tr>
+                                {/* REALISASI s/d MINGGU LALU (volume) */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  {subActivity.realisasiMinggulalu.volume > 0
+                                    ? subActivity.realisasiMinggulalu.volume.toFixed(2)
+                                    : '-'}
+                                </td>
+                                {/* TARGET MINGGU INI */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  {subActivity.targetMingguIni > 0
+                                    ? subActivity.targetMingguIni.toFixed(2)
+                                    : '-'}
+                                </td>
+                                {/* REALISASI MINGGU INI */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  {subActivity.realisasiMingguIni > 0
+                                    ? subActivity.realisasiMingguIni.toFixed(2)
+                                    : '-'}
+                                </td>
+                                {/* STATUS */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  <span
+                                    className={cn(
+                                      'rounded px-2 py-1 text-xs font-medium',
+                                      subActivity.status === 'Tercapai'
+                                        ? 'bg-green-100 text-green-800'
+                                        : subActivity.status === 'Tidak Tercapai'
+                                          ? 'bg-red-100 text-red-800'
+                                          : 'bg-yellow-100 text-yellow-800'
+                                    )}
+                                  >
+                                    {subActivity.status}
+                                  </span>
+                                </td>
+                                {/* KUMULATIF s/d MINGGU INI (volume) */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  {subActivity.kumulatifMingguIni.volume > 0
+                                    ? subActivity.kumulatifMingguIni.volume.toFixed(2)
+                                    : '-'}
+                                </td>
+                                {/* REALISASI s/d MINGGU LALU (bobot) - First column under % TERHADAP */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  {subActivity.kumulatifMingguIni.bobot > 0
+                                    ? subActivity.kumulatifMingguIni.bobot.toFixed(2)
+                                    : '-'}
+                                </td>
+                                {/* ITEM PEKERJAAN % */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  {subActivity.persentaseItemPekerjaan > 0
+                                    ? subActivity.persentaseItemPekerjaan.toFixed(1) + '%'
+                                    : '-'}
+                                </td>
+                                {/* GRAFIK PEMENUHAN PROGRESS % */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  {subActivity.persentaseGrafikProgress > 0
+                                    ? subActivity.persentaseGrafikProgress.toFixed(1) + '%'
+                                    : '-'}
+                                </td>
+                                {/* RENCANA KOMULATIF PEKERJAAN % */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  {subActivity.persentaseRencanaKumulatif > 0
+                                    ? subActivity.persentaseRencanaKumulatif.toFixed(1) + '%'
+                                    : '-'}
+                                </td>
+                                {/* STATUS KOMULATIF */}
+                                <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                  {subActivity.statusKumulatif ? (
+                                    <span
+                                      className={cn(
+                                        'rounded px-2 py-1 text-xs font-medium',
+                                        subActivity.statusKumulatif === 'Tercapai'
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-red-100 text-red-800'
+                                      )}
+                                    >
+                                      {subActivity.statusKumulatif}
+                                    </span>
+                                  ) : (
+                                    '-'
+                                  )}
+                                </td>
+                                {/* SELURUH PEKERJAAN % */}
+                                <td className="px-2 py-3 text-center">
+                                  {subActivity.persentaseSeluruhPekerjaan > 0
+                                    ? subActivity.persentaseSeluruhPekerjaan.toFixed(1) + '%'
+                                    : '-'}
+                                </td>
+                              </tr>
+                              {/* Second Row - % TERHADAP */}
+                              <tr className="border-b border-gray-200"></tr>
+                            </React.Fragment>
+                          ))}
+                        </React.Fragment>
                       ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
-
-              {/* Progress Bar at Bottom */}
-              <div className="flex-shrink-0 border-t border-gray-200 p-4">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-600">Progress Keseluruhan:</span>
-                  <div className="h-2 flex-1 rounded-full bg-gray-200">
-                    <div className="h-2 w-[3%] rounded-full bg-[#ffc928] transition-all duration-300" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">3.0%</span>
                 </div>
               </div>
             </div>
