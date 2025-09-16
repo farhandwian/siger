@@ -140,8 +140,8 @@ export async function GET(req: NextRequest) {
           const subActivityData: any = {
             name: subActivity.name,
             Target:
-              subActivity.satuan && subActivity.volumeKontrak
-                ? `${subActivity.volumeKontrak} ${subActivity.satuan}/Minggu`
+              subActivity.satuan && subActivity.volume
+                ? `${subActivity.volume} ${subActivity.satuan}/Minggu`
                 : '0 Unit/Minggu', // Default target if not set
           }
 

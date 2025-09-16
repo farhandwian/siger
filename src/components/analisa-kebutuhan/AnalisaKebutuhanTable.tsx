@@ -9,31 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { BuatAnalisaKebutuhanModal } from './BuatAnalisaKebutuhanModal'
 
-// Type definitions for the flexible data structure
-interface CategoryItem {
-  name: string // Unified naming (can be role, item, etc.)
-  jumlah: string
-  stokHarian: string
-  terpasang: string
-  totalStokHariIni: string
-}
-
-interface SubActivity {
-  name: string
-  Target: string
-  // Flexible categories - Record<categoryName, items[]>
-  categories?: Record<string, CategoryItem[]>
-}
-
-interface Activity {
-  name: string
-  subActivities: SubActivity[]
-}
-
-interface TableData {
-  Kegiatan: Activity[]
-}
-
 // Dummy data following the flexible structure (commented out - now using real API)
 /*
 const dummyData: TableData = {
@@ -296,6 +271,20 @@ export default function AnalisaKebutuhanTable({ projectId }: AnalisaKebutuhanTab
                             <td className="border border-gray-200"></td>
                             <td className="border border-gray-200"></td>
                           </tr>
+
+                          {/* Show message if no analysis data available */}
+                          {(!subActivity.categories ||
+                            Object.keys(subActivity.categories).length === 0) && (
+                            <tr>
+                              <td className="border border-gray-200"></td>
+                              <td
+                                className="border border-gray-200 p-2 pl-6 text-xs italic text-gray-500"
+                                colSpan={5}
+                              >
+                                Belum ada data analisa kebutuhan untuk kegiatan ini
+                              </td>
+                            </tr>
+                          )}
 
                           {/* Dynamic Categories Section */}
                           {subActivity.categories &&
