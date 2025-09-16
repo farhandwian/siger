@@ -8,7 +8,6 @@ import { GOOGLE_MAPS_OPTIONS, PROJECT_WORK_MAP_OPTIONS } from '@/constants/map-c
 import { ProjectAreaBaseLayer } from './project-area-base-layer'
 import {
   useLatestDailySubActivities,
-  LatestDailySubActivity,
 } from '@/hooks/useLatestDailySubActivities'
 import { useSubActivityImages } from '@/hooks/useSubActivityImages'
 
@@ -44,6 +43,14 @@ export function ProjectWorkMap({ projectId, isEditable = true }: ProjectWorkMapP
     images: [],
     currentIndex: 0,
   })
+
+  // Handle polygon save and refresh - use full page reload for reliability
+  const handlePolygonSave = () => {
+    // Force full page reload to ensure clean state
+    setTimeout(() => {
+      window.location.reload()
+    }, 500) // Small delay to ensure save completes
+  }
 
   // Fetch latest daily sub activities from API
   const {
@@ -264,9 +271,7 @@ export function ProjectWorkMap({ projectId, isEditable = true }: ProjectWorkMapP
           <ProjectAreaBaseLayer
             projectId={projectId}
             editable={isEditable}
-            onPolygonSave={async coordinates => {
-              console.log('Polygon saved successfully:', coordinates)
-            }}
+            onPolygonSave={handlePolygonSave}
           />
 
           {/* Work Location Markers */}
@@ -472,6 +477,20 @@ function ImagePreviewModal({
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
 
+  // Add event listener for keyboard navigation
+  React.useEffect(() => {
+    if (!isOpen) return
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft' && images[currentIndex - 1]) onPrevious()
+      if (e.key === 'ArrowRight' && images[currentIndex + 1]) onNext()
+    }
+    
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, currentIndex, onClose, onPrevious, onNext, images])
+
   if (!isOpen || !images[currentIndex]) return null
 
   const currentImage = images[currentIndex]
@@ -495,22 +514,9 @@ function ImagePreviewModal({
 
       window.URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Download failed:', error)
+      // Silently handle download error
     }
   }
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') onClose()
-    if (e.key === 'ArrowLeft' && canGoPrevious) onPrevious()
-    if (e.key === 'ArrowRight' && canGoNext) onNext()
-  }
-
-  // Add event listener for keyboard navigation
-  React.useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [currentIndex, canGoPrevious, canGoNext])
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm">
