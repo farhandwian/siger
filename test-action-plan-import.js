@@ -1,4 +1,4 @@
-// Test that Action Plan CSV import API works the same as Activity Schedule import
+// Test that Action Plan CSV import API works the same as Activity SchedulePlan import
 console.log('🧪 Testing Action Plan CSV Import API...')
 
 const API_BASE = 'http://localhost:3001'
@@ -11,7 +11,7 @@ const testImportData = {
     {
       name: 'Test Activity for Action Plan',
       type: 'activity',
-      scheduleData: [],
+      scheduleplanData: [],
     },
     {
       name: 'Test Sub-Activity for Action Plan',
@@ -21,7 +21,7 @@ const testImportData = {
       volumeKontrak: 100,
       bobotMC0: 10,
       volumeMC0: 50,
-      scheduleData: [
+      scheduleplanData: [
         {
           period: '2025-05-W5',
           month: 5,
@@ -46,16 +46,16 @@ const testImportData = {
 async function testActionPlanImport() {
   try {
     console.log('\n📤 Sending test data to Action Plan import API...')
-    console.log('Endpoint: /api/projects/2/action-plan-schedule/import')
+    console.log('Endpoint: /api/projects/2/action-plan-scheduleplan/import')
     console.log('Data sample:', {
       projectId: testImportData.projectId,
       activitiesCount: testImportData.activities.length,
       importMode: testImportData.importMode,
       firstActivity: testImportData.activities[0]?.name,
-      scheduleCount: testImportData.activities.reduce((sum, a) => sum + a.scheduleData.length, 0),
+      scheduleplanCount: testImportData.activities.reduce((sum, a) => sum + a.scheduleplanData.length, 0),
     })
 
-    const response = await fetch(`${API_BASE}/api/projects/2/action-plan-schedule/import`, {
+    const response = await fetch(`${API_BASE}/api/projects/2/action-plan-scheduleplan/import`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ async function testActionPlanImport() {
     if (result.success) {
       console.log('🎉 Action Plan CSV import API is working correctly!')
       console.log(
-        '💡 This means the Action Plan import now follows the same pattern as Activity Schedule import.'
+        '💡 This means the Action Plan import now follows the same pattern as Activity SchedulePlan import.'
       )
     }
   } catch (error) {

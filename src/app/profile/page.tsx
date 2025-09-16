@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/useAuth'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
-import { User, Mail, Phone, Calendar, Shield, Clock } from 'lucide-react'
-import { format } from 'date-fns'
+import { User, Mail, Calendar, Shield, Clock } from 'lucide-react'
+import { UserRole } from '@prisma/client'
 
 /**
  * User Profile Page
@@ -221,9 +221,9 @@ export default function ProfilePage() {
                     <Shield className="mx-auto mb-2 h-6 w-6 text-gray-400" />
                     <p className="text-xs text-gray-500">Security Level</p>
                     <p className="font-medium">
-                      {user.role === 'ADMIN'
+                      {user.role === UserRole.ADMIN_SISTEM
                         ? 'High'
-                        : user.role === 'MANAGER'
+                        : user.role === UserRole.ADMIN_BALAI || user.role === UserRole.SATKER
                           ? 'Medium'
                           : 'Standard'}
                     </p>

@@ -117,6 +117,12 @@ export class ApiClient {
         total: number
         totalPages: number
       }
+      userContext?: {
+        role: string
+        balaiId: string | null
+        satkerId: string | null
+        assignedProjectsCount: number
+      }
     }>(`/projects?${searchParams}`)
 
     // Validate each project in the response
@@ -125,6 +131,7 @@ export class ApiClient {
     return {
       projects: validatedProjects,
       pagination: response.pagination,
+      userContext: response.userContext,
     }
   }
 

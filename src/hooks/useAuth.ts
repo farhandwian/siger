@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useMemo } from 'react'
-import { UserRole } from '@/lib/auth'
+import { UserRole } from '@prisma/client'
 
 /**
  * Authentication Hook
@@ -27,13 +27,6 @@ export interface UserPermissions {
   canViewMonitoring: boolean
   canEditMonitoring: boolean
   
-  // Proposal permissions
-  canViewProposals: boolean
-  canCreateProposals: boolean
-  canEditProposals: boolean
-  canDeleteProposals: boolean
-  canApproveProposals: boolean
-  
   // User management permissions
   canViewUsers: boolean
   canCreateUsers: boolean
@@ -56,29 +49,34 @@ export function useAuth() {
 
   const permissions = useMemo((): UserPermissions => {
     if (!session?.user?.role) {
-      // No permissions for unauthenticated users
       return {
+        // Project permissions
         canViewProjects: false,
         canCreateProjects: false,
         canEditProjects: false,
         canDeleteProjects: false,
+        
+        // Activity permissions
         canViewActivities: false,
         canCreateActivities: false,
         canEditActivities: false,
         canDeleteActivities: false,
+        
+        // Monitoring permissions
         canViewMonitoring: false,
         canEditMonitoring: false,
-        canViewProposals: false,
-        canCreateProposals: false,
-        canEditProposals: false,
-        canDeleteProposals: false,
-        canApproveProposals: false,
+        
+        // User management permissions
         canViewUsers: false,
         canCreateUsers: false,
         canEditUsers: false,
         canDeleteUsers: false,
+        
+        // Reports permissions
         canViewReports: false,
         canExportReports: false,
+        
+        // Role checks
         isAdmin: false,
         isManager: false,
         isUser: false,
@@ -90,43 +88,36 @@ export function useAuth() {
 
     return {
       // Project permissions
-      canViewProjects: ['ADMIN', 'MANAGER', 'USER', 'VIEWER'].includes(role),
-      canCreateProjects: ['ADMIN', 'MANAGER'].includes(role),
-      canEditProjects: ['ADMIN', 'MANAGER'].includes(role),
-      canDeleteProjects: ['ADMIN'].includes(role),
+      canViewProjects: true, // All authenticated users can view
+      canCreateProjects: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER, UserRole.PPK] as UserRole[]).includes(role),
+      canEditProjects: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER, UserRole.PPK] as UserRole[]).includes(role),
+      canDeleteProjects: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI] as UserRole[]).includes(role),
       
       // Activity permissions
-      canViewActivities: ['ADMIN', 'MANAGER', 'USER', 'VIEWER'].includes(role),
-      canCreateActivities: ['ADMIN', 'MANAGER', 'USER'].includes(role),
-      canEditActivities: ['ADMIN', 'MANAGER', 'USER'].includes(role),
-      canDeleteActivities: ['ADMIN', 'MANAGER'].includes(role),
+      canViewActivities: true, // All authenticated users can view
+      canCreateActivities: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER, UserRole.PPK] as UserRole[]).includes(role),
+      canEditActivities: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER, UserRole.PPK] as UserRole[]).includes(role),
+      canDeleteActivities: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI] as UserRole[]).includes(role),
       
       // Monitoring permissions
-      canViewMonitoring: ['ADMIN', 'MANAGER', 'USER', 'VIEWER'].includes(role),
-      canEditMonitoring: ['ADMIN', 'MANAGER'].includes(role),
-      
-      // Proposal permissions
-      canViewProposals: ['ADMIN', 'MANAGER', 'USER', 'VIEWER'].includes(role),
-      canCreateProposals: ['ADMIN', 'MANAGER', 'USER'].includes(role),
-      canEditProposals: ['ADMIN', 'MANAGER', 'USER'].includes(role),
-      canDeleteProposals: ['ADMIN', 'MANAGER'].includes(role),
-      canApproveProposals: ['ADMIN', 'MANAGER'].includes(role),
+      canViewMonitoring: true, // All authenticated users can view
+      canEditMonitoring: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.SATKER, UserRole.PPK, UserRole.VENDOR] as UserRole[]).includes(role),
       
       // User management permissions
-      canViewUsers: ['ADMIN'].includes(role),
-      canCreateUsers: ['ADMIN'].includes(role),
-      canEditUsers: ['ADMIN'].includes(role),
-      canDeleteUsers: ['ADMIN'].includes(role),
+      canViewUsers: role === UserRole.ADMIN_SISTEM,
+      canCreateUsers: role === UserRole.ADMIN_SISTEM,
+      canEditUsers: role === UserRole.ADMIN_SISTEM,
+      canDeleteUsers: role === UserRole.ADMIN_SISTEM,
       
       // Reports permissions
-      canViewReports: ['ADMIN', 'MANAGER', 'USER'].includes(role),
-      canExportReports: ['ADMIN', 'MANAGER'].includes(role),
+      canViewReports: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.DIRJEN_SDA, UserRole.KABALAI, UserRole.SATKER, UserRole.PPK] as UserRole[]).includes(role),
+      canExportReports: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.DIRJEN_SDA, UserRole.KABALAI] as UserRole[]).includes(role),
       
       // Role checks
-      isAdmin: role === 'ADMIN',
-      isManager: role === 'MANAGER',
-      isUser: role === 'USER',
-      isViewer: role === 'VIEWER',
+      isAdmin: role === UserRole.ADMIN_SISTEM,
+      isManager: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.DIRJEN_SDA, UserRole.KABALAI] as UserRole[]).includes(role),
+      isUser: ([UserRole.ADMIN_SISTEM, UserRole.ADMIN_BALAI, UserRole.DIRJEN_SDA, UserRole.KABALAI, UserRole.SATKER, UserRole.PPK] as UserRole[]).includes(role),
+      isViewer: true, // All authenticated users can view
     }
   }, [session?.user?.role])
 

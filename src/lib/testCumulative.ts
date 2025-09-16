@@ -10,15 +10,41 @@ const mockActivities: Activity[] = [
     id: '1',
     name: 'Test Activity 1',
     order: 1,
+    projectId: 'proj1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
     subActivities: [
       {
         id: 'sub1',
         name: 'Sub Activity 1',
         weight: 50,
         order: 1,
+        activityId: 'act1',
+        satuan: 'unit',
+        volume: 100,
+        createdAt: new Date(),
+        updatedAt: new Date(),
         schedules: [
-          { month: 6, week: 1, year: 2025, planPercentage: 5, actualPercentage: 5 },
-          { month: 6, week: 2, year: 2025, planPercentage: 10, actualPercentage: 8 },
+          { 
+            id: 'sp1', 
+            subActivityId: 'sub1',
+            weekNumber: 1,
+            plan: 5,
+            actionPlan: 5,
+            realization: 3,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          { 
+            id: 'sp2', 
+            subActivityId: 'sub1',
+            weekNumber: 2,
+            plan: 10,
+            actionPlan: 8,
+            realization: 7,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
         ],
       },
       {
@@ -26,9 +52,32 @@ const mockActivities: Activity[] = [
         name: 'Sub Activity 2',
         weight: 30,
         order: 2,
+        activityId: 'act1',
+        satuan: 'unit',
+        volume: 50,
+        createdAt: new Date(),
+        updatedAt: new Date(),
         schedules: [
-          { month: 6, week: 1, year: 2025, planPercentage: 3, actualPercentage: 3 },
-          { month: 6, week: 2, year: 2025, planPercentage: 7, actualPercentage: 7 },
+          { 
+            id: 'sp3', 
+            subActivityId: 'sub2',
+            weekNumber: 1,
+            plan: 3,
+            actionPlan: 4,
+            realization: 2,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          { 
+            id: 'sp4', 
+            subActivityId: 'sub2',
+            weekNumber: 2,
+            plan: 7,
+            actionPlan: 6,
+            realization: 5,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
         ],
       },
     ],

@@ -26,12 +26,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const oldValue = currentProject[fieldName as keyof typeof currentProject] as string | null
+    // Handle type conversion for numeric fields
+    let updateValue: string | number | null = value;
+    if (fieldName === 'numberOfWeeks') {
+      updateValue = value === '' || value === null ? null : parseInt(value, 10);
+      if (isNaN(updateValue as number) && updateValue !== null) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Invalid number format for numberOfWeeks',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    const oldValue = currentProject[fieldName as keyof typeof currentProject] as string | number | null
 
     // Update project in database
     const updatedProject = await prisma.project.update({
       where: { id: projectId },
-      data: { [fieldName]: value },
+      data: { [fieldName]: updateValue },
     })
 
     // Create audit log
@@ -39,7 +54,7 @@ export async function POST(request: NextRequest) {
       data: {
         projectId,
         fieldName,
-        oldValue: oldValue || '',
+        oldValue: oldValue !== null ? oldValue.toString() : '',
         newValue: value,
       },
     })

@@ -38,6 +38,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Validate and sanitize project data before returning
     const sanitizedProject = {
       ...project,
+      // Keep currency fields as simple strings
+      paguAnggaran: project.paguAnggaran ? String(project.paguAnggaran) : null,
+      nilaiKontrak: project.nilaiKontrak ? String(project.nilaiKontrak) : null,
+      
       // Ensure numeric fields are properly formatted
       fisikProgress: project.fisikProgress !== null ? Number(project.fisikProgress) : null,
       fisikDeviasi: project.fisikDeviasi !== null ? Number(project.fisikDeviasi) : null,
@@ -48,9 +52,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       bangunanProgress: project.bangunanProgress !== null ? Number(project.bangunanProgress) : null,
       bangunanDeviasi: project.bangunanDeviasi !== null ? Number(project.bangunanDeviasi) : null,
       bangunanTarget: project.bangunanTarget !== null ? Number(project.bangunanTarget) : null,
-      keuanganProgress: project.keuanganProgress !== null ? Number(project.keuanganProgress) : null,
-      keuanganDeviasi: project.keuanganDeviasi !== null ? Number(project.keuanganDeviasi) : null,
-      keuanganTarget: project.keuanganTarget !== null ? Number(project.keuanganTarget) : null,
+      
+      // Convert financial values to percentages (0-100)
+      keuanganProgress: project.nilaiKontrak && project.keuanganProgress ? 
+        Math.min(100, Math.round((project.keuanganProgress / parseFloat(project.nilaiKontrak)) * 100)) : 
+        0,
+      keuanganTarget: project.nilaiKontrak && project.keuanganTarget ? 
+        Math.min(100, Math.round((project.keuanganTarget / parseFloat(project.nilaiKontrak)) * 100)) : 
+        100,
+      keuanganDeviasi: project.keuanganDeviasi !== null ? Number(project.keuanganDeviasi) : 0,
       // Ensure JSON fields are properly parsed
       outputData: project.outputData || [],
       tenagaKerjaData: project.tenagaKerjaData || [],

@@ -205,12 +205,16 @@
   }
 
   /* Activity Schedule Table Components */
+  .activity-table-header-week {
+    @apply min-w-[35px] border-b border-gray-200 bg-white px-1 py-1 text-center text-[8px] font-bold text-[#364878] lg:min-w-[40px] lg:px-2 lg:py-1.5 lg:text-[9px] xl:min-w-[40px] xl:px-2 xl:text-[10px];
+  }
+  
   .activity-table-header-primary {
     @apply border-b border-gray-200 bg-[#364878] px-2 py-1 text-center text-[9px] font-bold text-white lg:px-3 lg:py-1.5 lg:text-[10px] xl:px-6 xl:py-1.5 xl:text-xs;
   }
   
   .activity-table-header-secondary {
-    @apply min-w-[35px] border-b border-gray-200 bg-[#80a9da] px-1 py-1 text-center text-[8px] font-bold text-white lg:min-w-[40px] lg:px-2 lg:py-1.5 lg:text-[9px] xl:min-w-[40px] xl:px-2 xl:text-[10px];
+    @apply min-w-[35px] border-b border-gray-200 bg-[#80a9da] py-1 text-center text-[8px] font-bold text-white lg:min-w-[40px] lg:py-1.5 lg:text-[9px] xl:min-w-[40px] xl:text-[10px];
   }
   
   .activity-table-sticky-left {

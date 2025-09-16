@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,9 +39,9 @@ const CreateUserSchema = z
     username: z.string().min(3, 'Username must be at least 3 characters'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
-    role: z.enum(['ADMIN', 'MANAGER', 'USER', 'VIEWER']),
+    role: z.nativeEnum(UserRole),
     phoneNumber: z.string().optional(),
-    isActive: z.boolean().default(true),
+    isActive: z.boolean(), // Remove default here, let the form provide it
   })
   .refine(data => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -54,7 +55,7 @@ interface CreateUserRequest {
   email: string
   username: string
   password: string
-  role: 'ADMIN' | 'MANAGER' | 'USER' | 'VIEWER'
+  role: UserRole
   phoneNumber?: string
   isActive: boolean
 }
@@ -77,10 +78,13 @@ async function createUser(userData: CreateUserRequest) {
 }
 
 const roleDescriptions = {
-  ADMIN: 'Full system access including user management',
-  MANAGER: 'Project management and approval permissions',
-  USER: 'Standard user with project participation rights',
-  VIEWER: 'Read-only access to projects and reports',
+  [UserRole.ADMIN_SISTEM]: 'Global system administrator with full access',
+  [UserRole.ADMIN_BALAI]: 'Balai-level administrator with regional oversight',
+  [UserRole.DIRJEN_SDA]: 'Director General with read-only oversight access',
+  [UserRole.KABALAI]: 'Head of Balai with read-only regional access',
+  [UserRole.SATKER]: 'Budget execution unit with satker-level CRUD access',
+  [UserRole.PPK]: 'Project commitment officer with assigned project management',
+  [UserRole.VENDOR]: 'Contractor/vendor with progress update access only',
 }
 
 export default function CreateUserPage() {
@@ -99,7 +103,7 @@ export default function CreateUserPage() {
   } = useForm<CreateUserFormData>({
     resolver: zodResolver(CreateUserSchema),
     defaultValues: {
-      role: 'USER',
+      role: UserRole.PPK,
       isActive: true,
     },
   })
@@ -358,10 +362,13 @@ export default function CreateUserPage() {
                         <SelectValue placeholder="Select user role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="VIEWER">Viewer</SelectItem>
-                        <SelectItem value="USER">User</SelectItem>
-                        <SelectItem value="MANAGER">Manager</SelectItem>
-                        <SelectItem value="ADMIN">Admin</SelectItem>
+                        <SelectItem value={UserRole.VENDOR}>Vendor/Contractor</SelectItem>
+                        <SelectItem value={UserRole.PPK}>PPK (Project Officer)</SelectItem>
+                        <SelectItem value={UserRole.SATKER}>SATKER (Budget Unit)</SelectItem>
+                        <SelectItem value={UserRole.KABALAI}>Head of Balai</SelectItem>
+                        <SelectItem value={UserRole.DIRJEN_SDA}>Director General</SelectItem>
+                        <SelectItem value={UserRole.ADMIN_BALAI}>Balai Administrator</SelectItem>
+                        <SelectItem value={UserRole.ADMIN_SISTEM}>System Administrator</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.role && (

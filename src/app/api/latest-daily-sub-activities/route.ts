@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // First, get all unique subActivityIds with their latest tanggalProgres
-    const latestEntriesRaw = await prisma.dailySubActivity.groupBy({
+    const latestEntriesRaw = await prisma.dailyReport.groupBy({
       by: ['subActivityId'],
       _max: {
         tanggalProgres: true,
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     // Get the actual daily activities with latest dates per subActivityId
     const [dailyActivities, total] = await Promise.all([
-      prisma.dailySubActivity.findMany({
+      prisma.dailyReport.findMany({
         where: {
           OR: orConditions,
         },
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true,
               satuan: true,
-              volumeKontrak: true,
+              volume: true,
               weight: true,
               activity: {
                 select: {
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.dailySubActivity.count({
+      prisma.dailyReport.count({
         where: {
           OR: orConditions,
         },

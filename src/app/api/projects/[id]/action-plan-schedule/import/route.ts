@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 
 // Validation schemas for action plan schedule import
-const ActionPlanScheduleDataSchema = z.object({
+const ActionPlanDataSchema = z.object({
   period: z.string(),
   month: z.number().min(1).max(12),
   year: z.number(),
@@ -20,7 +20,7 @@ const ActionPlanActivityImportSchema = z.object({
   volumeKontrak: z.number().optional(),
   bobotMC0: z.number().optional(),
   volumeMC0: z.number().optional(),
-  scheduleData: z.array(ActionPlanScheduleDataSchema),
+  scheduleData: z.array(ActionPlanDataSchema),
 })
 
 const ActionPlanImportRequestSchema = z.object({
@@ -100,9 +100,9 @@ export async function POST(request: NextRequest) {
       const subActivityIds = projectActivities.flatMap(a => a.subActivities?.map(sa => sa.id) || [])
 
       // Delete existing action plan schedules
-      await prisma.actionPlanSchedule.deleteMany({
+      await prisma.actionPlan.deleteMany({
         where: {
-          OR: [{ activityId: { in: activityIds } }, { subActivityId: { in: subActivityIds } }],
+          subActivityId: { in: subActivityIds },
         },
       })
 
@@ -168,9 +168,7 @@ export async function POST(request: NextRequest) {
                 weight: activityData.bobotMC0 || 0,
                 order: stats.subActivitiesCreated,
                 satuan: activityData.satuan,
-                volumeKontrak: activityData.volumeKontrak,
-                bobotMC0: activityData.bobotMC0,
-                volumeMC0: activityData.volumeMC0,
+                volume: activityData.volumeKontrak,
               },
             })
             stats.subActivitiesCreated++
@@ -181,9 +179,8 @@ export async function POST(request: NextRequest) {
               where: { id: subActivity.id },
               data: {
                 satuan: activityData.satuan || subActivity.satuan,
-                volumeKontrak: activityData.volumeKontrak ?? subActivity.volumeKontrak,
-                bobotMC0: activityData.bobotMC0 ?? subActivity.bobotMC0,
-                volumeMC0: activityData.volumeMC0 ?? subActivity.volumeMC0,
+                volume: activityData.volumeKontrak ?? subActivity.volume,
+                weight: activityData.bobotMC0 ?? subActivity.weight,
               },
             })
             console.log(`✅ Updated sub-activity: ${activityData.name}`)
@@ -229,34 +226,33 @@ export async function POST(request: NextRequest) {
                   week: scheduleData.week,
                 }
 
-            const existingSchedule = await tx.actionPlanSchedule.findFirst({
+            const existingSchedule = await tx.actionPlan.findFirst({
               where: whereClause,
             })
 
             if (existingSchedule) {
               // Update existing action plan schedule
-              await tx.actionPlanSchedule.update({
+              await tx.actionPlan.update({
                 where: { id: existingSchedule.id },
                 data: {
-                  planPercentage: scheduleData.planPercentage,
-                  actualPercentage: scheduleData.actualPercentage,
+                  percentage: scheduleData.planPercentage,
                 },
               })
               stats.schedulesUpdated++
             } else {
               // Create new action plan schedule
-              await tx.actionPlanSchedule.create({
-                data: {
-                  activityId: targetActivityId,
-                  subActivityId: targetSubActivityId,
-                  month: scheduleData.month,
-                  year: scheduleData.year,
-                  week: scheduleData.week,
-                  planPercentage: scheduleData.planPercentage,
-                  actualPercentage: scheduleData.actualPercentage,
-                },
-              })
-              stats.schedulesCreated++
+              if (targetSubActivityId) {
+                await tx.actionPlan.create({
+                  data: {
+                    subActivityId: targetSubActivityId,
+                    month: scheduleData.month,
+                    year: scheduleData.year,
+                    week: scheduleData.week,
+                    percentage: scheduleData.planPercentage,
+                  },
+                })
+                stats.schedulesCreated++
+              }
             }
           } catch (error: any) {
             const errorMsg = `Failed to process schedule for ${activityData.name} - ${scheduleData.period}: ${error.message}`

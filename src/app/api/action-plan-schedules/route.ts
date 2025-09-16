@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import {
-  CreateActionPlanScheduleSchema,
-  ActionPlanScheduleResponseSchema,
+  CreateActionPlanSchema,
 } from '@/lib/schemas/action-plan-schedule'
 
 // Query parameters schema for filtering action plan schedules
@@ -12,8 +11,7 @@ const QuerySchema = z.object({
   projectId: z.string().optional(),
   activityId: z.string().optional(),
   subActivityId: z.string().optional(),
-  year: z.coerce.number().optional(),
-  month: z.coerce.number().min(1).max(12).optional(),
+  weekNumber: z.coerce.number().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -24,64 +22,45 @@ export async function GET(req: NextRequest) {
     // Build where clause based on query parameters
     const where: any = {}
 
-    if (query.activityId) {
-      where.activityId = query.activityId
-    }
-
     if (query.subActivityId) {
       where.subActivityId = query.subActivityId
     }
 
-    if (query.year) {
-      where.year = query.year
+    if (query.weekNumber) {
+      where.weekNumber = query.weekNumber
     }
 
-    if (query.month) {
-      where.month = query.month
+    // If projectId or activityId is provided, filter through subActivity relations
+    if (query.projectId || query.activityId) {
+      where.subActivity = {}
+      
+      if (query.activityId) {
+        where.subActivity.activityId = query.activityId
+      }
+      
+      if (query.projectId) {
+        where.subActivity.activity = {
+          projectId: query.projectId,
+        }
+      }
     }
 
-    // If projectId is provided, filter by activities belonging to that project
-    if (query.projectId) {
-      where.OR = [
-        {
-          activity: {
-            projectId: query.projectId,
-          },
-        },
-        {
-          subActivity: {
-            activity: {
-              projectId: query.projectId,
-            },
-          },
-        },
-      ]
-    }
-
-    const actionPlanSchedules = await prisma.actionPlanSchedule.findMany({
+    const actionPlans = await prisma.actionPlan.findMany({
       where,
-      include: {
-        activity: {
-          select: {
-            id: true,
-            name: true,
-            projectId: true,
-          },
-        },
-        subActivity: {
-          select: {
-            id: true,
-            name: true,
-            activityId: true,
-          },
-        },
+      select: {
+        id: true,
+        subActivityId: true,
+        weekNumber: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
       },
       orderBy: [{ year: 'asc' }, { month: 'asc' }, { week: 'asc' }],
     })
 
     return NextResponse.json({
       success: true,
-      data: actionPlanSchedules,
+      data: actionPlans,
     })
   } catch (error) {
     console.error('Error fetching action plan schedules:', error)
@@ -99,79 +78,56 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('=== ACTION PLAN SCHEDULES POST API ===')
     const body = await req.json()
-    console.log('Request body:', body)
+    const data = CreateActionPlanSchema.parse(body)
 
-    const data = CreateActionPlanScheduleSchema.parse(body)
-    console.log('Parsed data:', data)
-
-    // Validate that either activityId or subActivityId is provided, but not both
-    if (!data.activityId && !data.subActivityId) {
-      console.log('Validation error: Neither activityId nor subActivityId provided')
+    // Validate that subActivityId is provided (required field in new schema)
+    if (!data.subActivityId) {
       return NextResponse.json(
-        { success: false, error: 'Either activityId or subActivityId must be provided' },
+        { success: false, error: 'subActivityId is required' },
         { status: 400 }
       )
     }
 
-    if (data.activityId && data.subActivityId) {
-      console.log('Validation error: Both activityId and subActivityId provided')
-      return NextResponse.json(
-        { success: false, error: 'Cannot provide both activityId and subActivityId' },
-        { status: 400 }
-      )
-    }
-
-    // Check if a schedule already exists for this activity/subactivity and time period
-    const existingSchedule = await prisma.actionPlanSchedule.findFirst({
+    // Check if a schedule already exists for this subactivity and week
+    const existingSchedule = await prisma.actionPlan.findFirst({
       where: {
-        ...(data.activityId
-          ? { activityId: data.activityId }
-          : { subActivityId: data.subActivityId }),
-        month: data.month,
-        year: data.year,
-        week: data.week,
+        subActivityId: data.subActivityId,
+        weekNumber: data.weekNumber,
       },
     })
 
     if (existingSchedule) {
       return NextResponse.json(
-        { success: false, error: 'Action plan schedule already exists for this time period' },
+        { success: false, error: 'Action plan schedule already exists for this week' },
         { status: 409 }
       )
     }
 
-    const actionPlanSchedule = await prisma.actionPlanSchedule.create({
-      data,
-      include: {
-        activity: {
-          select: {
-            id: true,
-            name: true,
-            projectId: true,
-          },
-        },
-        subActivity: {
-          select: {
-            id: true,
-            name: true,
-            activityId: true,
-          },
-        },
+    const actionPlan = await prisma.actionPlan.create({
+      data: {
+        subActivityId: data.subActivityId,
+        weekNumber: data.weekNumber,
+        percentage: data.percentage || 0,
       },
+      select: {
+        id: true,
+        subActivityId: true,
+        weekNumber: true,
+        percentage: true,
+        createdAt: true,
+        updatedAt: true
+      }
     })
 
     return NextResponse.json(
       {
         success: true,
-        data: actionPlanSchedule,
+        data: actionPlan,
       },
       { status: 201 }
     )
   } catch (error) {
-    console.error('Error creating action plan schedule:', error)
-
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Invalid request data', details: error.errors },

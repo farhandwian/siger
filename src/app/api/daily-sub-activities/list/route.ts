@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     } = parsedQuery
 
     // Build where clause for filtering
-    const whereClause: Prisma.DailySubActivityWhereInput = {
+    const whereClause: Prisma.DailyReportWhereInput = {
       // userId, // Always filter by the specified user ID - TEMPORARILY DISABLED
     }
 
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Build order by clause
-    let orderBy: Prisma.DailySubActivityOrderByWithRelationInput = {}
+    const orderBy: Prisma.DailyReportOrderByWithRelationInput = {}
 
     switch (sortBy) {
       case 'updatedAt':
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
 
     // Execute queries in parallel
     const [data, total] = await Promise.all([
-      prisma.dailySubActivity.findMany({
+      prisma.dailyReport.findMany({
         where: whereClause,
         orderBy,
         skip,
@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
-      prisma.dailySubActivity.count({
+      prisma.dailyReport.count({
         where: whereClause,
       }),
     ])

@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { Card, CardContent } from '../ui/card'
-import { Button } from '../ui/button'
 import { ProgressBar } from '../ui/progress-bar'
 import { cn } from '@/lib/utils'
 
@@ -180,6 +179,7 @@ const DataCard: React.FC<DataCardProps> = ({ title, data }) => {
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const ProjectDetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, projectId }) => {
   if (!isOpen) return null
 

@@ -94,12 +94,16 @@ function calculateWeekTotal(
   for (const activity of activities) {
     if (activity.subActivities && activity.subActivities.length > 0) {
       for (const subActivity of activity.subActivities) {
+        // Calculate week number from month, week, and year
+        // This is a simplified calculation - you may need to adjust based on your specific logic
+        const weekNumber = ((month - 1) * 4) + week
+        
         const schedule = subActivity.schedules?.find(
-          s => s.month === month && s.week === week && s.year === year
+          (s) => s.weekNumber === weekNumber
         )
 
         if (schedule) {
-          const value = type === 'plan' ? schedule.planPercentage : schedule.actualPercentage
+          const value = type === 'plan' ? schedule.plan : schedule.realization
           if (value !== null && value !== undefined) {
             total += value
           }

@@ -1,7 +1,8 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import { useRealMonitoringData } from '@/hooks/useRealMonitoringData'
+import { useCalculatedData } from '@/hooks/useCalculatedData'
+import { useProject } from '@/hooks/useActivityQueries'
 import { TrendingUp, AlertTriangle, Calendar } from 'lucide-react'
 
 const MetricCard = ({
@@ -65,10 +66,19 @@ const MetricCard = ({
   </Card>
 )
 
-export function MonitoringMetrics({ projectId = '1' }: { projectId?: string }) {
-  const { data, isLoading, isEmpty } = useRealMonitoringData(projectId)
+export function MonitoringMetrics({ 
+  projectId = '1', 
+  isActionPlanTable = false 
+}: { 
+  projectId?: string
+  isActionPlanTable?: boolean 
+}) {
+  const { getCalculatedValueForWeek, isLoading } = useCalculatedData(projectId)
+  const { data: project, isLoading: projectLoading } = useProject(projectId)
 
-  if (isLoading) {
+  const loading = isLoading || projectLoading
+
+  if (loading) {
     return (
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {[1, 2, 3].map(i => (
@@ -78,7 +88,7 @@ export function MonitoringMetrics({ projectId = '1' }: { projectId?: string }) {
     )
   }
 
-  if (isEmpty || !data) {
+  if (!project) {
     return (
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="col-span-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-center text-gray-500">
@@ -88,18 +98,38 @@ export function MonitoringMetrics({ projectId = '1' }: { projectId?: string }) {
     )
   }
 
-  const progressPercentage = data.total > 0 ? ((data.current / data.total) * 100).toFixed(1) : '0.0'
+  const totalWeeks = project.numberOfWeeks || 20
+  
+  // Use the last week (most recent completed week)
+  const lastWeek = totalWeeks
+  
+  // Get cumulative realization for current progress
+  const currentProgress = getCalculatedValueForWeek(lastWeek, 'cumulative-realization')
+  
+  // Get final week cumulative plan as total target
+  const totalTarget = getCalculatedValueForWeek(totalWeeks, 'cumulative-plan')
+  
+  // Get deviation based on table type (plan vs action plan)
+  const deviation = getCalculatedValueForWeek(
+    lastWeek, 
+    isActionPlanTable ? 'deviation-action-plan' : 'deviation-plan'
+  )
+  
+  // Calculate schedule progress
+  const scheduleProgress = totalWeeks > 0 ? (lastWeek / totalWeeks) * 100 : 0
+  
+  const progressPercentage = totalTarget > 0 ? ((currentProgress / totalTarget) * 100).toFixed(1) : '0.0'
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {/* Cumulative Progress Card */}
       <MetricCard
         title="Progress Kumulatif Aktual"
-        value={`${data.current.toFixed(1)}%`}
-        subtitle={`Target: ${data.total.toFixed(1)}% (${progressPercentage}%)`}
+        value={`${currentProgress.toFixed(1)}%`}
+        subtitle={`Target: ${totalTarget.toFixed(1)}% (${progressPercentage}%)`}
         showProgress={true}
-        current={data.current}
-        total={data.total}
+        current={currentProgress}
+        total={totalTarget}
         icon={TrendingUp}
         trend="up"
       />
@@ -107,20 +137,20 @@ export function MonitoringMetrics({ projectId = '1' }: { projectId?: string }) {
       {/* Cumulative Deviation Card */}
       <MetricCard
         title="Deviasi Kumulatif"
-        value={`${data.deviation > 0 ? '+' : ''}${data.deviation}%`}
+        value={`${deviation > 0 ? '+' : ''}${deviation.toFixed(1)}%`}
         subtitle="Rencana vs Realisasi"
         icon={AlertTriangle}
-        trend={data.deviation > 0 ? 'up' : data.deviation < 0 ? 'down' : 'neutral'}
+        trend={deviation > 0 ? 'up' : deviation < 0 ? 'down' : 'neutral'}
       />
 
       {/* Schedule Progress Card */}
       <MetricCard
         title="Progres Waktu Kontrak"
-        value={`${data.scheduleProgress.toFixed(1)}%`}
-        subtitle={`Minggu ${data.weeksPassed} dari ${data.totalWeeks}`}
+        value={`${scheduleProgress.toFixed(1)}%`}
+        subtitle={`Minggu ${lastWeek} dari ${totalWeeks}`}
         showProgress={true}
-        current={data.weeksPassed}
-        total={data.totalWeeks}
+        current={lastWeek}
+        total={totalWeeks}
         icon={Calendar}
         trend="neutral"
       />

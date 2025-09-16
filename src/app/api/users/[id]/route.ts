@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { UpdateUserSchema } from '@/lib/schemas'
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 
 // GET /api/users/[id] - Get user by ID
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -16,7 +17,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         email: true,
         name: true,
         role: true,
-        phoneNumber: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // PUT /api/users/[id] - Update user by ID
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const validatedData = UpdateUserSchema.parse(body)
 
@@ -92,7 +92,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         email: true,
         name: true,
         role: true,
-        phoneNumber: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -120,7 +119,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 // DELETE /api/users/[id] - Delete user by ID
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -132,7 +131,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     // Check if user has any daily activities (we might want to prevent deletion)
-    const hasActivities = await prisma.dailySubActivity.count({
+    const hasActivities = await prisma.dailyReport.count({
       where: { userId: id },
     })
 
@@ -147,7 +146,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
           email: true,
           name: true,
           role: true,
-          phoneNumber: true,
           isActive: true,
           createdAt: true,
           updatedAt: true,

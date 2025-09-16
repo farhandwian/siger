@@ -23,10 +23,9 @@ export async function GET(
         subActivities: {
           orderBy: { order: 'asc' },
           include: {
-            schedules: true,
+            schedulePlans: true,
           },
         },
-        schedules: true,
       },
     })
 
@@ -99,10 +98,9 @@ export async function PUT(
         subActivities: {
           orderBy: { order: 'asc' },
           include: {
-            schedules: true,
+            schedulePlans: true,
           },
         },
-        schedules: true,
       },
     })
 

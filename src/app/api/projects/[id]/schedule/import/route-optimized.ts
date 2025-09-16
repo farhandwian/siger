@@ -4,7 +4,7 @@ import { parseCSV } from '@/lib/csv-parser'
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const projectId = params.id
+    const { id: projectId } = await params
     const body = await request.json()
     const { csvData } = body
 
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
             // Process schedules using batch operations
             if (activityData.scheduleData && activityData.scheduleData.length > 0) {
               // Get existing schedules for this sub-activity
-              const existingSchedules = await tx.activitySchedule.findMany({
+              const existingSchedules = await tx.schedule.findMany({
                 where: { subActivityId: subActivity.id },
                 select: { id: true, month: true, year: true, week: true },
               })
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
               if (scheduleUpdates.length > 0) {
                 await Promise.all(
                   scheduleUpdates.map(update =>
-                    tx.activitySchedule.update({
+                    tx.schedule.update({
                       where: { id: update.id },
                       data: {
                         planPercentage: update.planPercentage,
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
               // Batch create schedules
               if (scheduleCreates.length > 0) {
                 try {
-                  await tx.activitySchedule.createMany({
+                  await tx.schedule.createMany({
                     data: scheduleCreates,
                     skipDuplicates: true,
                   })
@@ -223,12 +223,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
                   // Handle duplicates individually if batch fails
                   for (const createData of scheduleCreates) {
                     try {
-                      await tx.activitySchedule.create({ data: createData })
+                      await tx.schedule.create({ data: createData })
                       scheduleCount++
                     } catch (individualError: any) {
                       if (individualError.code === 'P2002') {
                         // Update existing instead
-                        const existing = await tx.activitySchedule.findFirst({
+                        const existing = await tx.schedule.findFirst({
                           where: {
                             subActivityId: createData.subActivityId,
                             month: createData.month,
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
                           },
                         })
                         if (existing) {
-                          await tx.activitySchedule.update({
+                          await tx.schedule.update({
                             where: { id: existing.id },
                             data: {
                               planPercentage: createData.planPercentage,
