@@ -79,6 +79,7 @@ model Project {
   addendums          Addendums[]
   auditLogs          ProjectAuditLog[]
   satker             Satker?         @relation(fields: [satkerId], references: [id])
+  weeklyReports      WeeklyReport[]
 
   @@map("projects")
 }
@@ -332,6 +333,71 @@ model ResourceFlowSchedule {
 
   @@unique([analisaKebutuhanId, tanggal])
   @@map("resource_flow_schedules")
+}
+
+model WeeklyReport {
+  id         String       @id @default(cuid())
+  projectId  String       @map("project_id")
+  weekNumber Int          @map("week_number")
+  startDate  DateTime     @map("start_date") @db.Date
+  endDate    DateTime     @map("end_date") @db.Date
+  filePath   String?      @map("file_path")
+  fileUrl    String?      @map("file_url")
+  status     ReportStatus @default(PUBLISHED)
+  satker     String?      @map("satker")
+  kegiatan   String?      @map("kegiatan")
+  proyekPekerjaan String? @map("proyek_pekerjaan")
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activities WeeklyReportActivity[]
+
+  @@unique([projectId, weekNumber, startDate, endDate])
+  @@index([projectId])
+  @@index([weekNumber])
+  @@index([startDate, endDate])
+  @@index([status])
+  @@map("weekly_reports")
+}
+
+model WeeklyReportActivity {
+  id                              String       @id @default(cuid())
+  weeklyReportId                  String       @map("weekly_report_id")
+  name                            String       @map("name") // Changed from uraian to name for consistency
+  sat                             String?      @map("sat")
+  volume                          Float?       @default(0) @map("volume")
+  weight                          Float?       @default(0) @map("weight") // Changed from bobot to weight for consistency
+  realisasiMinggulalu_volume      Float?       @default(0) @map("realisasi_minggulalu_volume")
+  realisasiMinggulalu_bobot       Float?       @default(0) @map("realisasi_minggulalu_bobot")
+  targetMingguIni                 Float?       @default(0) @map("target_minggu_ini")
+  realisasiMingguIni              Float?       @default(0) @map("realisasi_minggu_ini")
+  status                          String?      @map("status") // "Tercapai", "Tidak Tercapai", "Dalam Progress"
+  kumulatifMingguIni_volume       Float?       @default(0) @map("kumulatif_minggu_ini_volume")
+  kumulatifMingguIni_bobot        Float?       @default(0) @map("kumulatif_minggu_ini_bobot")
+  persentaseItemPekerjaan         Float?       @default(0) @map("persentase_item_pekerjaan")
+  persentaseGrafikProgress        Float?       @default(0) @map("persentase_grafik_progress")
+  persentaseRencanaKumulatif      Float?       @default(0) @map("persentase_rencana_kumulatif")
+  statusKumulatif                 String?      @map("status_kumulatif")
+  persentaseSeluruhPekerjaan      Float?       @default(0) @map("persentase_seluruh_pekerjaan")
+  parentActivityId                String?      @map("parent_activity_id") // References another WeeklyReportActivity
+  displayOrder                    Int          @default(0) @map("display_order") // For maintaining order
+  createdAt                       DateTime     @default(now()) @map("created_at")
+  updatedAt                       DateTime     @updatedAt @map("updated_at")
+  
+  weeklyReport                    WeeklyReport @relation(fields: [weeklyReportId], references: [id], onDelete: Cascade)
+  parentActivity                  WeeklyReportActivity? @relation("ActivityHierarchy", fields: [parentActivityId], references: [id])
+  subActivities                   WeeklyReportActivity[] @relation("ActivityHierarchy")
+
+  @@index([weeklyReportId])
+  @@index([parentActivityId])
+  @@index([displayOrder])
+  @@map("weekly_report_activities")
+}
+
+enum ReportStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 enum UserRole {

@@ -1,0 +1,24 @@
+.markerContainer {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.marker1 {
+  top: 20%;
+  left: 25%;
+}
+
+.marker2 {
+  top: 60%;
+  left: 70%;
+}
+
+.marker3 {
+  top: 45%;
+  left: 15%;
+}
+
+.marker4 {
+  top: 75%;
+  left: 45%;
+}

@@ -3,23 +3,26 @@
 import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2 } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { z } from 'zod'
+import { motion } from 'framer-motion'
+import { AnimatedDotPattern } from '@/components/shared/animated-dot-pattern'
+import { AnimatedMapMarker } from '@/components/shared/animated-map-marker'
+import { SigerLogo } from '@/components/shared/siger-logo'
 
 /**
  * Sign In Page Component
- * Provides user authentication interface using NextAuth.js
- * Includes form validation, error handling, and CSRF protection
+ * Redesigned to match Figma mockup with animations and modern UI
+ * Features animated backgrounds, floating markers, and improved UX
  */
 
 const SignInSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Format email tidak valid'),
+  password: z.string().min(6, 'Password minimal 6 karakter'),
 })
 
 type SignInFormData = z.infer<typeof SignInSchema>
@@ -27,6 +30,7 @@ type SignInFormData = z.infer<typeof SignInSchema>
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState<SignInFormData>({
     email: '',
     password: '',
@@ -74,7 +78,7 @@ export default function SignInPage() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        setError('Email atau password tidak valid')
       } else {
         // Wait for session to be established
         const session = await getSession()
@@ -84,8 +88,7 @@ export default function SignInPage() {
         }
       }
     } catch (error) {
-      console.error('Sign in error:', error)
-      setError('An unexpected error occurred. Please try again.')
+      setError('Terjadi kesalahan yang tidak terduga. Silakan coba lagi.')
     } finally {
       setIsLoading(false)
     }
@@ -101,82 +104,143 @@ export default function SignInPage() {
       if (error) setError(null)
     }
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword)
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">SIGER</h1>
-          <p className="text-gray-600">
-            Sistem Informasi Gerakan Nasional Rehabilitasi Hutan dan Lahan
-          </p>
-        </div>
+    <div className="relative flex min-h-screen overflow-hidden">
+      {/* Dark background with animated dot pattern */}
+      <div className="fixed inset-0 z-0 bg-[#0F1419]">
+        <AnimatedDotPattern />
+      </div>
 
-        <Card className="rounded-2xl shadow-lg">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-center text-2xl">Sign In</CardTitle>
-            <p className="text-center text-sm text-gray-600">
-              Enter your credentials to access your account
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={handleInputChange('email')}
-                  disabled={isLoading}
-                  className={validationErrors.email ? 'border-red-500' : ''}
-                  required
-                />
-                {validationErrors.email && (
-                  <p className="mt-1 text-sm text-red-500">{validationErrors.email}</p>
-                )}
-              </div>
+      {/* Left side - Form container */}
+      <div className="relative z-20 flex w-full items-center justify-center px-6 lg:w-1/2 lg:px-12">
+        <motion.div
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-lg"
+        >
+          {/* Logo */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="mb-12"
+          >
+            <SigerLogo />
+          </motion.div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleInputChange('password')}
-                  disabled={isLoading}
-                  className={validationErrors.password ? 'border-red-500' : ''}
-                  required
-                />
-                {validationErrors.password && (
-                  <p className="mt-1 text-sm text-red-500">{validationErrors.password}</p>
-                )}
-              </div>
+          {/* Form Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="flex flex-col gap-8"
+          >
+            {/* Title Section */}
+            <div className="space-y-3">
+              <h1 className="text-4xl font-bold leading-tight text-white">Masuk Akun</h1>
+              <p className="text-lg text-gray-400">Silahkan masukkan email dan password</p>
+            </div>
 
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="rounded-lg border border-red-500/30 bg-red-500/10 p-4"
+                >
+                  <Alert variant="destructive" className="border-0 bg-transparent p-0">
+                    <AlertDescription className="text-red-400">{error}</AlertDescription>
+                  </Alert>
+                </motion.div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign In'
-                )}
+              <div className="space-y-4">
+                {/* Email Field */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-sm font-medium text-white">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange('email')}
+                    disabled={isLoading}
+                    required
+                    className={`h-12 rounded-lg border-gray-200 bg-white text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
+                      validationErrors.email ? 'border-red-500' : ''
+                    }`}
+                    placeholder="Email"
+                  />
+                  {validationErrors.email && (
+                    <p className="text-xs text-red-400">{validationErrors.email}</p>
+                  )}
+                </div>
+
+                {/* Password Field */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-sm font-medium text-white">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={handleInputChange('password')}
+                      disabled={isLoading}
+                      required
+                      className={`h-12 rounded-lg border-gray-200 bg-white pr-12 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
+                        validationErrors.password ? 'border-red-500' : ''
+                      }`}
+                      placeholder="Password"
+                    />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-gray-700"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  {validationErrors.password && (
+                    <p className="text-xs text-red-400">{validationErrors.password}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="h-12 w-full transform rounded-lg bg-[#ffc928] font-semibold text-[#1a365d] transition-all duration-200 hover:scale-[1.02] hover:bg-[#ffc928]/90 active:scale-[0.98] disabled:transform-none disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isLoading ? 'Memproses...' : 'Masuk'}
               </Button>
             </form>
+          </motion.div>
 
-            <div className="mt-4 text-center text-sm text-gray-600">
-              <p>Need access? Contact your system administrator</p>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Footer */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="mt-16 max-w-xs text-sm text-gray-400"
+          >
+            DIREKTORAT JENDERAL SUMBER DAYA AIR KEMENTRIAN PEKERJAAN UMUM
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Right side - Floating marker and empty space */}
+      <div className="relative hidden items-center justify-center lg:flex lg:w-1/2">
+        <AnimatedMapMarker />
       </div>
     </div>
   )
