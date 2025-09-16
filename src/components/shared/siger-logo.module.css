@@ -1,0 +1,10 @@
+.maskImage {
+  -webkit-mask-image: url('http://localhost:3845/assets/d62c2f695690afc07fa938aa57deb32a10edd5b4.png');
+  mask-image: url('http://localhost:3845/assets/d62c2f695690afc07fa938aa57deb32a10edd5b4.png');
+  -webkit-mask-size: 45.583px 24.216px;
+  mask-size: 45.583px 24.216px;
+  -webkit-mask-position: 1.425px 0px;
+  mask-position: 1.425px 0px;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
