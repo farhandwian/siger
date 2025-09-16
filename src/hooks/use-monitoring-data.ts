@@ -31,23 +31,6 @@ export interface MonitoringData {
 export function useMonitoringData() {
   const queryClient = useQueryClient()
 
-<<<<<<< HEAD
-  // Progress data query
-  const progressQuery = useQuery({
-    queryKey: ['monitoring', 'progress'],
-    queryFn: async () => {
-      const response = await fetch('/api/monitoring/progress')
-      if (!response.ok) throw new Error('Failed to fetch progress data')
-      const result = await response.json()
-      return result.data
-    },
-    // refetchInterval: 5000, // 5 seconds for real-time updates, ubah nanti
-    staleTime: 0,
-    gcTime: 30000, // Keep in cache for 30 seconds
-  })
-
-=======
->>>>>>> 429199f1443e44db632f821434a2da6a9614eb38
   // S-Curve data query
   const sCurveQuery = useQuery({
     queryKey: ['monitoring', 's-curve'],

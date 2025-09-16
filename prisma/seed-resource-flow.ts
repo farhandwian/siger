@@ -112,7 +112,7 @@ export async function seedResourceFlowSchedules() {
               tanggal: date,
               rencana: rencana,
               realisasi: realisasi,
-              file: null, // No files for seed data
+              // file: null, // No files for seed data
             },
           })
 
