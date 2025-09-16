@@ -85,11 +85,11 @@ model Project {
 
 model ProjectAuditLog {
   id        String   @id @default(cuid())
-  changedAt DateTime @default(now()) @map("changed_at")
-  fieldName String   @map("field_name")
-  newValue  String?  @map("new_value")
-  oldValue  String?  @map("old_value")
   projectId String   @map("project_id")
+  fieldName String   @map("field_name")
+  oldValue  String?  @map("old_value")
+  newValue  String?  @map("new_value")
+  changedAt DateTime @default(now()) @map("changed_at")
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("project_audit_logs")
@@ -143,6 +143,7 @@ model SubActivity {
   
   schedules           Schedule[]
   dailyReports        DailyReport[]
+  analisaKebutuhan  AnalisaKebutuhan[]
 
   activity            Activity             @relation(fields: [activityId], references: [id], onDelete: Cascade)
 
@@ -250,6 +251,7 @@ model ProjectAssignment {
 model DailyReport {
   id                      String      @id @default(cuid())
   subActivityId           String      @map("sub_activity_id")
+  userId                  String      @map("user_id")
   koordinat               Json?       @map("koordinat")
   catatanKegiatan         String?     @map("catatan_kegiatan")
   file                    Json?       @map("file")
@@ -257,7 +259,6 @@ model DailyReport {
   tanggalProgres          String      @map("tanggal_progres")
   createdAt               DateTime    @default(now()) @map("created_at")
   updatedAt               DateTime    @updatedAt @map("updated_at")
-  userId                  String      @map("user_id")
   
   subActivity             SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
   user                    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -272,6 +273,65 @@ model Wilayah {
 
   @@index([nama])
   @@map("wilayah")
+}
+
+model KategoriKebutuhan {
+  id        String      @id @default(cuid())
+  nama      String      @unique @map("nama")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  kebutuhan Kebutuhan[]
+
+  @@map("kategori_kebutuhan")
+}
+
+model Kebutuhan {
+  id                   String              @id @default(cuid())
+  kategoriKebutuhanId  String              @map("kategori_kebutuhan_id")
+  nama                 String              @map("nama")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  kategoriKebutuhan    KategoriKebutuhan   @relation(fields: [kategoriKebutuhanId], references: [id], onDelete: Cascade)
+  analisaKebutuhan     AnalisaKebutuhan[]
+
+  @@map("kebutuhan")
+}
+
+model AnalisaKebutuhan {
+  id                              String                  @id @default(cuid())
+  subActivityId                   String                  @map("sub_activity_id")
+  kebutuhanId                     String                  @map("kebutuhan_id")
+  koefisien                       Float                   @map("koefisien")
+  hasil                           Float?                  @default(0) @map("hasil")
+  satuanHasil                     String?                 @map("satuan_hasil")
+  hasilAnalisaKebutuhan          Float?                  @default(0) @map("hasil_analisa_kebutuhan")
+  satuanHasilAnalisaKebutuhan    String?                 @map("satuan_hasil_analisa_kebutuhan")
+  stokHarian                      Float?                  @default(0) @map("stok_harian")
+  terpasang                       Float?                  @default(0) @map("terpasang")
+  totalSisaStokHariIni           Float?                  @default(0) @map("total_sisa_stok_hari_ini")
+  createdAt                       DateTime                @default(now()) @map("created_at")
+  updatedAt                       DateTime                @updatedAt @map("updated_at")
+  subActivity                     SubActivity             @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+  kebutuhan                       Kebutuhan               @relation(fields: [kebutuhanId], references: [id], onDelete: Cascade)
+  resourceFlowSchedules          ResourceFlowSchedule[]
+
+  @@unique([subActivityId, kebutuhanId])
+  @@map("analisa_kebutuhan")
+}
+
+model ResourceFlowSchedule {
+  id               String           @id @default(cuid())
+  analisaKebutuhanId String         @map("analisa_kebutuhan_id")
+  tanggal          String           @map("tanggal")
+  rencana          Float?           @default(0) @map("rencana")
+  realisasi        Float?           @default(0) @map("realisasi")
+  file             Json?            @map("file")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  analisaKebutuhan AnalisaKebutuhan @relation(fields: [analisaKebutuhanId], references: [id], onDelete: Cascade)
+
+  @@unique([analisaKebutuhanId, tanggal])
+  @@map("resource_flow_schedules")
 }
 
 enum UserRole {

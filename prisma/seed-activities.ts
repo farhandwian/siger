@@ -11,49 +11,49 @@ const prisma = new PrismaClient()
  */
 function generateSCurveDistribution(totalWeeks: number, totalWeight: number): number[] {
   if (totalWeeks <= 0) return []
-  
+
   const weeklyPercentages: number[] = []
-  
+
   for (let week = 1; week <= totalWeeks; week++) {
     // Normalized position in project timeline (0 to 1)
     const progress = week / totalWeeks
-    
+
     // S-curve formula using logistic function
     // Starts slow (2-5%), peaks in middle (10-15%), ends slow (2-5%)
     const sCurveValue = 1 / (1 + Math.exp(-8 * (progress - 0.5))) // Slightly gentler curve
-    
+
     // Calculate incremental progress for this week
     const previousProgress = week === 1 ? 0 : (week - 1) / totalWeeks
     const previousSCurveValue = week === 1 ? 0 : 1 / (1 + Math.exp(-8 * (previousProgress - 0.5)))
-    
+
     const incrementalProgress = sCurveValue - previousSCurveValue
     const weeklyWeight = incrementalProgress * totalWeight
-    
+
     weeklyPercentages.push(weeklyWeight)
   }
-  
+
   // Normalize to ensure exact total weight (avoid floating point errors)
   const currentTotal = weeklyPercentages.reduce((sum, weight) => sum + weight, 0)
   const normalizationFactor = totalWeight / currentTotal
-  
+
   const normalizedWeights = weeklyPercentages.map(weight => weight * normalizationFactor)
-  
+
   // Final adjustment to ensure exact total
   const finalTotal = normalizedWeights.reduce((sum, weight) => sum + weight, 0)
   const finalAdjustment = totalWeight - finalTotal
-  
+
   // Add the final adjustment to the week with highest percentage (typically middle weeks)
   if (Math.abs(finalAdjustment) > 0.001) {
     const maxIndex = normalizedWeights.indexOf(Math.max(...normalizedWeights))
     normalizedWeights[maxIndex] += finalAdjustment
   }
-  
+
   return normalizedWeights.map(weight => Math.round(weight * 1000) / 1000) // 3 decimal precision
 }
 
 /**
  * Seeds activities and sub-activities with new schema structure
- * 
+ *
  * Key improvements:
  * 1. Total weight distribution: ALL sub-activities in a project sum to exactly 100%
  * 2. Schedule plan percentages correspond directly to sub-activity weights
@@ -278,11 +278,12 @@ async function seedActivities() {
       ],
     },
   ]
-  
+
   // Verify total weight = 100%
   // 5+4+5 + 7+5+5 + 6+4+6 + 8+6+3 + 7+5+3 + 5+4+3 + 3+2+4 = 14+17+16+17+15+12+9 = 100 ✅
-  const totalWeight = activitiesData.reduce((sum, activity) => 
-    sum + activity.subActivities.reduce((actSum, sub) => actSum + sub.weight, 0), 0
+  const totalWeight = activitiesData.reduce(
+    (sum, activity) => sum + activity.subActivities.reduce((actSum, sub) => actSum + sub.weight, 0),
+    0
   )
   if (totalWeight !== 100) {
     throw new Error(`Total sub-activity weights must equal 100%, got ${totalWeight}%`)
@@ -330,7 +331,7 @@ async function seedActivities() {
         const totalActivities = 7
         const projectDurationWeeks = 48 // Use 48 weeks to leave buffer at end
         const activitySpacing = Math.floor(projectDurationWeeks / totalActivities) // ~6-7 weeks between starts
-        
+
         const startWeek = Math.max(1, (activityData.order - 1) * activitySpacing + 1)
         const durationWeeks = Math.min(20, 52 - startWeek + 1) // 20 weeks duration per activity
         const endWeek = startWeek + durationWeeks - 1
@@ -348,7 +349,8 @@ async function seedActivities() {
             planPercentage = sCurveDistribution[workWeek - 1] || 0
 
             // Add realistic variance to actual progress for completed weeks
-            if (weekNumber <= 36) { // Up to current week (September 2025, week 36)
+            if (weekNumber <= 36) {
+              // Up to current week (September 2025, week 36)
               const variance = (Math.random() - 0.5) * 0.3 // ±0.15% variance
               actualPercentage = Math.max(0, planPercentage + variance)
             }
@@ -365,14 +367,17 @@ async function seedActivities() {
         // Verify and correct total to exactly match sub-activity weight
         const totalPlan = scheduleData.reduce((sum, data) => sum + data.planPercentage, 0)
         const weightDiff = subActivityData.weight - totalPlan
-        
+
         if (Math.abs(weightDiff) > 0.001) {
           // Distribute the difference across non-zero weeks to maintain S-curve shape
           const nonZeroWeeks = scheduleData.filter(data => data.planPercentage > 0)
           if (nonZeroWeeks.length > 0) {
             const adjustmentPerWeek = weightDiff / nonZeroWeeks.length
             nonZeroWeeks.forEach(data => {
-              data.planPercentage = Math.max(0, Math.round((data.planPercentage + adjustmentPerWeek) * 1000) / 1000)
+              data.planPercentage = Math.max(
+                0,
+                Math.round((data.planPercentage + adjustmentPerWeek) * 1000) / 1000
+              )
             })
           }
         }
@@ -409,10 +414,10 @@ async function createSampleDailyActivities() {
 
   // Get some users to assign daily activities (PPK and VENDOR users who do daily updates)
   const users = await prisma.user.findMany({
-    where: { 
+    where: {
       role: {
-        in: [UserRole.PPK, UserRole.VENDOR]
-      }
+        in: [UserRole.PPK, UserRole.VENDOR],
+      },
     },
     take: 3,
   })
@@ -519,12 +524,11 @@ async function main() {
 
 // Only run if this file is executed directly
 if (require.main === module) {
-  main()
-    .catch((e) => {
-      // eslint-disable-next-line no-console
-      console.error(e)
-      process.exit(1)
-    })
+  main().catch(e => {
+    // eslint-disable-next-line no-console
+    console.error(e)
+    process.exit(1)
+  })
 }
 
 export default seedActivities

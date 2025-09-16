@@ -1,0 +1,10 @@
+-pada tabel jadwal itu perlu ada tahun pada kolom waktunya
+-npm run dev -- --hostname 0.0.0.0 --port 3000 -> supaya expo go di hp bisa akses
+-npm run dev -- -H 0.0.0.0 -p 3000
+-npx tsx prisma/seed-auth-users.ts
+-npx tsx prisma/seed-analisa-kebutuhan.ts
+
+running migration
+npx prisma migrate reset --force
+npx prisma db push --force-reset
+npm run db:seed
