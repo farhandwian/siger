@@ -9,11 +9,8 @@ const withPWA = require('next-pwa')({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   serverExternalPackages: ['mapbox-gl'],
-  // Allow external access for mobile development
-  experimental: {
-    allowedOrigins: ['*'],
-  },
   // Allow access from any IP address
   async headers() {
     return [

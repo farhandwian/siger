@@ -13,6 +13,10 @@ async function cleanupDatabase() {
 
   // Delete records in correct order to avoid foreign key constraint issues
   // Delete child tables first
+  await prisma.resourceFlowSchedule.deleteMany({})
+  await prisma.analisaKebutuhan.deleteMany({})
+  await prisma.kebutuhan.deleteMany({})
+  await prisma.kategoriKebutuhan.deleteMany({})
   await prisma.dailyReport.deleteMany({})
   await prisma.schedule.deleteMany({})
   await prisma.subActivity.deleteMany({})
@@ -54,6 +58,16 @@ async function main() {
     execSync('tsx prisma/seed-activities.ts', { stdio: 'inherit' })
     console.log('✅ Activities and schedules seeded successfully\n')
 
+    // Run analisa kebutuhan seeder (resource requirements analysis)
+    console.log('🔧 Seeding analisa kebutuhan (resource requirements)...')
+    execSync('tsx prisma/seed-analisa-kebutuhan.ts', { stdio: 'inherit' })
+    console.log('✅ Analisa kebutuhan seeded successfully\n')
+
+    // Run resource flow schedules seeder (resource flow planning data)
+    console.log('📊 Seeding resource flow schedules...')
+    execSync('tsx prisma/seed-resource-flow.ts', { stdio: 'inherit' })
+    console.log('✅ Resource flow schedules seeded successfully\n')
+
     console.log('🎉 All seeding completed successfully!')
     console.log('📋 Summary:')
     console.log('   - Enhanced authentication system with 7 roles')
@@ -63,6 +77,8 @@ async function main() {
     console.log('   - PPK/VENDOR project assignments')
     console.log('   - 7 activity categories with sub-activities')
     console.log('   - Activity schedules and daily progress data')
+    console.log('   - Resource requirements analysis (Analisa Kebutuhan)')
+    console.log('   - Resource flow schedules for project tracking')
   } catch (error) {
     console.error('❌ Seeding failed:', error)
     process.exit(1)

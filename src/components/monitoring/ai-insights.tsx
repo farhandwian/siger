@@ -3,7 +3,7 @@
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useMonitoringData } from '@/hooks/use-monitoring-data'
-import { Sparkles, RefreshCw, Clock, TrendingUp, AlertTriangle } from 'lucide-react'
+import { Sparkles, RefreshCw, TrendingUp, AlertTriangle } from 'lucide-react'
 
 interface AIInsight {
   id: string

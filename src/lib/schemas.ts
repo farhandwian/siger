@@ -4,6 +4,9 @@ import { UserRole } from '@prisma/client'
 // Re-export schedule schemas
 export * from './schemas/schedule'
 
+// Re-export addendum schemas
+export * from './schemas/addendum'
+
 // Legacy schema aliases for backward compatibility
 export {
   ScheduleSchema as SchedulePlanSchema,

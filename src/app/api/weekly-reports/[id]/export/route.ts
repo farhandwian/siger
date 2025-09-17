@@ -32,7 +32,6 @@ export async function GET(
         activities: {
           orderBy: [
             { displayOrder: 'asc' },
-            { no: 'asc' },
             { createdAt: 'asc' },
           ],
         },
@@ -173,15 +172,15 @@ export async function GET(
     
     // Group activities by parent for proper merging
     type WeeklyReportActivityType = typeof weeklyReport.activities[0]
-    const mainActivities = weeklyReport.activities.filter((a: WeeklyReportActivityType) => a.no > 0)
-    const subActivities = weeklyReport.activities.filter((a: WeeklyReportActivityType) => a.no === 0)
+    const mainActivities = weeklyReport.activities.filter((a: WeeklyReportActivityType) => a.displayOrder > 0)
+    const subActivities = weeklyReport.activities.filter((a: WeeklyReportActivityType) => a.displayOrder === 0)
     
     // Process activities in order
     for (const mainActivity of mainActivities) {
       // Main activity row (section header)
       const mainRow = worksheet.getRow(currentRow)
-      mainRow.getCell(1).value = mainActivity.no
-      mainRow.getCell(2).value = mainActivity.uraian
+      mainRow.getCell(1).value = mainActivity.displayOrder
+      mainRow.getCell(2).value = mainActivity.name
       mainRow.getCell(3).value = ''
       mainRow.getCell(4).value = ''
       mainRow.getCell(5).value = ''
@@ -224,10 +223,10 @@ export async function GET(
         
         // Fill merged cells
         subRow1.getCell(1).value = 'SUB'
-        subRow1.getCell(2).value = subActivity.uraian
+        subRow1.getCell(2).value = subActivity.name
         subRow1.getCell(3).value = subActivity.sat || ''
         subRow1.getCell(4).value = subActivity.volume || ''
-        subRow1.getCell(5).value = subActivity.bobot ? subActivity.bobot.toFixed(3) : ''
+        subRow1.getCell(5).value = subActivity.weight ? subActivity.weight.toFixed(3) : ''
         
         // First row - KEMAJUAN PEKERJAAN
         subRow1.getCell(6).value = subActivity.realisasiMinggulalu_volume || 0

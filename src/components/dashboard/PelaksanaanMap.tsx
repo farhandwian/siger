@@ -5,7 +5,7 @@ import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { MapPin, Loader2, Eye, EyeOff, Triangle } from 'lucide-react'
+import { Eye, EyeOff, Triangle } from 'lucide-react'
 
 // Constants for map configuration
 const GOOGLE_MAPS_OPTIONS = {

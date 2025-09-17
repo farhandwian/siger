@@ -365,6 +365,13 @@
 - Expose sensitive data in API responses without proper authorization
 - Return detailed error messages that could reveal system information
 
+
+## 19) Additional
+-please create clear comment on the code so i can understand what each part does
+mapping:
+-on the ui proyek but on the db is project
+- on the ui pekerjaan but on the db is activity
+- on the ui kegiatan but on the db is sub_activity
 **Code Quality Standards:**
 - Write clean, composable, and strongly-typed TypeScript code
 - Prefer composition over inheritance for component architecture

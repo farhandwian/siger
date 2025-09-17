@@ -6,6 +6,7 @@ import { Button } from '../ui/button'
 import { ProgressBar } from '../ui/progress-bar'
 import { useRouter } from 'next/navigation'
 import { useProjects } from '@/hooks/useProjectQueries'
+import { useUpdateProjectStatus } from '@/hooks/useProjectQueries'
 import {
   MapPinIcon,
   CurrencyDollarIcon,
@@ -23,6 +24,7 @@ interface ProjectData {
   progress: number
   deviation: number
   target: number
+  projectStatus?: 'DRAFT' | 'KONTRAK' | 'DRAFT_ADDENDUM'
 }
 
 interface ProjectCardProps {
@@ -62,12 +64,75 @@ const StatusBadge: React.FC<{ status: ProjectData['status'] }> = ({ status }) =>
   )
 }
 
+const ProjectStatusBadge: React.FC<{ projectStatus: ProjectData['projectStatus'] }> = ({ projectStatus }) => {
+  if (!projectStatus) return null
+
+  const statusConfig = {
+    'DRAFT': {
+      label: 'Draft',
+      color: 'bg-yellow-100 text-yellow-800',
+    },
+    'KONTRAK': {
+      label: 'Kontrak',
+      color: 'bg-green-100 text-green-800',
+    },
+    'DRAFT_ADDENDUM': {
+      label: 'Draft Addendum',
+      color: 'bg-blue-100 text-blue-800',
+    },
+  }
+
+  const config = statusConfig[projectStatus]
+
+  return (
+    <span className={cn('inline-flex items-center rounded-full px-2 py-1 text-xs font-medium', config.color)}>
+      {config.label}
+    </span>
+  )
+}
+
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
   const router = useRouter()
+  const updateStatusMutation = useUpdateProjectStatus()
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
+  const [pendingAction, setPendingAction] = React.useState<'FINALISASI' | 'ADDENDUM' | null>(null)
 
   const handleDetailClick = () => {
     router.push(`/monitoring-evaluasi/project/${project.id}`)
   }
+
+  const handleFinalisasi = () => {
+    setPendingAction('FINALISASI')
+    setShowConfirmDialog(true)
+  }
+
+  const handleBuatAddendum = () => {
+    setPendingAction('ADDENDUM')
+    setShowConfirmDialog(true)
+  }
+
+  const handleConfirmAction = async () => {
+    if (!pendingAction) return
+
+    try {
+      const newStatus = pendingAction === 'FINALISASI' ? 'KONTRAK' : 'DRAFT_ADDENDUM'
+      await updateStatusMutation.mutateAsync({
+        projectId: project.id,
+        status: newStatus,
+      })
+    } catch (error) {
+      // Error is handled by the mutation
+    } finally {
+      setShowConfirmDialog(false)
+      setPendingAction(null)
+    }
+  }
+
+  const handleCancelAction = () => {
+    setShowConfirmDialog(false)
+    setPendingAction(null)
+  }
+
   return (
     <Card className={cn('relative border border-gray-200 shadow-sm', className)}>
       <CardContent className="p-2 lg:p-3 xl:p-4">
@@ -89,7 +154,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
                 </div>
               </div>
             </div>
-            <StatusBadge status={project.status} />
+            <div className="flex items-center gap-2">
+              <StatusBadge status={project.status} />
+              <ProjectStatusBadge projectStatus={project.projectStatus} />
+            </div>
           </div>
 
           {/* Progress Section */}
@@ -115,8 +183,28 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
             />
           </div>
 
-          {/* Detail Button */}
-          <div className="flex flex-shrink-0 justify-end lg:block">
+          {/* Action Buttons */}
+          <div className="flex flex-shrink-0 flex-col gap-2 lg:flex-row lg:items-center">
+            {project.projectStatus === 'DRAFT' && (
+              <Button
+                size="sm"
+                onClick={handleFinalisasi}
+                disabled={updateStatusMutation.isPending}
+                className="bg-green-500 px-2 text-[9px] text-white hover:bg-green-600 disabled:opacity-50 lg:px-2.5 lg:text-[10px] xl:px-3 xl:text-xs"
+              >
+                {updateStatusMutation.isPending ? '...' : 'Finalisasi'}
+              </Button>
+            )}
+            {project.projectStatus === 'KONTRAK' && (
+              <Button
+                size="sm"
+                onClick={handleBuatAddendum}
+                disabled={updateStatusMutation.isPending}
+                className="bg-blue-500 px-2 text-[9px] text-white hover:bg-blue-600 disabled:opacity-50 lg:px-2.5 lg:text-[10px] xl:px-3 xl:text-xs"
+              >
+                {updateStatusMutation.isPending ? '...' : 'Buat Addendum'}
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={handleDetailClick}
@@ -126,6 +214,41 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, className }) => {
             </Button>
           </div>
         </div>
+
+        {/* Confirmation Dialog */}
+        {showConfirmDialog && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-black bg-opacity-50">
+            <div className="m-4 rounded-lg bg-white p-4 shadow-lg">
+              <h3 className="text-sm font-medium text-gray-900">
+                Konfirmasi {pendingAction === 'FINALISASI' ? 'Finalisasi' : 'Buat Addendum'}
+              </h3>
+              <p className="mt-2 text-xs text-gray-600">
+                {pendingAction === 'FINALISASI'
+                  ? 'Apakah Anda yakin ingin memfinalisasi proyek ini? Status akan berubah menjadi KONTRAK dan tidak dapat diubah kembali.'
+                  : 'Apakah Anda yakin ingin membuat addendum untuk proyek ini? Status akan berubah menjadi DRAFT_ADDENDUM.'}
+              </p>
+              <div className="mt-4 flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleConfirmAction}
+                  disabled={updateStatusMutation.isPending}
+                  className="bg-green-500 text-xs text-white hover:bg-green-600"
+                >
+                  {updateStatusMutation.isPending ? 'Memproses...' : 'Ya'}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleCancelAction}
+                  disabled={updateStatusMutation.isPending}
+                  variant="outline"
+                  className="text-xs"
+                >
+                  Batal
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Bottom accent border */}
         <div className="absolute bottom-0 left-1/2 h-1.5 w-[calc(100%-12px)] -translate-x-1/2 transform bg-yellow-400 lg:w-[calc(100%-24px)] xl:w-[calc(100%-32px)]" />

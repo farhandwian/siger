@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 import { ProjectListQuerySchema } from '@/lib/schemas'
 import { z } from 'zod'
 import { UserRole } from '@/lib/auth'
+import { calculateWeeksBetweenDates } from '@/utils/dateUtils'
 
 // Force Node.js runtime for this API route to support bcryptjs and jsonwebtoken
 export const runtime = 'nodejs'
@@ -162,6 +163,7 @@ export async function GET(request: NextRequest) {
           fisikTarget: true,
           jenisPengadaan: true,
           lokasiProyek: true,
+          status: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -188,6 +190,7 @@ export async function GET(request: NextRequest) {
         progress: project.fisikProgress || 0,
         deviation: project.fisikDeviasi || 0,
         target: project.fisikTarget || 100,
+        projectStatus: project.status || 'DRAFT', // Add the actual project status from schema
       }
     })
 
@@ -245,6 +248,11 @@ export async function POST(request: NextRequest) {
     // Validate the request body
     const validatedData = CreateProjectSchema.parse(body)
 
+    // Calculate number of weeks based on SPMK and end contract dates
+    const numberOfWeeks = validatedData.tanggalSpmk && validatedData.akhirKontrak
+      ? calculateWeeksBetweenDates(validatedData.tanggalSpmk, validatedData.akhirKontrak)
+      : null;
+
     // Create new project in database
     const newProject = await prisma.project.create({
       data: {
@@ -261,6 +269,7 @@ export async function POST(request: NextRequest) {
         akhirKontrak: validatedData.akhirKontrak,
         pembayaranTerakhir: validatedData.pembayaranTerakhir,
         lokasiProyek: validatedData.lokasiProyek,
+        numberOfWeeks: numberOfWeeks,
         // Initialize default progress values
         fisikProgress: 0,
         fisikDeviasi: 0,

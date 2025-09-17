@@ -35,7 +35,7 @@ export default function UnauthorizedPage() {
               <Shield className="h-4 w-4" />
               <AlertTitle>Insufficient Permissions</AlertTitle>
               <AlertDescription>
-                You don't have permission to access this resource. Please contact your administrator
+                You don&apos;t have permission to access this resource. Please contact your administrator
                 if you believe this is an error.
               </AlertDescription>
             </Alert>

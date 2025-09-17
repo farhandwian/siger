@@ -4,11 +4,15 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { AddActivityModal } from '@/components/activity/add-activity-modal'
 import { EditActivityModal } from '@/components/activity/edit-activity-modal'
+import { CopyPlanToActionPlanModal } from '@/components/schedule/copy-plan-to-action-plan-modal'
+import { CreateAddendumModal } from '@/components/addendum/create-addendum-modal'
 import { Input } from '@/components/ui/input'
-import { Plus } from 'lucide-react'
+import { Plus, Copy } from 'lucide-react'
 import { generateSequentialWeeks } from '@/utils/dateUtils'
 import type { Activity, Schedule } from '@/lib/schemas'
 import { ScheduleValueType, useUpdateScheduleValue } from '@/hooks/useActivityQueries'
+import { useProjectStatus, useCanEditSchedulePlan, useUpdateProjectStatus } from '@/hooks/useAddendum'
+import { ProjectStatusBadge } from '@/components/addendum/project-status-badge'
 
 
 /**
@@ -35,8 +39,6 @@ interface UnifiedScheduleTableProps {
   ) => number
 
   // Optional customization
-  showAddButton?: boolean
-  showTitle?: boolean
   weekCount?: number // Fallback week count if project.numberOfWeeks is not available
 }
 
@@ -48,6 +50,8 @@ const PlanCell = memo(function PlanCell({
   editValue,
   isLastWeekOfMonth,
   isActionPlanTable,
+  weekNumber,
+  projectId,
   onEdit,
   onSave,
   onCancel,
@@ -59,6 +63,8 @@ const PlanCell = memo(function PlanCell({
   editValue: string;
   isLastWeekOfMonth: boolean;
   isActionPlanTable: boolean;
+  weekNumber: number;
+  projectId: string;
   onEdit: (cellId: string, currentValue: number | null) => void;
   onSave: (scheduleId: string, type: 'plan' | 'realization' | 'actionPlan') => void;
   onCancel: () => void;
@@ -67,11 +73,18 @@ const PlanCell = memo(function PlanCell({
 
   const value = isActionPlanTable ? schedule?.actionPlan ?? null : schedule?.plan ?? null;
   const mode = isActionPlanTable ? 'actionPlan' : 'plan';
+  
+  // Check if this plan cell can be edited based on project status and week
+  const { canEdit: canEditThisWeek } = useCanEditSchedulePlan(projectId, weekNumber);
+  
+  // For action plan, always allow editing (as per requirements)
+  const canEditCell = isActionPlanTable || canEditThisWeek;
+  
   return (
     <td
       className={`progress-cell-plan ${value && value > 0 ? 'has-value' : ''} ${
         isLastWeekOfMonth ? 'month-separator' : ''
-      }`}
+      } ${!canEditCell ? 'cursor-not-allowed opacity-60' : ''}`}
     >
       {isEditing ? (
         <Input
@@ -96,8 +109,13 @@ const PlanCell = memo(function PlanCell({
         />
       ) : (
         <div
-          className="progress-value-display"
-          onClick={() => onEdit(cellId, value)}
+          className={`progress-value-display ${canEditCell ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'}`}
+          onClick={() => {
+            if (canEditCell) {
+              onEdit(cellId, value)
+            }
+          }}
+          title={canEditCell ? 'Klik untuk mengedit' : 'Tidak dapat diedit berdasarkan status proyek'}
         >
           {value !== null && value !== undefined
             ? value === 0
@@ -185,19 +203,25 @@ export function UnifiedScheduleTable({
   isLoading = false,
   isActionPlanTable = false, // New prop to indicate if this is an action plan table
   getCalculatedValueForWeek,
-  showAddButton = true,
-  showTitle = true,
 }: UnifiedScheduleTableProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
   const [editingCell, setEditingCell] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [isCopyModalOpen, setIsCopyModalOpen] = useState(false)
+  const [isAddendumModalOpen, setIsAddendumModalOpen] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const customScrollbarRef = useRef<HTMLDivElement>(null)
 
   // Use the update schedule value hook
   const updateScheduleValue = useUpdateScheduleValue(projectId)
+
+  // Fetch project status for status display
+  const { data: statusData } = useProjectStatus(projectId)
+
+  // Hook for updating project status
+  const updateProjectStatus = useUpdateProjectStatus()
 
   // Internal save function using the new single-value API
   const saveScheduleValue = async (
@@ -431,6 +455,17 @@ export function UnifiedScheduleTable({
     setIsEditModalOpen(true)
   }
 
+  const handleFinalisasi = async () => {
+    try {
+      await updateProjectStatus.mutateAsync({
+        projectId,
+        data: { status: 'KONTRAK' }
+      })
+    } catch (error) {
+      // Error handling will be done by the mutation
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="animate-pulse">
@@ -447,18 +482,15 @@ export function UnifiedScheduleTable({
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
       {/* Header with Add Button and Legend */}
-      {(showAddButton || showTitle) && (
+      {(
         <div className="border-b border-gray-200 px-2 py-2 lg:px-3 lg:py-3 xl:px-4 xl:py-4">
           <div className="flex items-center justify-between">
-            <div>
-              {showTitle && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
-            </div>
             {/* Move Add button to the left using Tailwind order-first so it appears before the title */}
             <div
               className="order-first flex items-center gap-4"
-              aria-hidden={!showAddButton}
+              aria-hidden={false}
             >
-              {showAddButton && (
+              {statusData?.success && statusData.data.status !== 'KONTRAK' && (
               <Button
                 aria-label="Tambah Kegiatan"
                 title="Tambah Kegiatan"
@@ -468,6 +500,63 @@ export function UnifiedScheduleTable({
                 <Plus className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
                 Tambah Kegiatan
               </Button>
+              )}
+              {isActionPlanTable && (
+              <Button
+                aria-label="Salin Rencana ke Rencana Aksi"
+                title="Salin Rencana ke Rencana Aksi"
+                onClick={() => setIsCopyModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border-[#3b82f6] bg-[#3b82f6] px-2 py-1.5 text-[9px] font-medium text-white hover:bg-[#2563eb] lg:gap-2 lg:px-3 lg:py-2 lg:text-[10px] xl:text-xs"
+              >
+                <Copy className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
+                Salin Rencana
+              </Button>
+              )}
+              {/* Show FINALISASI button when status is DRAFT or DRAFT_ADDENDUM */}
+              {!isActionPlanTable && statusData?.success && (statusData.data.status === 'DRAFT' || statusData.data.status === 'DRAFT_ADDENDUM') && (
+              <Button
+                aria-label="Finalisasi Proyek"
+                title="Finalisasi Proyek"
+                onClick={() => {
+                  if (window.confirm('Apakah Anda yakin ingin memfinalisasi proyek ini? Tindakan ini tidak dapat dibatalkan.')) {
+                    handleFinalisasi()
+                  }
+                }}
+                disabled={updateProjectStatus.isPending}
+                className="flex items-center gap-1.5 rounded-lg border-[#10b981] bg-[#10b981] px-2 py-1.5 text-[9px] font-medium text-white hover:bg-[#059669] disabled:opacity-50 lg:gap-2 lg:px-3 lg:py-2 lg:text-[10px] xl:text-xs"
+              >
+                <svg className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Finalisasi
+              </Button>
+              )}
+              {/* Hide Buat Addendum button when status is DRAFT or DRAFT_ADDENDUM */}
+              {!isActionPlanTable && statusData?.success && statusData.data.status === 'KONTRAK' && (
+              <Button
+                aria-label="Buat Addendum"
+                title="Buat Addendum"
+                onClick={() => setIsAddendumModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border-[#364878] bg-[#364878] px-2 py-1.5 text-[9px] font-medium text-[#ffc928] hover:bg-[#273c72] lg:gap-2 lg:px-3 lg:py-2 lg:text-[10px] xl:text-xs"
+              >
+                <Plus className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
+                Buat Addendum
+              </Button>
+              )}
+              {/* Status Information */}
+              {statusData?.success && (
+                <div className="flex items-center gap-2 ml-2">
+                  <ProjectStatusBadge status={statusData.data.status} />
+                  {statusData.data.canEditPlan ? (
+                    <span className="text-[9px] text-green-600 font-medium lg:text-[10px] xl:text-xs">
+                      Dapat Diedit
+                    </span>
+                  ) : (
+                    <span className="text-[9px] text-red-600 font-medium lg:text-[10px] xl:text-xs">
+                      Terkunci
+                    </span>
+                  )}
+                </div>
               )}
             </div>
 
@@ -636,6 +725,8 @@ export function UnifiedScheduleTable({
                               isEditing={isEditing}
                               editValue={editValue}
                               isLastWeekOfMonth={week.isLastWeekOfMonth}
+                              weekNumber={week.weekNumber}
+                              projectId={projectId}
                               onEdit={handleCellEdit}
                               onSave={handleCellSave}
                               onCancel={handleCellCancel}
@@ -868,6 +959,24 @@ export function UnifiedScheduleTable({
         onClose={() => setIsEditModalOpen(false)}
         activity={selectedActivity}
         projectId={projectId}
+      />
+      
+      <CopyPlanToActionPlanModal
+        isOpen={isCopyModalOpen}
+        onClose={() => setIsCopyModalOpen(false)}
+        projectId={projectId}
+        onConfirm={() => {
+          // Refresh the data after copying
+          window.location.reload();
+        }}
+      />
+
+      {/* Create Addendum Modal */}
+      <CreateAddendumModal
+        isOpen={isAddendumModalOpen}
+        onClose={() => setIsAddendumModalOpen(false)}
+        projectId={projectId}
+        projectTitle={title}
       />
     </div>
   )

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { X, Save, Trash2, Plus } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
-import { useCreateActivity, useCreateSubActivity, activityKeys } from '@/hooks/useActivityQueries'
+import { useCreateActivity, activityKeys } from '@/hooks/useActivityQueries'
 import { useQueryClient } from '@tanstack/react-query'
 
 interface SubActivityForm {

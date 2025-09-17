@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    let stats = {
+    const stats = {
       activitiesCreated: 0,
       subActivitiesCreated: 0,
       schedulesCreated: 0,
@@ -96,11 +96,10 @@ export async function POST(request: NextRequest) {
         include: { subActivities: true },
       })
 
-      const activityIds = projectActivities.map(a => a.id)
       const subActivityIds = projectActivities.flatMap(a => a.subActivities?.map(sa => sa.id) || [])
 
       // Delete existing action plan schedules
-      await prisma.actionPlan.deleteMany({
+      await prisma.schedule.deleteMany({
         where: {
           subActivityId: { in: subActivityIds },
         },
@@ -212,43 +211,35 @@ export async function POST(request: NextRequest) {
         for (const scheduleData of activityData.scheduleData) {
           try {
             // Use upsert logic for action plan schedules
-            const whereClause = targetSubActivityId
-              ? {
-                  subActivityId: targetSubActivityId,
-                  month: scheduleData.month,
-                  year: scheduleData.year,
-                  week: scheduleData.week,
-                }
-              : {
-                  activityId: targetActivityId,
-                  month: scheduleData.month,
-                  year: scheduleData.year,
-                  week: scheduleData.week,
-                }
+            // Calculate weekNumber from month/year/week (simplified: assume week is sequential)
+            const weekNumber = (scheduleData.year * 52) + (scheduleData.month * 4) + scheduleData.week
 
-            const existingSchedule = await tx.actionPlan.findFirst({
+            const whereClause = {
+              subActivityId: targetSubActivityId!,
+              weekNumber: weekNumber,
+            }
+
+            const existingSchedule = await tx.schedule.findFirst({
               where: whereClause,
             })
 
             if (existingSchedule) {
               // Update existing action plan schedule
-              await tx.actionPlan.update({
+              await tx.schedule.update({
                 where: { id: existingSchedule.id },
                 data: {
-                  percentage: scheduleData.planPercentage,
+                  actionPlan: scheduleData.planPercentage,
                 },
               })
               stats.schedulesUpdated++
             } else {
               // Create new action plan schedule
               if (targetSubActivityId) {
-                await tx.actionPlan.create({
+                await tx.schedule.create({
                   data: {
                     subActivityId: targetSubActivityId,
-                    month: scheduleData.month,
-                    year: scheduleData.year,
-                    week: scheduleData.week,
-                    percentage: scheduleData.planPercentage,
+                    weekNumber: weekNumber,
+                    actionPlan: scheduleData.planPercentage,
                   },
                 })
                 stats.schedulesCreated++

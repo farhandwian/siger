@@ -11,7 +11,6 @@ import {
   DocumentDuplicateIcon,
   ChatBubbleLeftEllipsisIcon,
   DocumentTextIcon,
-  SigerLogo,
 } from '../ui/icons'
 import { Users, Shield } from 'lucide-react'
 import { UserRole } from '@prisma/client'

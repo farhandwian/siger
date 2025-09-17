@@ -3,7 +3,6 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '../ui/button'
-import { useAuth } from '@/hooks/useAuth'
 import { AuthStatus } from './user-nav'
 import { Bell, Search } from 'lucide-react'
 

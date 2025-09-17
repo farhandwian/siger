@@ -1,0 +1,28 @@
+.backgroundLayer {
+  background-image: url('/background-signin.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.staticLayer {
+  background-image: url('/background-signin.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+}
+
+.animatedLayer {
+  background-image: url('/background-signin.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.pulsingLayer {
+  background-image: url('/background-signin.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

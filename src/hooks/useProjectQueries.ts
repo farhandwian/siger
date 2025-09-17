@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient, type ProjectListResponse, type ProjectDetailResponse } from '@/lib/api-client'
+import { apiClient } from '@/lib/api-client'
 import { z } from 'zod'
 import { ProjectListQuerySchema, UpdateProjectFieldSchema } from '@/lib/schemas'
 
@@ -158,25 +158,33 @@ export function useProjectDetailLoadingState(id: string) {
   }
 }
 
-// Error boundary helper
-export function useProjectError() {
-  return {
-    isValidationError: (error: Error) => {
-      return (
-        error.message.includes('validation') ||
-        error.message.includes('Invalid') ||
-        error.message.includes('required')
-      )
+// Custom hook for updating project status
+export function useUpdateProjectStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ projectId, status }: { projectId: string; status: 'DRAFT' | 'KONTRAK' | 'DRAFT_ADDENDUM' }) => {
+      const response = await fetch(`/api/projects/${projectId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update project status')
+      }
+
+      return response.json()
     },
-    isNetworkError: (error: Error) => {
-      return (
-        error.message.includes('fetch') ||
-        error.message.includes('network') ||
-        error.message.includes('connection')
-      )
+    onSuccess: (data, variables) => {
+      // Invalidate and refetch project list
+      queryClient.invalidateQueries({ queryKey: projectKeys.lists() })
+      
+      // Invalidate specific project detail if it's cached
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(variables.projectId) })
     },
-    isNotFoundError: (error: Error) => {
-      return error.message.includes('not found') || error.message.includes('404')
-    },
-  }
+  })
 }

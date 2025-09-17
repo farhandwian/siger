@@ -24,6 +24,8 @@ import { formatDateForInput } from '@/utils/dateUtils'
 import { Upload } from 'lucide-react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import AnalisaKebutuhanTable from '@/components/analisa-kebutuhan/AnalisaKebutuhanTable'
+import { ResourceFlowTable } from '@/components/resource-flow/resource-flow-table'
 
 interface TabProps {
   label: string
@@ -261,6 +263,7 @@ export default function ProjectDetailPage() {
     'Jadwal',
     'Action Plan',
     'Analisa Kebutuhan',
+    'Resource Flow',
   ]
 
   // Use data from API or fallback to empty arrays
@@ -710,7 +713,16 @@ export default function ProjectDetailPage() {
 
               {activeTab === 'Analisa Kebutuhan' && (
                 <div className="space-y-6">
-                  {/* <AnalisaKebutuhanNew projectId={projectId} /> */}
+                  <AnalisaKebutuhanTable projectId={projectId} />
+                </div>
+              )}
+
+              {/* Peta Pekerjaan Tab Content */}
+              {activeTab === 'Resource Flow' && (
+                <div className="space-y-6">
+                  <div className="relative">
+                    <ResourceFlowTable projectId={projectId} />
+                  </div>
                 </div>
               )}
 
@@ -719,6 +731,18 @@ export default function ProjectDetailPage() {
                 activeTab !== 'Jadwal' &&
                 activeTab !== 'Action Plan' &&
                 activeTab !== 'Peta Pekerjaan' && (
+                  <div className="py-12 text-center">
+                    <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
+                    <p className="text-gray-600">Konten untuk tab ini sedang dalam pengembangan.</p>
+                  </div>
+                ) &&
+                activeTab !== 'Analisa Kebutuhan' && (
+                  <div className="py-12 text-center">
+                    <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
+                    <p className="text-gray-600">Konten untuk tab ini sedang dalam pengembangan.</p>
+                  </div>
+                ) &&
+                activeTab !== 'Resource Flow' && (
                   <div className="py-12 text-center">
                     <h3 className="mb-2 text-lg font-medium text-gray-900">{activeTab}</h3>
                     <p className="text-gray-600">Konten untuk tab ini sedang dalam pengembangan.</p>

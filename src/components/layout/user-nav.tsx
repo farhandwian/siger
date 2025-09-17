@@ -128,7 +128,8 @@ export function UserNav() {
  * Shows loading state while authentication is being determined
  */
 export function AuthStatus() {
-  const { isLoading, isAuthenticated } = useAuth()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { isLoading, isAuthenticated: _isAuthenticated } = useAuth()
 
   if (isLoading) {
     return <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200" />

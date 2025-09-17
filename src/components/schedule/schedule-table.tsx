@@ -30,8 +30,6 @@ export function ScheduleTable({
         isLoading={isLoading}
         isActionPlanTable={false}
         getCalculatedValueForWeek={getCalculatedValueForWeek}
-        showAddButton={true}
-        showTitle={false}
       />
     </div>
   )

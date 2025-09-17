@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import {
-  CreateActionPlanSchema,
-} from '@/lib/schemas/action-plan-schedule'
+  CreateScheduleSchema,
+} from '@/lib/schemas/schedule'
 
 // Query parameters schema for filtering action plan schedules
 const QuerySchema = z.object({
@@ -45,17 +45,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const actionPlans = await prisma.actionPlan.findMany({
+    const actionPlans = await prisma.schedule.findMany({
       where,
       select: {
         id: true,
         subActivityId: true,
         weekNumber: true,
-        percentage: true,
+        actionPlan: true,
         createdAt: true,
         updatedAt: true
       },
-      orderBy: [{ year: 'asc' }, { month: 'asc' }, { week: 'asc' }],
+      orderBy: [{ weekNumber: 'asc' }],
     })
 
     return NextResponse.json({
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const data = CreateActionPlanSchema.parse(body)
+    const data = CreateScheduleSchema.parse(body)
 
     // Validate that subActivityId is provided (required field in new schema)
     if (!data.subActivityId) {
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if a schedule already exists for this subactivity and week
-    const existingSchedule = await prisma.actionPlan.findFirst({
+    const existingSchedule = await prisma.schedule.findFirst({
       where: {
         subActivityId: data.subActivityId,
         weekNumber: data.weekNumber,
@@ -104,17 +104,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const actionPlan = await prisma.actionPlan.create({
+    const actionPlan = await prisma.schedule.create({
       data: {
         subActivityId: data.subActivityId,
         weekNumber: data.weekNumber,
-        percentage: data.percentage || 0,
+        actionPlan: data.actionPlan || 0,
       },
       select: {
         id: true,
         subActivityId: true,
         weekNumber: true,
-        percentage: true,
+        actionPlan: true,
         createdAt: true,
         updatedAt: true
       }

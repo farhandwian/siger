@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import { QueryProvider } from '@/providers/query-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import ChunkErrorHandler from '@/components/client/chunk-error-handler'
-import { Toaster } from 'sonner'
+import { ToastProvider } from '@/components/ui/toast'
 import '@/styles/globals.css'
 import '@/styles/scrollbar.css'
 import '@/styles/sidebar-force-hide.css'
@@ -18,12 +18,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id">
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning={true}>
         <AuthProvider>
           <QueryProvider>
-            <ChunkErrorHandler />
-            {children}
-            <Toaster position="top-right" />
+            <ToastProvider>
+              <ChunkErrorHandler />
+              {children}
+            </ToastProvider>
           </QueryProvider>
         </AuthProvider>
       </body>
