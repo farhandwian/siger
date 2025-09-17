@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -46,6 +47,7 @@ model Project {
   bangunanDeviasi    Float?              @default(0) @map("bangunan_deviasi")
   bangunanProgress   Float?              @default(0) @map("bangunan_progress")
   bangunanTarget     Float?              @default(0) @map("bangunan_target")
+  status             ProjectStatus       @default(DRAFT) @map("status")
   createdAt          DateTime            @default(now()) @map("created_at")
   fisikDeviasi       Float?              @default(0) @map("fisik_deviasi")
   fisikProgress      Float?              @default(0) @map("fisik_progress")
@@ -86,11 +88,11 @@ model Project {
 
 model ProjectAuditLog {
   id        String   @id @default(cuid())
-  changedAt DateTime @default(now()) @map("changed_at")
-  fieldName String   @map("field_name")
-  newValue  String?  @map("new_value")
-  oldValue  String?  @map("old_value")
   projectId String   @map("project_id")
+  fieldName String   @map("field_name")
+  oldValue  String?  @map("old_value")
+  newValue  String?  @map("new_value")
+  changedAt DateTime @default(now()) @map("changed_at")
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("project_audit_logs")
@@ -99,22 +101,20 @@ model ProjectAuditLog {
 model Addendums {
   id                 String    @id @default(cuid())
   projectId          String    @map("project_id")
-  addendumNumber     String    @map("addendum_number")
+  addendumNumber     Int       @map("addendum_number")
   title              String    @map("title")
   description        String?   @map("description")
-  oldValue           String?   @map("old_value")
-  newValue           String?   @map("new_value")
-  changeType         String    @map("change_type") // TIME_EXTENSION, VALUE_CHANGE, SCOPE_CHANGE, etc.
-  effectiveDate      DateTime? @map("effective_date")
-  documentPath       String?   @map("document_path")
+  effectiveDate      DateTime  @map("effective_date")
+  weekNumber         Int       @map("week_number") // Week from which changes can be made
+  modifiedBy         String    @map("modified_by") // User ID who created the addendum
   approvedBy         String?   @map("approved_by")
   approvedAt         DateTime? @map("approved_at")
-  isActive           Boolean   @default(true) @map("is_active")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
   project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@unique([projectId, addendumNumber])
   @@map("addendums")
 }
 
@@ -145,6 +145,7 @@ model SubActivity {
   schedules           Schedule[]
   dailyReports        DailyReport[]
   weeklyReportActivities WeeklyReportActivity[] // For weekly report tracking
+  analisaKebutuhan  AnalisaKebutuhan[]
 
   activity            Activity             @relation(fields: [activityId], references: [id], onDelete: Cascade)
 
@@ -252,6 +253,7 @@ model ProjectAssignment {
 model DailyReport {
   id                      String      @id @default(cuid())
   subActivityId           String      @map("sub_activity_id")
+  userId                  String      @map("user_id")
   koordinat               Json?       @map("koordinat")
   catatanKegiatan         String?     @map("catatan_kegiatan")
   file                    Json?       @map("file")
@@ -259,7 +261,6 @@ model DailyReport {
   tanggalProgres          String      @map("tanggal_progres")
   createdAt               DateTime    @default(now()) @map("created_at")
   updatedAt               DateTime    @updatedAt @map("updated_at")
-  userId                  String      @map("user_id")
   
   subActivity             SubActivity @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
   user                    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -274,6 +275,64 @@ model Wilayah {
 
   @@index([nama])
   @@map("wilayah")
+}
+
+model KategoriKebutuhan {
+  id        String      @id @default(cuid())
+  nama      String      @unique @map("nama")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  kebutuhan Kebutuhan[]
+
+  @@map("kategori_kebutuhan")
+}
+
+model Kebutuhan {
+  id                   String              @id @default(cuid())
+  kategoriKebutuhanId  String              @map("kategori_kebutuhan_id")
+  nama                 String              @map("nama")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  kategoriKebutuhan    KategoriKebutuhan   @relation(fields: [kategoriKebutuhanId], references: [id], onDelete: Cascade)
+  analisaKebutuhan     AnalisaKebutuhan[]
+
+  @@map("kebutuhan")
+}
+
+model AnalisaKebutuhan {
+  id                              String                  @id @default(cuid())
+  subActivityId                   String                  @map("sub_activity_id")
+  kebutuhanId                     String                  @map("kebutuhan_id")
+  koefisien                       Float                   @map("koefisien")
+  hasil                           Float?                  @default(0) @map("hasil")
+  satuanHasil                     String?                 @map("satuan_hasil")
+  hasilAnalisaKebutuhan          Float?                  @default(0) @map("hasil_analisa_kebutuhan")
+  satuanHasilAnalisaKebutuhan    String?                 @map("satuan_hasil_analisa_kebutuhan")
+  stokHarian                      Float?                  @default(0) @map("stok_harian")
+  terpasang                       Float?                  @default(0) @map("terpasang")
+  totalSisaStokHariIni           Float?                  @default(0) @map("total_sisa_stok_hari_ini")
+  createdAt                       DateTime                @default(now()) @map("created_at")
+  updatedAt                       DateTime                @updatedAt @map("updated_at")
+  subActivity                     SubActivity             @relation(fields: [subActivityId], references: [id], onDelete: Cascade)
+  kebutuhan                       Kebutuhan               @relation(fields: [kebutuhanId], references: [id], onDelete: Cascade)
+  resourceFlowSchedules          ResourceFlowSchedule[]
+
+  @@unique([subActivityId, kebutuhanId])
+  @@map("analisa_kebutuhan")
+}
+
+model ResourceFlowSchedule {
+  id               String           @id @default(cuid())
+  analisaKebutuhanId String         @map("analisa_kebutuhan_id")
+  tanggal          String           @map("tanggal")
+  realisasi        Float?           @default(0) @map("realisasi")
+  file             Json?            @map("file")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  analisaKebutuhan AnalisaKebutuhan @relation(fields: [analisaKebutuhanId], references: [id], onDelete: Cascade)
+
+  @@unique([analisaKebutuhanId, tanggal])
+  @@map("resource_flow_schedules")
 }
 
 model WeeklyReport {
@@ -378,6 +437,11 @@ enum WeeklyActivityStatus {
   TERCAPAI
   TIDAK_TERCAPAI
   DALAM_PROGRESS
+}
+enum ProjectStatus {
+  DRAFT
+  KONTRAK
+  DRAFT_ADDENDUM
 }
 
 enum UserRole {
