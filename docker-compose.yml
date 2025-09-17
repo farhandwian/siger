@@ -4,13 +4,21 @@ services:
       context: .
       dockerfile: Dockerfile
     image: siger-dashboard:latest
-    ports:
-      - "3000:3000"
+      #ports:
+      #- "3000:3000"
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
+    networks:
+      - cloudflare
     env_file:
       - .env
     volumes:
       - ./uploads:/app/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
+
+networks:
+  cloudflare:
+    external: true
