@@ -51,8 +51,10 @@ function SectionSkeleton() {
 }
 
 export default function DashboardPage() {
-  const { isAuthenticated, isLoading } = useAuth()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { isAuthenticated: _isAuthenticated, isLoading } = useAuth()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_sidebarOpen, _setSidebarOpen] = useState(false)
 
   // Show loading state while checking authentication
   if (isLoading) {

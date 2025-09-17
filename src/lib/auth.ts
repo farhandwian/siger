@@ -57,6 +57,7 @@ declare module 'next-auth' {
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
+  trustHost: true,
   providers: [
     Credentials({
       name: 'credentials',

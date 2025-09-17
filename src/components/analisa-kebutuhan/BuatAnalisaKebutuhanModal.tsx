@@ -148,7 +148,7 @@ export function BuatAnalisaKebutuhanModal({
   })
 
   // Fetch existing analisa kebutuhan for selected sub-activity
-  const { data: existingAnalisaData, refetch: refetchExistingData } = useQuery<{
+  const { data: existingAnalisaData } = useQuery<{
     success: boolean
     data: Array<{
       id: string
@@ -265,7 +265,6 @@ export function BuatAnalisaKebutuhanModal({
   const {
     register,
     handleSubmit,
-    formState: { errors },
     control,
     watch,
     reset,
@@ -346,17 +345,6 @@ export function BuatAnalisaKebutuhanModal({
     .flatMap(a => a.subActivities)
     .find(sa => sa.id === selectedSubActivityId)
 
-  // Group kebutuhan by category
-  const kebutuhanByCategory = categories.reduce(
-    (acc, category) => {
-      acc[category.id] = {
-        name: category.nama,
-        items: kebutuhanItems.filter(item => item.kategoriKebutuhanId === category.id),
-      }
-      return acc
-    },
-    {} as Record<string, { name: string; items: CategoryItem[] }>
-  )
 
   // Calculate volume per hari
   const calculateVolumePerHari = () => {
@@ -396,20 +384,6 @@ export function BuatAnalisaKebutuhanModal({
     // Note: Form population is now handled by useEffect when existing data is fetched
   }
 
-  // Add new entry (for individual items within a category)
-  const addEntry = () => {
-    appendEntry({
-      kategoriKebutuhanId: '',
-      kebutuhanId: '',
-      koefisien: 0,
-      hasil: 0,
-      satuanHasil: '',
-      hasilAnalisaKebutuhan: 0,
-      satuanHasilAnalisaKebutuhan: '',
-      categoryName: '',
-      itemName: '',
-    })
-  }
 
   // Add new category (for adding a new category section)
   const addNewCategory = () => {
@@ -427,27 +401,7 @@ export function BuatAnalisaKebutuhanModal({
     })
   }
 
-  // Calculate hasil for entry
-  const calculateHasil = (koefisien: number) => {
-    const volumePerHari = calculateVolumePerHari()
-    return koefisien * volumePerHari
-  }
 
-  // Get unit for category
-  const getUnitForCategory = (categoryId: string) => {
-    const category = categories.find(cat => cat.id === categoryId)
-    if (!category) return 'Unit/Hari'
-
-    const lowerName = category.nama.toLowerCase()
-    if (lowerName.includes('tenaga') || lowerName.includes('kerja')) {
-      return 'Orang/Hari'
-    } else if (lowerName.includes('bahan')) {
-      return 'm²/Hari'
-    } else if (lowerName.includes('alat')) {
-      return 'unit/Hari'
-    }
-    return 'Unit/Hari'
-  }
 
   // Get kebutuhan items for selected category
   const getKebutuhanForCategory = (categoryId: string) => {
@@ -622,10 +576,6 @@ export function BuatAnalisaKebutuhanModal({
                     return Object.entries(entriesByCategory).map(([groupKey, categoryEntries]) => {
                       // Extract actual categoryId from groupKey
                       const categoryId = groupKey.startsWith('unselected_') ? '' : groupKey
-                      const categoryName = categoryId
-                        ? categories.find(cat => cat.id === categoryId)?.nama ||
-                          'Kategori Tidak Diketahui'
-                        : 'Pilih Kategori'
 
                       return (
                         <Card key={groupKey} className="bg-gray-100">

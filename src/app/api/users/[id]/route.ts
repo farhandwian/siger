@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { UpdateUserSchema } from '@/lib/schemas'
 import { z } from 'zod'
-import { UserRole } from '@prisma/client'
 
 // GET /api/users/[id] - Get user by ID
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {

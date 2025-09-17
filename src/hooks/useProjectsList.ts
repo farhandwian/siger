@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ProjectsListResponseSchema, type ProjectProgressItem } from '@/lib/schemas/projects-list'
+import { ProjectsListResponseSchema } from '@/lib/schemas/projects-list'
 
 /**
  * Transformed project data for the component

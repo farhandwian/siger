@@ -3,8 +3,6 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import {
   UpdateAnalisaKebutuhanSchema,
-  AnalisaKebutuhanDetailResponseSchema,
-  ErrorResponseSchema,
 } from '@/lib/schemas/analisa-kebutuhan'
 
 /**
@@ -129,7 +127,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // Update the entry
-    const { id: _, subActivityId, kebutuhanId, ...updateData } = validatedData
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: _, subActivityId: _subActivityId, kebutuhanId: _kebutuhanId, ...updateData } = validatedData
     const updatedAnalisaKebutuhan = await prisma.analisaKebutuhan.update({
       where: { id },
       data: updateData,

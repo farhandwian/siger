@@ -137,6 +137,7 @@ export function ActionPlanCSVImportModal({
     return lines.map(line => parseCSVLine(line, delimiter))
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const parseMonthName = (monthName: string): number => {
     const monthMap: { [key: string]: number } = {
       JANUARI: 1,
@@ -172,6 +173,7 @@ export function ActionPlanCSVImportModal({
     return monthMap[monthName.toUpperCase()] || 1
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const parseDateRange = (dateRange: string): { startDay: number; endDay: number } => {
     const match = dateRange.match(/(\d{1,2})\s*-\s*(\d{1,2})/)
     if (match) {
@@ -289,7 +291,7 @@ export function ActionPlanCSVImportModal({
       // Find all Mondays in the month that have Thursday in the same month
       let week = 1
       const firstDayOfMonth = new Date(year, month - 1, 1)
-      let currentMonday = getMonday(firstDayOfMonth)
+      const currentMonday = getMonday(firstDayOfMonth)
 
       while (currentMonday <= thursday) {
         const currentThursday = new Date(currentMonday)
@@ -326,6 +328,7 @@ export function ActionPlanCSVImportModal({
   }
 
   // Helper function to get month name
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getMonthName = (month: number): string => {
     const months = [
       'January',
@@ -442,7 +445,7 @@ export function ActionPlanCSVImportModal({
           }
 
           // Check next row for actual values
-          let actualScheduleData = planScheduleData.map(item => ({ ...item, actualPercentage: 0 }))
+          const actualScheduleData = planScheduleData.map(item => ({ ...item, actualPercentage: 0 }))
           if (i + 1 < dataRows.length) {
             const nextRow = dataRows[i + 1]
             if (nextRow && !nextRow[0]?.trim() && !nextRow[1]?.trim()) {

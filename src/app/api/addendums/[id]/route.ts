@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { 
   UpdateAddendumSchema,
-  ApproveAddendumSchema,
   AddendumResponseSchema
 } from '@/lib/schemas/addendum'
 

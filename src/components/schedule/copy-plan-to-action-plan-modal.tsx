@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { ProgressBar } from '@/components/ui/progress-bar'
 
 interface CopyPlanToActionPlanModalProps {
   isOpen: boolean

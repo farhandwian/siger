@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ProjectOptionsResponseSchema, ErrorResponseSchema } from '@/lib/schemas/reports'
 
@@ -7,7 +7,7 @@ import { ProjectOptionsResponseSchema, ErrorResponseSchema } from '@/lib/schemas
  *
  * Returns simplified project data for use in filter dropdowns
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Fetch projects with basic information
     const projects = await prisma.project.findMany({

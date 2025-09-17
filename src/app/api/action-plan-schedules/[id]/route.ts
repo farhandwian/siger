@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { UpdateActionPlanSchema } from '@/lib/schemas/action-plan-schedule'
+import { UpdateScheduleSchema } from '@/lib/schemas/schedule'
 
 const ParamsSchema = z.object({
   id: z.string(),
@@ -13,15 +13,13 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     const params = await context.params
     const { id } = ParamsSchema.parse(params)
 
-    const actionPlan = await prisma.actionPlan.findUnique({
+    const actionPlan = await prisma.schedule.findUnique({
       where: { id },
       select: {
         id: true,
         subActivityId: true,
-        month: true,
-        year: true,
-        week: true,
-        percentage: true,
+        weekNumber: true,
+        actionPlan: true,
         createdAt: true,
         updatedAt: true
       }
@@ -55,10 +53,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     const params = await context.params
     const { id } = ParamsSchema.parse(params)
     const body = await req.json()
-    const data = UpdateActionPlanSchema.parse(body)
+    const data = UpdateScheduleSchema.parse(body)
 
     // Check if the action plan schedule exists
-    const existingSchedule = await prisma.actionPlan.findUnique({
+    const existingSchedule = await prisma.schedule.findUnique({
       where: { id },
     })
 
@@ -70,13 +68,11 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     }
 
     // Check for conflicts if time fields are being updated
-    if (data.month || data.year || data.week || data.subActivityId) {
-      const conflictCheck = await prisma.actionPlan.findFirst({
+    if (data.weekNumber || data.subActivityId) {
+      const conflictCheck = await prisma.schedule.findFirst({
         where: {
           subActivityId: data.subActivityId || existingSchedule.subActivityId,
-          month: data.month || existingSchedule.month,
-          year: data.year || existingSchedule.year,
-          week: data.week || existingSchedule.week,
+          weekNumber: data.weekNumber || existingSchedule.weekNumber,
           NOT: { id }, // Exclude current record
         },
       })
@@ -89,22 +85,18 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       }
     }
 
-    const updatedSchedule = await prisma.actionPlan.update({
+    const updatedSchedule = await prisma.schedule.update({
       where: { id },
       data: {
         subActivityId: data.subActivityId || existingSchedule.subActivityId,
-        month: data.month || existingSchedule.month,
-        year: data.year || existingSchedule.year,
-        week: data.week || existingSchedule.week,
-        percentage: data.percentage !== undefined ? data.percentage : existingSchedule.percentage,
+        weekNumber: data.weekNumber || existingSchedule.weekNumber,
+        actionPlan: data.actionPlan !== undefined ? data.actionPlan : existingSchedule.actionPlan,
       },
       select: {
         id: true,
         subActivityId: true,
-        month: true,
-        year: true,
-        week: true,
-        percentage: true,
+        weekNumber: true,
+        actionPlan: true,
         createdAt: true,
         updatedAt: true
       }
@@ -132,7 +124,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
     const { id } = ParamsSchema.parse(params)
 
     // Check if the action plan schedule exists
-    const existingSchedule = await prisma.actionPlan.findUnique({
+    const existingSchedule = await prisma.schedule.findUnique({
       where: { id },
     })
 
@@ -143,7 +135,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
       )
     }
 
-    await prisma.actionPlan.delete({
+    await prisma.schedule.delete({
       where: { id },
     })
 

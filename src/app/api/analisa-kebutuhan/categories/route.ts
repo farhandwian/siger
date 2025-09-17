@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 /**
  * GET /api/analisa-kebutuhan/categories
  * Fetch all kategori kebutuhan for dropdown selection
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const categories = await prisma.kategoriKebutuhan.findMany({
       orderBy: {

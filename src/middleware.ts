@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import jwt from 'jsonwebtoken'
 import { UserRole } from '@/lib/auth'
@@ -91,7 +91,7 @@ function hasRequiredPermissions(userRole: UserRole, pathname: string, userContex
 
   // Project routes - check based on role and scope
   if (pathname.startsWith('/api/projects')) {
-    switch (userRole) {
+    switch (userRole as UserRole) {
       case 'ADMIN_SISTEM':
       case 'DIRJEN_SDA':
         return true // Can access all projects

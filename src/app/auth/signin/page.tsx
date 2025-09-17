@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ const SignInSchema = z.object({
 
 type SignInFormData = z.infer<typeof SignInSchema>
 
-export default function SignInPage() {
+function SignInForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -243,5 +243,21 @@ export default function SignInPage() {
         <AnimatedMapMarker />
       </div>
     </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="relative flex min-h-screen overflow-hidden">
+        <div className="fixed inset-0 z-0 bg-[#0F1419]">
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="text-white">Loading...</div>
+          </div>
+        </div>
+      </div>
+    }>
+      <SignInForm />
+    </Suspense>
   )
 }

@@ -112,7 +112,7 @@ export default function CreateUserPage() {
 
   const createUserMutation = useMutation({
     mutationFn: createUser,
-    onSuccess: data => {
+    onSuccess: () => {
       toast.success('User created successfully')
       router.push('/admin/users')
     },
@@ -122,7 +122,8 @@ export default function CreateUserPage() {
   })
 
   const onSubmit = (data: CreateUserFormData) => {
-    const { confirmPassword, ...userData } = data
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { confirmPassword: _, ...userData } = data
     createUserMutation.mutate(userData)
   }
 
@@ -150,7 +151,7 @@ export default function CreateUserPage() {
           <div className="p-6">
             <Alert variant="destructive">
               <AlertDescription>
-                You don't have permission to create users. Please contact your administrator.
+                You don&apos;t have permission to create users. Please contact your administrator.
               </AlertDescription>
             </Alert>
           </div>

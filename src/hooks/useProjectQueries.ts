@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient, type ProjectListResponse, type ProjectDetailResponse } from '@/lib/api-client'
+import { apiClient } from '@/lib/api-client'
 import { z } from 'zod'
 import { ProjectListQuerySchema, UpdateProjectFieldSchema } from '@/lib/schemas'
 

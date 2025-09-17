@@ -192,7 +192,7 @@ export default function UsersManagementPage() {
             <Alert variant="destructive">
               <Shield className="h-4 w-4" />
               <AlertDescription>
-                You don't have permission to access user management. Please contact your
+                You don&apos;t have permission to access user management. Please contact your
                 administrator.
               </AlertDescription>
             </Alert>

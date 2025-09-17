@@ -51,7 +51,7 @@ export const GET = createProtectedHandler(
     const query = QuerySchema.parse(Object.fromEntries(searchParams))
 
     // Build where clause
-    let where: any = {}
+    const where: any = {}
 
     if (query.search) {
       where.OR = [

@@ -28,6 +28,9 @@ COPY . .
 # Copy environment variables (if available)
 COPY .env* ./
 
+# Generate Prisma client
+RUN npx prisma generate
+
 # Build the Next.js application
 RUN npm run build
 

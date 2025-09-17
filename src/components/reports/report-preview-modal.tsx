@@ -412,7 +412,7 @@ export function ReportPreviewModal({ isOpen, onClose, report }: ReportPreviewMod
                                   rowSpan={2}
                                   className="border-r border-gray-200 px-2 py-3 text-center"
                                 >
-                                  {activity.subActivities.indexOf(subActivity) + 1}
+                                  {activity.subActivities!.indexOf(subActivity) + 1}
                                 </td>
                                 <td
                                   rowSpan={2}

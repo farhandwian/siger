@@ -1,5 +1,4 @@
-import { format, parse, addDays, startOfMonth, endOfMonth, getDay } from 'date-fns'
-import { id } from 'date-fns/locale'
+import { format, parse, addDays, getDay, differenceInWeeks } from 'date-fns'
 
 export interface WeekRange {
   week: number
@@ -26,10 +25,10 @@ export function getActualPeriodsFromSchedulePlanData(activities: any[]): MonthDa
   const periodMap = new Map<string, { month: number; year: number; week: number; count: number }>()
 
   // Collect all unique periods from scheduleplan data
-  activities.forEach((activity, activityIndex) => {
+  activities.forEach((activity) => {
     // Check main activity scheduleplans
     if (activity.scheduleplans) {
-      activity.scheduleplans.forEach((scheduleplan: any, scheduleplanIndex: number) => {
+      activity.scheduleplans.forEach((scheduleplan: any) => {
         if (scheduleplan.month && scheduleplan.year && scheduleplan.week) {
           const key = `${scheduleplan.year}-${scheduleplan.month.toString().padStart(2, '0')}-W${scheduleplan.week}`
           const existing = periodMap.get(key)
@@ -45,9 +44,9 @@ export function getActualPeriodsFromSchedulePlanData(activities: any[]): MonthDa
 
     // Check sub-activity scheduleplans
     if (activity.subActivities) {
-      activity.subActivities.forEach((subActivity: any, subIndex: number) => {
+      activity.subActivities.forEach((subActivity: any) => {
         if (subActivity.scheduleplans) {
-          subActivity.scheduleplans.forEach((scheduleplan: any, scheduleplanIndex: number) => {
+          subActivity.scheduleplans.forEach((scheduleplan: any) => {
             if (scheduleplan.month && scheduleplan.year && scheduleplan.week) {
               const key = `${scheduleplan.year}-${scheduleplan.month.toString().padStart(2, '0')}-W${scheduleplan.week}`
               const existing = periodMap.get(key)
@@ -680,7 +679,7 @@ function generateSequentialWeeksFromDate(startDate: Date, totalWeeks: number): S
     return monday
   }
 
-  let currentMonday = getMonday(startDate)
+  const currentMonday = getMonday(startDate)
 
   for (let i = 0; i < totalWeeks; i++) {
     const weekStart = new Date(currentMonday)
@@ -708,6 +707,7 @@ function generateSequentialWeeksFromDate(startDate: Date, totalWeeks: number): S
       month,
       year,
       weekInMonth,
+      isLastWeekOfMonth: false, // Will be set by addLastWeekOfMonthFlags
     })
 
     // Move to next Monday
@@ -756,7 +756,7 @@ function getWeekInMonth(date: Date): number {
   // Calculate week number within the month using same logic as CSV import
   let week = 1
   const firstDayOfMonth = new Date(year, month - 1, 1)
-  let currentMonday = getMonday(firstDayOfMonth)
+  const currentMonday = getMonday(firstDayOfMonth)
 
   while (currentMonday <= thursday) {
     const currentThursday = new Date(currentMonday)
@@ -777,22 +777,27 @@ function getWeekInMonth(date: Date): number {
 }
 
 /**
- * Get Indonesian month name
+ * Calculate the number of weeks between two dates
+ * @param startDateStr - Start date as string
+ * @param endDateStr - End date as string
+ * @returns Number of weeks between the dates, or null if dates are invalid
  */
-function getMonthNameIndonesian(month: number): string {
-  const months = [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
-  ]
-  return months[month - 1] || 'Unknown'
+export function calculateWeeksBetweenDates(startDateStr: string | null, endDateStr: string | null): number | null {
+  if (!startDateStr || !endDateStr) {
+    return null
+  }
+
+  const startDate = parseDateString(startDateStr)
+  const endDate = parseDateString(endDateStr)
+
+  if (!startDate || !endDate) {
+    return null
+  }
+
+  // Calculate the difference in weeks
+  const weeksDifference = differenceInWeeks(endDate, startDate)
+
+  // Return absolute value to ensure positive result
+  return Math.abs(weeksDifference)
 }
+

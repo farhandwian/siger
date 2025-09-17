@@ -18,28 +18,25 @@ export async function PUT(request: NextRequest) {
     }
 
     // Create or update schedule
-    const schedule = await prisma.schedulePlan.upsert({
+    const schedule = await prisma.schedule.upsert({
       where: {
-        subActivityId_month_year_week: {
+        subActivityId_weekNumber: {
           subActivityId,
-          month: validatedData.month,
-          year: validatedData.year,
-          week: validatedData.week,
+          weekNumber: validatedData.weekNumber,
         },
       },
       update: {
-        percentage: validatedData.percentage,
+        plan: validatedData.plan,
       },
       create: {
         subActivityId,
-        month: validatedData.month,
-        year: validatedData.year,
-        week: validatedData.week,
-        percentage: validatedData.percentage,
+        weekNumber: validatedData.weekNumber,
+        plan: validatedData.plan,
       },
     })
 
     // Get project ID for cumulative calculation
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const subActivity = await prisma.subActivity.findUnique({
       where: { id: subActivityId },
       include: { activity: { select: { projectId: true } } },
