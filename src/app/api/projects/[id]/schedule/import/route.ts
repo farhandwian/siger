@@ -32,13 +32,13 @@ const ImportRequestSchema = z.object({
 // Helper function to parse CSV data into activities
 function parseCsvData(csvData: string[][]): ActivityImport[] {
   const activities: ActivityImport[] = []
-  
+
   if (csvData.length < 2) {
     throw new Error('CSV must have at least header and one data row')
   }
 
   const headers = csvData[0]
-  
+
   // Extract week columns (week1, week2, etc.)
   const weekColumns: number[] = []
   headers.forEach((header, index) => {
@@ -54,18 +54,20 @@ function parseCsvData(csvData: string[][]): ActivityImport[] {
   for (let i = 1; i < csvData.length; i += 2) {
     const planRow = csvData[i]
     const realizationRow = csvData[i + 1] || [] // May not exist for last row
-    
+
     // Skip if this is an empty row or realization-only row
     if (!planRow[1] || planRow[1].trim() === '') continue
-    
+
     const scheduleData: ScheduleData[] = []
-    
+
     // Process each week column
     weekColumns.forEach((colIndex, weekIndex) => {
       const weekNumber = weekIndex + 1
       const planValue = planRow[colIndex] ? parseFloat(planRow[colIndex]) : null
-      const realizationValue = realizationRow[colIndex] ? parseFloat(realizationRow[colIndex]) : null
-      
+      const realizationValue = realizationRow[colIndex]
+        ? parseFloat(realizationRow[colIndex])
+        : null
+
       // Only add schedule data if there's actual data
       if (planValue !== null || realizationValue !== null) {
         scheduleData.push({
@@ -114,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     // Handle CSV data parsing
     let activitiesData: ActivityImport[]
-    
+
     if (body.csvData) {
       // Parse CSV data into activities
       activitiesData = parseCsvData(body.csvData)
@@ -149,13 +151,14 @@ export async function POST(request: NextRequest) {
     // Track progress
     const totalSteps = 6 // Steps: parse, validate, delete, activities, sub-activities, schedules
     let currentStep = 2 // Already completed parse and validate
-    
+
     const updateProgress = (step: number, message: string) => {
       currentStep = step
       const progress = Math.round((step / totalSteps) * 100)
-      // Note: In a real implementation, you might want to use Server-Sent Events 
+      // Note: In a real implementation, you might want to use Server-Sent Events
       // or WebSockets for real-time progress updates
-      void progress; void message; // Acknowledge unused vars for now
+      void progress
+      void message // Acknowledge unused vars for now
     }
 
     updateProgress(currentStep, 'Starting import process...')
@@ -174,15 +177,15 @@ export async function POST(request: NextRequest) {
         include: { subActivities: true },
       })
 
-      const allSubActivityIds = existingActivities.flatMap(act => 
+      const allSubActivityIds = existingActivities.flatMap(act =>
         act.subActivities.map(sub => sub.id)
       )
 
       if (allSubActivityIds.length > 0) {
         await prisma.schedule.deleteMany({
           where: {
-            subActivityId: { in: allSubActivityIds }
-          }
+            subActivityId: { in: allSubActivityIds },
+          },
         })
       }
     } else {
@@ -221,9 +224,9 @@ export async function POST(request: NextRequest) {
 
       // Refresh activity map with new activities
       const newActivities = await prisma.activity.findMany({
-        where: { 
+        where: {
           projectId: validatedData.projectId,
-          name: { in: activitiesToCreate.map(a => a.name) }
+          name: { in: activitiesToCreate.map(a => a.name) },
         },
         include: { subActivities: true },
       })
@@ -231,8 +234,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Process sub-activities in batches
-    const subActivitiesToProcess = validatedData.activities.filter(act => act.type === 'subActivity')
-    
+    const subActivitiesToProcess = validatedData.activities.filter(
+      act => act.type === 'subActivity'
+    )
+
     // Prepare batch data for sub-activities
     const subActivitiesToCreate = []
     const subActivitiesToUpdate = []
@@ -254,7 +259,7 @@ export async function POST(request: NextRequest) {
             satuan: activityData.satuan,
             volume: activityData.volume,
             weight: activityData.bobot || 0,
-          }
+          },
         })
 
         // Prepare schedules for this existing sub-activity
@@ -265,8 +270,8 @@ export async function POST(request: NextRequest) {
                 subActivityId_weekNumber: {
                   subActivityId: existingSubActivity.id,
                   weekNumber: scheduleData.weekNumber,
-                }
-              }
+                },
+              },
             })
 
             if (existingSchedule) {
@@ -275,7 +280,7 @@ export async function POST(request: NextRequest) {
                 data: {
                   plan: scheduleData.plan || 0,
                   realization: scheduleData.realization || 0,
-                }
+                },
               })
             } else {
               schedulesToCreate.push({
@@ -302,7 +307,7 @@ export async function POST(request: NextRequest) {
 
     // Execute batch operations
     updateProgress(5, 'Processing sub-activities...')
-    
+
     // 1. Batch update existing sub-activities
     for (const update of subActivitiesToUpdate) {
       await prisma.subActivity.update(update)
@@ -326,8 +331,8 @@ export async function POST(request: NextRequest) {
       const createdSubActivitiesData = await prisma.subActivity.findMany({
         where: {
           activityId: { in: subActivitiesToCreate.map(s => s.activityId) },
-          name: { in: subActivitiesToCreate.map(s => s.name) }
-        }
+          name: { in: subActivitiesToCreate.map(s => s.name) },
+        },
       })
 
       // Prepare schedules for newly created sub-activities
@@ -382,23 +387,22 @@ export async function POST(request: NextRequest) {
       message: 'Activities and schedules imported successfully',
       data: result,
     })
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Validation error', 
-          details: error.errors 
+        {
+          success: false,
+          error: 'Validation error',
+          details: error.errors,
         },
         { status: 400 }
       )
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
       },
       { status: 500 }
     )
@@ -421,24 +425,23 @@ export async function GET(request: NextRequest) {
         subActivities: {
           include: {
             schedules: {
-              orderBy: { weekNumber: 'asc' }
-            }
-          }
-        }
+              orderBy: { weekNumber: 'asc' },
+            },
+          },
+        },
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     })
 
     return NextResponse.json({
       success: true,
       data: activities,
     })
-
   } catch (error) {
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
       },
       { status: 500 }
     )
