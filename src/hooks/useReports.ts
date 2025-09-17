@@ -184,3 +184,115 @@ export function useReportsLoadingState() {
 
 // Import React for hooks that use it
 import React from 'react'
+
+/**
+ * Hook to fetch available week periods for projects
+ * Used for filtering and report creation
+ */
+export function useReportPeriods(projectId?: string) {
+  return useQuery({
+    queryKey: ['report-periods', projectId],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (projectId) {
+        params.set('projectId', projectId)
+      }
+
+      const response = await fetch(`/api/reports/periods?${params.toString()}`)
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch period data')
+      }
+
+      return response.json()
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+/**
+ * Hook to fetch detailed weekly report data for preview modal
+ */
+export function useWeeklyReportDetails(reportId: string | null) {
+  return useQuery({
+    queryKey: ['weekly-report-details', reportId],
+    queryFn: async () => {
+      if (!reportId) throw new Error('Report ID is required')
+
+      const response = await fetch(`/api/reports/weekly/${reportId}`)
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch report details')
+      }
+
+      return response.json()
+    },
+    enabled: !!reportId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+/**
+ * Hook to create a new weekly report
+ */
+export function useCreateWeeklyReport() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: { projectId: string; weekNumber: number }) => {
+      const response = await fetch('/api/reports/weekly', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new Error(errorData.error || 'Failed to create weekly report')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate and refetch weekly reports list
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({ queryKey: ['weekly-reports'] })
+    },
+  })
+}
+
+/**
+ * Hook to download weekly report as Excel
+ */
+export function useDownloadWeeklyReport() {
+  return useMutation({
+    mutationFn: async ({ reportId, fileName }: { reportId: string; fileName?: string }) => {
+      const response = await fetch(`/api/reports/weekly/${reportId}/export`)
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new Error(errorData.error || 'Failed to download report')
+      }
+
+      // Get filename from Content-Disposition header or use provided/default name
+      const contentDisposition = response.headers.get('Content-Disposition')
+      const defaultFileName =
+        contentDisposition?.match(/filename="(.+)"/)?.[1] ||
+        fileName ||
+        `laporan-mingguan-${new Date().toISOString().split('T')[0]}.xlsx`
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = defaultFileName
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      return { success: true, fileName: defaultFileName }
+    },
+  })
+}

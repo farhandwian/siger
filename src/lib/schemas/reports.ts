@@ -12,8 +12,8 @@ export const WeeklyReportSchema = z.object({
   startDate: z.string(), // ISO date string
   endDate: z.string(), // ISO date string
   reportPeriod: z.string(), // Formatted display string like "Minggu ke-1 | 10-24 Agustus 2025"
-  filePath: z.string().optional(), // Path to the report file
-  fileUrl: z.string().optional(), // URL for downloading the report
+  filePath: z.string().nullable().optional(), // Path to the report file - can be null or undefined
+  fileUrl: z.string().nullable().optional(), // URL for downloading the report - can be null or undefined
   status: z.enum(['draft', 'published', 'archived']).default('published'),
   createdAt: z.string(), // ISO timestamp
   updatedAt: z.string(), // ISO timestamp
@@ -124,3 +124,97 @@ export const ErrorResponseSchema = z.object({
 })
 
 export type ErrorResponse = z.infer<typeof ErrorResponseSchema>
+
+/**
+ * Schema for period data used in week filtering
+ */
+export const PeriodDataSchema = z.object({
+  minWeek: z.number(),
+  maxWeek: z.number(),
+  totalWeeks: z.number(),
+  projectId: z.string().nullable(),
+  projectInfo: z
+    .object({
+      id: z.string(),
+      pekerjaan: z.string().nullable(),
+      satker: z
+        .object({
+          name: z.string(),
+          code: z.string(),
+        })
+        .nullable(),
+    })
+    .nullable(),
+})
+
+export type PeriodData = z.infer<typeof PeriodDataSchema>
+
+/**
+ * Response schema for period data API
+ */
+export const PeriodResponseSchema = z.object({
+  success: z.literal(true),
+  data: PeriodDataSchema,
+})
+
+export type PeriodResponse = z.infer<typeof PeriodResponseSchema>
+
+/**
+ * Schema for weekly report activity data
+ */
+export const WeeklyReportActivitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  activityType: z.enum(['MAIN_ACTIVITY', 'SUB_ACTIVITY']).optional(),
+  parentActivityId: z.string().nullable(),
+  romanNumber: z.string().nullable(),
+  subNumber: z.number().nullable(),
+  // Basic fields
+  sat: z.string().nullable(),
+  volume: z.number().nullable(),
+  bobot: z.number().nullable(),
+  // KEMAJUAN PEKERJAAN fields
+  realisasiMinggulalu_volume: z.number().nullable(),
+  targetMingguIni: z.number().nullable(),
+  realisasiMingguIni: z.number().nullable(),
+  status: z.enum(['TERCAPAI', 'TIDAK_TERCAPAI', 'DALAM_PROGRESS']).nullable(),
+  kumulatifMingguIni_volume: z.number().nullable(),
+  // % TERHADAP fields
+  realisasiMinggulalu_bobot: z.number().nullable(),
+  persentaseItemPekerjaan: z.number().nullable(),
+  persentaseGrafikProgress: z.number().nullable(),
+  persentaseRencanaKumulatif: z.number().nullable(),
+  statusKumulatif: z.string().nullable(),
+  persentaseSeluruhPekerjaan: z.number().nullable(),
+})
+
+export type WeeklyReportActivity = z.infer<typeof WeeklyReportActivitySchema>
+
+/**
+ * Schema for detailed weekly report data
+ */
+export const WeeklyReportDetailsSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  projectName: z.string().optional(),
+  weekNumber: z.number(),
+  startDate: z.string(),
+  endDate: z.string(),
+  reportPeriod: z.string(),
+  satker: z.string().nullable(),
+  kegiatan: z.string().nullable(),
+  proyekPekerjaan: z.string().nullable(),
+  activities: z.array(WeeklyReportActivitySchema),
+})
+
+export type WeeklyReportDetails = z.infer<typeof WeeklyReportDetailsSchema>
+
+/**
+ * Response schema for detailed weekly report
+ */
+export const WeeklyReportDetailsResponseSchema = z.object({
+  success: z.literal(true),
+  data: WeeklyReportDetailsSchema,
+})
+
+export type WeeklyReportDetailsResponse = z.infer<typeof WeeklyReportDetailsResponseSchema>

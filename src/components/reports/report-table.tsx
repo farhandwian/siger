@@ -224,20 +224,7 @@ export function ReportTable({
       <ReportPreviewModal
         isOpen={isPreviewModalOpen}
         onClose={() => setIsPreviewModalOpen(false)}
-        report={
-          selectedReport
-            ? {
-                id: selectedReport.id,
-                projectName: selectedReport.projectName,
-                satker: 'Dinas PU Kabupaten Lampung Tengah',
-                kegiatan: 'Irigasi dan Rawa II',
-                proyekPekerjaan: selectedReport.projectName,
-                weekNumber: selectedReport.weekNumber,
-                reportPeriod: selectedReport.reportPeriod,
-                activities: [],
-              }
-            : undefined
-        }
+        reportId={selectedReport?.id || null}
       />
     </div>
   )

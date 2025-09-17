@@ -35,17 +35,18 @@ export async function seedWeeklyReports() {
         status: ReportStatus.PUBLISHED,
         satker: 'Dinas PU Kabupaten Lampung Tengah',
         kegiatan: 'Irigasi dan Rawa II',
-        proyekPekerjaan: 'Rehabilitasi/Peningkatan Jaringan Irigasi DIDIRI di Kabupaten Lampung Tengah dan Kabupaten Lampung Timur',
+        proyekPekerjaan:
+          'Rehabilitasi/Peningkatan Jaringan Irigasi DIDIRI di Kabupaten Lampung Tengah dan Kabupaten Lampung Timur',
       },
     })
 
-    // Create main activities and their sub-activities
+    // Create main activities and their sub-activities based on the sample structure
     const activities = [
       // Main Activity 1 - PEKERJAAN PERSIAPAN
       {
         weeklyReportId: weeklyReport.id,
-        no: 1,
-        uraian: 'PEKERJAAN PERSIAPAN',
+        name: 'PEKERJAAN PERSIAPAN',
+        activityType: 'MAIN_ACTIVITY' as const,
         sat: '',
         volume: 0,
         bobot: 0,
@@ -54,8 +55,8 @@ export async function seedWeeklyReports() {
       // Sub-activities for Activity 1
       {
         weeklyReportId: weeklyReport.id,
-        no: 0,
-        uraian: 'Mobilisasi dan demobilisasi',
+        name: 'Mobilisasi dan demobilisasi',
+        activityType: 'SUB_ACTIVITY' as const,
         sat: 'Ls',
         volume: 1.0,
         bobot: 1.174,
@@ -63,7 +64,7 @@ export async function seedWeeklyReports() {
         realisasiMinggulalu_bobot: 0,
         targetMingguIni: 0.59,
         realisasiMingguIni: 0.5,
-        status: 'Tidak Tercapai',
+        status: 'TIDAK_TERCAPAI' as const,
         kumulatifMingguIni_volume: 0.5,
         kumulatifMingguIni_bobot: 0.59,
         persentaseItemPekerjaan: 50.0,
@@ -75,8 +76,8 @@ export async function seedWeeklyReports() {
       },
       {
         weeklyReportId: weeklyReport.id,
-        no: 0,
-        uraian: 'Stake out Trasa Saluran',
+        name: 'Stake out Trasa Saluran',
+        activityType: 'SUB_ACTIVITY' as const,
         sat: "m'",
         volume: 84797,
         bobot: 1.55,
@@ -84,7 +85,7 @@ export async function seedWeeklyReports() {
         realisasiMinggulalu_bobot: 0,
         targetMingguIni: 0,
         realisasiMingguIni: 84587.58,
-        status: 'Tercapai',
+        status: 'TERCAPAI' as const,
         kumulatifMingguIni_volume: 84587.58,
         kumulatifMingguIni_bobot: 1.55,
         persentaseItemPekerjaan: 99.8,
@@ -96,8 +97,8 @@ export async function seedWeeklyReports() {
       },
       {
         weeklyReportId: weeklyReport.id,
-        no: 0,
-        uraian: 'Pasangan Patok',
+        name: 'Pasangan Patok',
+        activityType: 'SUB_ACTIVITY' as const,
         sat: 'Bh',
         volume: 3.07,
         bobot: 0.068,
@@ -105,7 +106,7 @@ export async function seedWeeklyReports() {
         realisasiMinggulalu_bobot: 0,
         targetMingguIni: 0,
         realisasiMingguIni: 1.455,
-        status: 'Tercapai',
+        status: 'TERCAPAI' as const,
         kumulatifMingguIni_volume: 1.455,
         kumulatifMingguIni_bobot: 0.07,
         persentaseItemPekerjaan: 47.4,
@@ -118,8 +119,8 @@ export async function seedWeeklyReports() {
       // Main Activity 2 - SISTEM MANAJEMEN KESELAMATAN KERJA
       {
         weeklyReportId: weeklyReport.id,
-        no: 2,
-        uraian: 'SISTEM MANAJEMEN KESELAMATAN KERJA',
+        name: 'SISTEM MANAJEMEN KESELAMATAN KERJA',
+        activityType: 'MAIN_ACTIVITY' as const,
         sat: '',
         volume: 0,
         bobot: 0,
@@ -128,8 +129,8 @@ export async function seedWeeklyReports() {
       // Sub-activity for Activity 2
       {
         weeklyReportId: weeklyReport.id,
-        no: 0,
-        uraian: 'Sistem Manajemen Keselamatan Kerja',
+        name: 'Sistem Manajemen Keselamatan Kerja',
+        activityType: 'SUB_ACTIVITY' as const,
         sat: 'Ls',
         volume: 1.0,
         bobot: 1.174,
@@ -137,7 +138,7 @@ export async function seedWeeklyReports() {
         realisasiMinggulalu_bobot: 0,
         targetMingguIni: 0.01,
         realisasiMingguIni: 1.01,
-        status: 'Tercapai',
+        status: 'TERCAPAI' as const,
         kumulatifMingguIni_volume: 1.01,
         kumulatifMingguIni_bobot: 1.174,
         persentaseItemPekerjaan: 100.0,
@@ -150,8 +151,8 @@ export async function seedWeeklyReports() {
       // Main Activity 3 - PEKERJAAN NORMALISASI SALURAN
       {
         weeklyReportId: weeklyReport.id,
-        no: 3,
-        uraian: 'PEKERJAAN NORMALISASI SALURAN',
+        name: 'PEKERJAAN NORMALISASI SALURAN',
+        activityType: 'MAIN_ACTIVITY' as const,
         sat: '',
         volume: 0,
         bobot: 0,
@@ -160,8 +161,8 @@ export async function seedWeeklyReports() {
       // Sub-activities for Activity 3
       {
         weeklyReportId: weeklyReport.id,
-        no: 0,
-        uraian: 'Galian Tanah Manual',
+        name: 'Galian Tanah Manual',
+        activityType: 'SUB_ACTIVITY' as const,
         sat: 'm³',
         volume: 125436.5,
         bobot: 22.876,
@@ -169,7 +170,7 @@ export async function seedWeeklyReports() {
         realisasiMinggulalu_bobot: 0,
         targetMingguIni: 12543.65,
         realisasiMingguIni: 8562.4,
-        status: 'Tidak Tercapai',
+        status: 'TIDAK_TERCAPAI' as const,
         kumulatifMingguIni_volume: 8562.4,
         kumulatifMingguIni_bobot: 1.56,
         persentaseItemPekerjaan: 6.8,
@@ -181,8 +182,8 @@ export async function seedWeeklyReports() {
       },
       {
         weeklyReportId: weeklyReport.id,
-        no: 0,
-        uraian: 'Galian Tanah Mekanis',
+        name: 'Galian Tanah Mekanis',
+        activityType: 'SUB_ACTIVITY' as const,
         sat: 'm³',
         volume: 89765.2,
         bobot: 16.432,
@@ -190,7 +191,7 @@ export async function seedWeeklyReports() {
         realisasiMinggulalu_bobot: 0,
         targetMingguIni: 8976.52,
         realisasiMingguIni: 12543.8,
-        status: 'Tercapai',
+        status: 'TERCAPAI' as const,
         kumulatifMingguIni_volume: 12543.8,
         kumulatifMingguIni_bobot: 2.29,
         persentaseItemPekerjaan: 14.0,
@@ -199,6 +200,59 @@ export async function seedWeeklyReports() {
         statusKumulatif: 'Tercapai',
         persentaseSeluruhPekerjaan: 1.2,
         displayOrder: 9,
+      },
+      // Additional Activity 4 - PEKERJAAN STRUKTUR
+      {
+        weeklyReportId: weeklyReport.id,
+        name: 'PEKERJAAN STRUKTUR',
+        activityType: 'MAIN_ACTIVITY' as const,
+        sat: '',
+        volume: 0,
+        bobot: 0,
+        displayOrder: 10,
+      },
+      // Sub-activities for Activity 4
+      {
+        weeklyReportId: weeklyReport.id,
+        name: 'Pasangan Batu Kali',
+        activityType: 'SUB_ACTIVITY' as const,
+        sat: 'm³',
+        volume: 2850.5,
+        bobot: 15.24,
+        realisasiMinggulalu_volume: 0,
+        realisasiMinggulalu_bobot: 0,
+        targetMingguIni: 285.05,
+        realisasiMingguIni: 142.5,
+        status: 'TIDAK_TERCAPAI' as const,
+        kumulatifMingguIni_volume: 142.5,
+        kumulatifMingguIni_bobot: 0.76,
+        persentaseItemPekerjaan: 5.0,
+        persentaseGrafikProgress: 50.0,
+        persentaseRencanaKumulatif: 10.0,
+        statusKumulatif: 'Tidak Tercapai',
+        persentaseSeluruhPekerjaan: 0.4,
+        displayOrder: 11,
+      },
+      {
+        weeklyReportId: weeklyReport.id,
+        name: 'Plesteran dan Acian',
+        activityType: 'SUB_ACTIVITY' as const,
+        sat: 'm²',
+        volume: 5420.8,
+        bobot: 8.65,
+        realisasiMinggulalu_volume: 0,
+        realisasiMinggulalu_bobot: 0,
+        targetMingguIni: 0,
+        realisasiMingguIni: 0,
+        status: null, // Will use as 'Belum Dimulai' string for statusKumulatif
+        kumulatifMingguIni_volume: 0,
+        kumulatifMingguIni_bobot: 0,
+        persentaseItemPekerjaan: 0,
+        persentaseGrafikProgress: 0,
+        persentaseRencanaKumulatif: 0,
+        statusKumulatif: 'Belum Dimulai',
+        persentaseSeluruhPekerjaan: 0,
+        displayOrder: 12,
       },
     ]
 
@@ -213,6 +267,10 @@ export async function seedWeeklyReports() {
 
     const mainActivity3 = await prisma.weeklyReportActivity.create({
       data: activities[6],
+    })
+
+    const mainActivity4 = await prisma.weeklyReportActivity.create({
+      data: activities[9],
     })
 
     // Create sub-activities with parent references
@@ -237,6 +295,13 @@ export async function seedWeeklyReports() {
       }),
       prisma.weeklyReportActivity.create({
         data: { ...activities[8], parentActivityId: mainActivity3.id },
+      }),
+      // Sub-activities for Activity 4
+      prisma.weeklyReportActivity.create({
+        data: { ...activities[10], parentActivityId: mainActivity4.id },
+      }),
+      prisma.weeklyReportActivity.create({
+        data: { ...activities[11], parentActivityId: mainActivity4.id },
       }),
     ])
 

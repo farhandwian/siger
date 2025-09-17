@@ -144,6 +144,7 @@ model SubActivity {
   
   schedules           Schedule[]
   dailyReports        DailyReport[]
+  weeklyReportActivities WeeklyReportActivity[] // For weekly report tracking
 
   activity            Activity             @relation(fields: [activityId], references: [id], onDelete: Cascade)
 
@@ -276,61 +277,89 @@ model Wilayah {
 }
 
 model WeeklyReport {
-  id         String       @id @default(cuid())
-  projectId  String       @map("project_id")
-  weekNumber Int          @map("week_number")
-  startDate  DateTime     @map("start_date") @db.Date
-  endDate    DateTime     @map("end_date") @db.Date
-  filePath   String?      @map("file_path")
-  fileUrl    String?      @map("file_url")
-  status     ReportStatus @default(PUBLISHED)
-  satker     String?      @map("satker")
-  kegiatan   String?      @map("kegiatan")
-  proyekPekerjaan String? @map("proyek_pekerjaan")
-  createdAt  DateTime     @default(now()) @map("created_at")
-  updatedAt  DateTime     @updatedAt @map("updated_at")
-  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  activities WeeklyReportActivity[]
+  id              String       @id @default(cuid())
+  projectId       String       @map("project_id")
+  weekNumber      Int          @map("week_number")
+  startDate       DateTime     @map("start_date") @db.Date
+  endDate         DateTime     @map("end_date") @db.Date
+  filePath        String?      @map("file_path")
+  fileUrl         String?      @map("file_url")
+  excelFilePath   String?      @map("excel_file_path") // For Excel export storage
+  status          ReportStatus @default(DRAFT)
+  satker          String?      @map("satker")
+  kegiatan        String?      @map("kegiatan")
+  proyekPekerjaan String?      @map("proyek_pekerjaan")
+  // Period helper fields for efficient filtering
+  projectMinWeek  Int?         @map("project_min_week") // Cached min week for this project
+  projectMaxWeek  Int?         @map("project_max_week") // Cached max week for this project
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  createdBy       String?      @map("created_by") // User who created the report
+  
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activities      WeeklyReportActivity[]
 
   @@unique([projectId, weekNumber, startDate, endDate])
   @@index([projectId])
   @@index([weekNumber])
   @@index([startDate, endDate])
   @@index([status])
+  @@index([projectMinWeek, projectMaxWeek])
   @@map("weekly_reports")
 }
 
 model WeeklyReportActivity {
-  id                              String       @id @default(cuid())
-  weeklyReportId                  String       @map("weekly_report_id")
-  name                            String       @map("name") // Changed from uraian to name for consistency
-  sat                             String?      @map("sat")
-  volume                          Float?       @default(0) @map("volume")
-  weight                          Float?       @default(0) @map("weight") // Changed from bobot to weight for consistency
-  realisasiMinggulalu_volume      Float?       @default(0) @map("realisasi_minggulalu_volume")
-  realisasiMinggulalu_bobot       Float?       @default(0) @map("realisasi_minggulalu_bobot")
-  targetMingguIni                 Float?       @default(0) @map("target_minggu_ini")
-  realisasiMingguIni              Float?       @default(0) @map("realisasi_minggu_ini")
-  status                          String?      @map("status") // "Tercapai", "Tidak Tercapai", "Dalam Progress"
-  kumulatifMingguIni_volume       Float?       @default(0) @map("kumulatif_minggu_ini_volume")
-  kumulatifMingguIni_bobot        Float?       @default(0) @map("kumulatif_minggu_ini_bobot")
-  persentaseItemPekerjaan         Float?       @default(0) @map("persentase_item_pekerjaan")
-  persentaseGrafikProgress        Float?       @default(0) @map("persentase_grafik_progress")
-  persentaseRencanaKumulatif      Float?       @default(0) @map("persentase_rencana_kumulatif")
-  statusKumulatif                 String?      @map("status_kumulatif")
-  persentaseSeluruhPekerjaan      Float?       @default(0) @map("persentase_seluruh_pekerjaan")
-  parentActivityId                String?      @map("parent_activity_id") // References another WeeklyReportActivity
-  displayOrder                    Int          @default(0) @map("display_order") // For maintaining order
-  createdAt                       DateTime     @default(now()) @map("created_at")
-  updatedAt                       DateTime     @updatedAt @map("updated_at")
+  id                              String                   @id @default(cuid())
+  weeklyReportId                  String                   @map("weekly_report_id")
   
-  weeklyReport                    WeeklyReport @relation(fields: [weeklyReportId], references: [id], onDelete: Cascade)
-  parentActivity                  WeeklyReportActivity? @relation("ActivityHierarchy", fields: [parentActivityId], references: [id])
-  subActivities                   WeeklyReportActivity[] @relation("ActivityHierarchy")
+  // Core identification fields
+  activityType                    WeeklyActivityType       @default(SUB_ACTIVITY) @map("activity_type")
+  name                            String                   @map("name") // Matches sample "name" field
+  sat                             String?                  @map("sat") // Satuan (unit)
+  volume                          Float?                   @default(0) @map("volume")
+  bobot                           Float?                   @default(0) @map("bobot") // Weight percentage - matches sample
+  
+  // Source data references for traceability
+  sourceSubActivityId             String?                  @map("source_sub_activity_id") // Reference to original SubActivity
+  sourceScheduleWeekNumber        Int?                     @map("source_schedule_week_number") // Which week this data comes from
+  
+  // KEMAJUAN PEKERJAAN section - matches sample structure
+  realisasiMinggulalu_volume      Float?                   @default(0) @map("realisasi_minggulalu_volume")
+  realisasiMinggulalu_bobot       Float?                   @default(0) @map("realisasi_minggulalu_bobot")
+  targetMingguIni                 Float?                   @default(0) @map("target_minggu_ini")
+  realisasiMingguIni              Float?                   @default(0) @map("realisasi_minggu_ini")
+  status                          WeeklyActivityStatus?    @map("status") // "Tercapai", "Tidak Tercapai", "Dalam Progress"
+  kumulatifMingguIni_volume       Float?                   @default(0) @map("kumulatif_minggu_ini_volume")
+  kumulatifMingguIni_bobot        Float?                   @default(0) @map("kumulatif_minggu_ini_bobot")
+  
+  // % TERHADAP section - matches sample percentage fields
+  persentaseItemPekerjaan         Float?                   @default(0) @map("persentase_item_pekerjaan")
+  persentaseGrafikProgress        Float?                   @default(0) @map("persentase_grafik_progress")
+  persentaseRencanaKumulatif      Float?                   @default(0) @map("persentase_rencana_kumulatif")
+  statusKumulatif                 String?                  @map("status_kumulatif")
+  persentaseSeluruhPekerjaan      Float?                   @default(0) @map("persentase_seluruh_pekerjaan")
+  
+  // Hierarchy and organization
+  parentActivityId                String?                  @map("parent_activity_id") // For main activity grouping
+  displayOrder                    Int                      @default(0) @map("display_order") // Order within parent
+  romanNumber                     String?                  @map("roman_number") // For main activities (I, II, III, etc.)
+  subNumber                       Int?                     @map("sub_number") // For sub-activities (1, 2, 3, etc.)
+  
+  // Metadata
+  createdAt                       DateTime                 @default(now()) @map("created_at")
+  updatedAt                       DateTime                 @updatedAt @map("updated_at")
+  
+  // Relations
+  weeklyReport                    WeeklyReport             @relation(fields: [weeklyReportId], references: [id], onDelete: Cascade)
+  parentActivity                  WeeklyReportActivity?    @relation("ActivityHierarchy", fields: [parentActivityId], references: [id])
+  subActivities                   WeeklyReportActivity[]   @relation("ActivityHierarchy")
+  sourceSubActivity               SubActivity?             @relation(fields: [sourceSubActivityId], references: [id])
 
   @@index([weeklyReportId])
   @@index([parentActivityId])
   @@index([displayOrder])
+  @@index([activityType])
+  @@index([sourceSubActivityId])
   @@map("weekly_report_activities")
 }
 
@@ -338,6 +367,17 @@ enum ReportStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+enum WeeklyActivityType {
+  MAIN_ACTIVITY
+  SUB_ACTIVITY
+}
+
+enum WeeklyActivityStatus {
+  TERCAPAI
+  TIDAK_TERCAPAI
+  DALAM_PROGRESS
 }
 
 enum UserRole {

@@ -181,6 +181,7 @@ export function ReportPreviewModal({ isOpen, onClose, report }: ReportPreviewMod
   ]
 
   const activities = sampleActivities
+  console.log('report activities:', report)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
