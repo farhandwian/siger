@@ -110,7 +110,7 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                     <div className="flex items-center justify-between gap-4 lg:justify-end">
                       <span className="text-sm font-medium text-gray-700">MINGGU KE :</span>
                       <span className="rounded border bg-white px-3 py-1 text-sm font-medium text-gray-900">
-                        {reportData.data.weekNumber || '2'} (Dua)
+                        {reportData.data.weekNumber || '2'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-4 lg:justify-end">
@@ -228,20 +228,20 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                               <tr
                                 className={cn(
                                   'border-b border-gray-200',
-                                  activity.activityType === 'MAIN_PEKERJAAN'
+                                  activity.activityType === 'MAIN_ACTIVITY'
                                     ? 'bg-gray-50' // Main activities have gray background
                                     : 'bg-white' // Sub-activities have white background
                                 )}
                               >
                                 <td className="border-r border-gray-200 px-2 py-3 text-center font-medium">
-                                  {activity.activityType === 'MAIN_PEKERJAAN'
+                                  {activity.activityType === 'MAIN_ACTIVITY'
                                     ? activity.romanNumber || (index + 1).toString()
                                     : activity.subNumber || index + 1}
                                 </td>
                                 <td
                                   className={cn(
                                     'border-r border-gray-200 px-3 py-3 text-left text-sm',
-                                    activity.activityType === 'MAIN_PEKERJAAN'
+                                    activity.activityType === 'MAIN_ACTIVITY'
                                       ? 'font-semibold' // Main activities are bold
                                       : 'pl-8 font-normal' // Sub-activities are indented and normal weight
                                   )}
@@ -250,7 +250,7 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                                 </td>
 
                                 {/* For main activities, show empty cells for all data columns */}
-                                {activity.activityType === 'MAIN_PEKERJAAN' ? (
+                                {activity.activityType === 'MAIN_ACTIVITY' ? (
                                   // Main activity: all data columns are empty
                                   <>
                                     {Array.from({ length: 14 }).map((_, colIndex) => (
@@ -279,7 +279,7 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                                         : '-'}
                                     </td>
 
-                                    {/* KEMAJUAN PEKERJAAN - Volume Columns */}
+                                    {/* KEMAJUAN ACTIVITY - Volume Columns */}
                                     <td className="border-r border-gray-200 px-2 py-3 text-center">
                                       {activity.realisasiMinggulalu_volume != null &&
                                       activity.realisasiMinggulalu_volume > 0

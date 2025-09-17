@@ -430,6 +430,7 @@ enum ReportStatus {
 enum WeeklyActivityType {
   MAIN_ACTIVITY
   SUB_ACTIVITY
+  CUMULATIVE_ACTIVITY
 }
 
 enum WeeklyActivityStatus {
