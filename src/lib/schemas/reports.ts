@@ -195,22 +195,22 @@ export const WeeklyReportActivitySchema = z.object({
   romanNumber: z.string().nullable(),
   subNumber: z.number().nullable(),
   // Basic fields
-  sat: z.string().nullable(),
-  volume: z.number().nullable(),
-  bobot: z.number().nullable(),
+  sat: z.string().nullable().optional(),
+  volume: z.number().nullable().optional(),
+  bobot: z.number().nullable().optional(),
   // KEMAJUAN PEKERJAAN fields
-  realisasiMinggulalu_volume: z.number().nullable(),
-  targetMingguIni: z.number().nullable(),
-  realisasiMingguIni: z.number().nullable(),
-  status: z.enum(['TERCAPAI', 'TIDAK_TERCAPAI', 'DALAM_PROGRESS']).nullable(),
-  kumulatifMingguIni_volume: z.number().nullable(),
+  realisasiMinggulalu_volume: z.number().nullable().optional(),
+  targetMingguIni: z.number().nullable().optional(),
+  realisasiMingguIni: z.number().nullable().optional(),
+  status: z.enum(['TERCAPAI', 'TIDAK_TERCAPAI', 'DALAM_PROGRESS']).nullable().optional(),
+  kumulatifMingguIni_volume: z.number().nullable().optional(),
   // % TERHADAP fields
-  persentaseRealisasiMingguLalu: z.number().nullable(),
-  persentaseItemPekerjaan: z.number().nullable(),
-  persentaseGrafikProgress: z.number().nullable(),
-  persentaseRencanaKumulatif: z.number().nullable(),
-  statusKumulatif: z.string().nullable(),
-  persentaseSeluruhPekerjaan: z.number().nullable(),
+  persentaseRealisasiMingguLalu: z.number().nullable().optional(),
+  persentaseItemPekerjaan: z.number().nullable().optional(),
+  persentaseGrafikProgress: z.number().nullable().optional(),
+  persentaseRencanaKumulatif: z.number().nullable().optional(),
+  statusKumulatif: z.string().nullable().optional(),
+  persentaseSeluruhPekerjaan: z.number().nullable().optional(),
 })
 
 export type WeeklyReportActivity = z.infer<typeof WeeklyReportActivitySchema>

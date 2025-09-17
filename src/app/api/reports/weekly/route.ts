@@ -118,7 +118,10 @@ export async function POST(request: NextRequest) {
           name: activity.name,
           displayOrder: activityIndex * 1000, // Leave space for sub-activities
           romanNumber: convertToRoman(activityIndex),
-          // Main activities don't have data, just act as headers
+          // Main activities don't have data, just act as headers - provide default values for required fields
+          persentaseRealisasiMingguLalu: 0,
+          persentaseRencanaKumulatif: 0,
+          persentaseSeluruhPekerjaan: 0,
         },
       })
 

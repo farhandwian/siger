@@ -388,13 +388,13 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                                     <td className="border-r border-gray-200 px-2 py-3 text-center">
                                       {activity.persentaseRealisasiMingguLalu != null &&
                                       activity.persentaseRealisasiMingguLalu > 0
-                                        ? activity.persentaseRealisasiMingguLalu.toFixed(2) + '%'
+                                        ? activity.persentaseRealisasiMingguLalu.toFixed(3)
                                         : '-'}
                                     </td>
                                     <td className="border-r border-gray-200 px-2 py-3 text-center">
                                       {activity.persentaseItemPekerjaan != null &&
                                       activity.persentaseItemPekerjaan > 0
-                                        ? activity.persentaseItemPekerjaan.toFixed(1) + '%'
+                                        ? activity.persentaseItemPekerjaan.toFixed(2)
                                         : '-'}
                                     </td>
                                     <td className="border-r border-gray-200 px-2 py-3 text-center">
@@ -406,7 +406,7 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                                     <td className="border-r border-gray-200 px-2 py-3 text-center">
                                       {activity.persentaseRencanaKumulatif != null &&
                                       activity.persentaseRencanaKumulatif > 0
-                                        ? activity.persentaseRencanaKumulatif.toFixed(1) + '%'
+                                        ? activity.persentaseRencanaKumulatif.toFixed(2)
                                         : '-'}
                                     </td>
                                     <td className="border-r border-gray-200 px-2 py-3 text-center">
