@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { ScheduleTable } from '@/components/schedule/schedule-table'
 import { CSVImportModal } from '@/components/schedule/csv-import-modal'
-import { ActionPlanCSVImportModal } from '@/components/action-plan/ActionPlanCSVImportModal'
 import { ActionPlanTable } from '@/components/action-plan/action-plan-table'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
@@ -756,14 +755,6 @@ export default function ProjectDetailPage() {
         <CSVImportModal
           isOpen={csvImportModalOpen}
           onClose={() => setCsvImportModalOpen(false)}
-          projectId={String(params.id)}
-          onSuccess={refreshActivities}
-        />
-
-        {/* Action Plan CSV Import Modal */}
-        <ActionPlanCSVImportModal
-          isOpen={actionPlanCsvImportModalOpen}
-          onClose={() => setActionPlanCsvImportModalOpen(false)}
           projectId={String(params.id)}
           onSuccess={refreshActivities}
         />

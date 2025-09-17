@@ -169,31 +169,22 @@ export async function POST(request: NextRequest) {
     let createdSchedules = 0
     let updatedSchedules = 0
 
-    // If replace mode, delete existing schedules for this project
+    // If replace mode, delete existing activities (and cascading data) for this project
     if (validatedData.importMode === 'replace') {
       updateProgress(3, 'Clearing existing data...')
-      const existingActivities = await prisma.activity.findMany({
+
+      // Delete all existing activities for this project
+      // This will cascade to delete sub-activities and schedules due to foreign key constraints
+      await prisma.activity.deleteMany({
         where: { projectId: validatedData.projectId },
-        include: { subActivities: true },
       })
-
-      const allSubActivityIds = existingActivities.flatMap(act =>
-        act.subActivities.map(sub => sub.id)
-      )
-
-      if (allSubActivityIds.length > 0) {
-        await prisma.schedule.deleteMany({
-          where: {
-            subActivityId: { in: allSubActivityIds },
-          },
-        })
-      }
     } else {
       updateProgress(3, 'Skipping data clear...')
     }
 
     updateProgress(4, 'Processing activities...')
     // Get existing activities and sub-activities to minimize queries
+    // (Note: If replace mode, this will be empty since we deleted everything above)
     const existingActivities = await prisma.activity.findMany({
       where: { projectId: validatedData.projectId },
       include: { subActivities: true },
@@ -380,11 +371,17 @@ export async function POST(request: NextRequest) {
       updatedSchedules,
       totalActivities: validatedData.activities.length,
       progress: 100, // Add final progress indicator
+      importMode: validatedData.importMode, // Include import mode in response
     }
+
+    const message =
+      validatedData.importMode === 'replace'
+        ? 'All existing data replaced with new activities and schedules'
+        : 'Activities and schedules imported successfully'
 
     return NextResponse.json({
       success: true,
-      message: 'Activities and schedules imported successfully',
+      message,
       data: result,
     })
   } catch (error) {
