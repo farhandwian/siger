@@ -66,7 +66,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Helper function to calculate cumulative values from week 1 to target week
-    const calculateCumulative = (schedules: ScheduleData[], targetWeek: number, field: 'plan' | 'actionPlan' | 'realization') => {
+    const calculateCumulative = (
+      schedules: ScheduleData[],
+      targetWeek: number,
+      field: 'plan' | 'actionPlan' | 'realization'
+    ) => {
       return schedules
         .filter(schedule => schedule.weekNumber >= 1 && schedule.weekNumber <= targetWeek)
         .reduce((sum, schedule) => sum + (schedule[field] || 0), 0)
@@ -74,62 +78,67 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Helper function to get schedule data for specific week
     const getWeekSchedule = (schedules: ScheduleData[], weekNumber: number) => {
-      return schedules.find(schedule => schedule.weekNumber === weekNumber) || {
-        plan: 0,
-        actionPlan: 0,
-        realization: 0
-      }
+      return (
+        schedules.find(schedule => schedule.weekNumber === weekNumber) || {
+          plan: 0,
+          actionPlan: 0,
+          realization: 0,
+        }
+      )
     }
 
     // Process activities with calculations
-    const processedActivities = activities.map(activity => ({
+    const processedActivities = activities.map((activity, activityIndex) => ({
       id: activity.id,
       name: activity.name,
-      activityType: 'MAIN_ACTIVITY' as const,
+      activityType: 'MAIN_ACTIVITY' as const, // Fixed: Use correct enum value
       parentActivityId: null,
-      romanNumber: '', // You may want to add this to Activity model
+      romanNumber: `${activityIndex + 1}`, // Roman numerals can be added later
       subNumber: null,
-      sat: '',
-      volume: 0,
-      bobot: 0,
-      // Main activities don't have direct calculations
-      realisasiMinggulalu_volume: 0,
-      targetMingguIni: 0,
-      realisasiMingguIni: 0,
-      status: 'TERCAPAI' as const,
-      kumulatifMingguIni_volume: 0,
-      realisasiMinggulalu_bobot: 0,
-      persentaseItemPekerjaan: 0,
-      persentaseGrafikProgress: 0,
-      persentaseRencanaKumulatif: 0,
-      statusKumulatif: 'TERCAPAI',
-      persentaseSeluruhPekerjaan: 0,
+      sat: null, // Main activities don't have units
+      volume: null, // Main activities don't have volume
+      bobot: null, // Main activities don't have weight
+      // Main activities don't have calculation data - all should be null/0
+      realisasiMinggulalu_volume: null,
+      targetMingguIni: null,
+      realisasiMingguIni: null,
+      status: null,
+      kumulatifMingguIni_volume: null,
+      realisasiMinggulalu_bobot: null,
+      persentaseItemPekerjaan: null,
+      persentaseGrafikProgress: null,
+      persentaseRencanaKumulatif: null,
+      statusKumulatif: null,
+      persentaseSeluruhPekerjaan: null,
       subActivities: activity.subActivities.map((subActivity, index) => {
         const currentWeek = weeklyReport.weekNumber
         const previousWeek = currentWeek - 1
-        
+
         // Get schedule data
         const currentWeekSchedule = getWeekSchedule(subActivity.schedules, currentWeek)
         const totalVolume = subActivity.volume || 0
         const weight = subActivity.weight || 0
-        
+
         // A. Kemajuan Pekerjaan calculations
         // A1. Realisasi s/d minggu lalu (B1 / (weight * volume))
-        const realisasiSdMingguLalu = previousWeek > 0 
-          ? calculateCumulative(subActivity.schedules, previousWeek, 'realization')
-          : 0
-        const realisasiMinggulalu_volume = totalVolume > 0 && weight > 0 
-          ? realisasiSdMingguLalu / (weight * totalVolume) 
-          : 0
+        const realisasiSdMingguLalu =
+          previousWeek > 0
+            ? calculateCumulative(subActivity.schedules, previousWeek, 'realization')
+            : 0
+        const realisasiMinggulalu_volume =
+          totalVolume > 0 && weight > 0 ? realisasiSdMingguLalu / (weight * totalVolume) : 0
 
         // A2. Target minggu ini (action plan * volume)
         const targetMingguIni = (currentWeekSchedule.actionPlan || 0) * totalVolume
 
         // A5. Kumulatif s/d minggu ini (B6 / (weight * volume))
-        const kumulatifRealization = calculateCumulative(subActivity.schedules, currentWeek, 'realization')
-        const kumulatifMingguIni_volume = totalVolume > 0 && weight > 0 
-          ? kumulatifRealization / (weight * totalVolume) 
-          : 0
+        const kumulatifRealization = calculateCumulative(
+          subActivity.schedules,
+          currentWeek,
+          'realization'
+        )
+        const kumulatifMingguIni_volume =
+          totalVolume > 0 && weight > 0 ? kumulatifRealization / (weight * totalVolume) : 0
 
         // A3. Realisasi minggu ini (A5 - A1)
         const realisasiMingguIni = kumulatifMingguIni_volume - realisasiMinggulalu_volume
@@ -144,15 +153,17 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         const realisasiMinggulalu_bobot = realisasiSdMingguLalu
 
         // B2. Item Pekerjaan (B6 / weight * 100)
-        const persentaseItemPekerjaan = weight > 0 
-          ? (kumulatifRealization / weight) * 100 
-          : 0
+        const persentaseItemPekerjaan = weight > 0 ? (kumulatifRealization / weight) * 100 : 0
 
         // B3. Grafik Pemenuhan Progress (to be implemented based on requirements)
         const persentaseGrafikProgress = 0 // Placeholder
 
         // B4. Rencana Kumulatif Pekerjaan (cumulative action plan)
-        const rencanaKumulatif = calculateCumulative(subActivity.schedules, currentWeek, 'actionPlan')
+        const rencanaKumulatif = calculateCumulative(
+          subActivity.schedules,
+          currentWeek,
+          'actionPlan'
+        )
         const persentaseRencanaKumulatif = rencanaKumulatif
 
         // B5. Status Kumulatif (B4 - B6 comparison)
@@ -165,7 +176,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         return {
           id: subActivity.id,
           name: subActivity.name,
-          activityType: 'SUB_ACTIVITY' as const,
+          activityType: 'SUB_ACTIVITY' as const, // Fixed: Use correct enum value
           parentActivityId: activity.id,
           romanNumber: '',
           subNumber: index + 1,
@@ -184,7 +195,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           statusKumulatif,
           persentaseSeluruhPekerjaan,
         }
-      })
+      }),
     }))
 
     // Format the response data
@@ -232,7 +243,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           persentaseSeluruhPekerjaan: activity.persentaseSeluruhPekerjaan,
         },
         // Sub activities
-        ...activity.subActivities
+        ...activity.subActivities,
       ]),
     }
 

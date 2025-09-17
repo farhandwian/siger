@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate start and end dates for the selected week
-    // Assuming project starts from tanggalSpmk and each week is 7 days
+    // Use tanggalSpmk as project start date instead of tanggalKontrak
     const projectStartDate = project.tanggalSpmk ? new Date(project.tanggalSpmk) : new Date()
     const weekStartDate = new Date(projectStartDate)
     weekStartDate.setDate(projectStartDate.getDate() + (weekNumber - 1) * 7)
@@ -123,33 +123,68 @@ export async function POST(request: NextRequest) {
 
       let subActivityIndex = 1
 
-      // Create sub-activity records with actual data
+      // Create sub-activity records with actual data according to the specific calculation formulas
       for (const subActivity of activity.subActivities) {
-        // Calculate values from Schedule data
+        // Get schedule data for calculations
         const currentWeekSchedule = subActivity.schedules.find(s => s.weekNumber === weekNumber)
-        const previousWeeksSchedules = subActivity.schedules.filter(s => s.weekNumber < weekNumber)
+        const allWeeksUpToCurrent = subActivity.schedules.filter(s => s.weekNumber <= weekNumber)
 
-        // Calculate cumulative realization up to previous week (REALISASI s/d MINGGU LALU)
-        const realisasiMinggulalu_volume = previousWeeksSchedules.reduce(
+        // Get volume and weight from subactivity
+        const volume = subActivity.volume || 1 // Avoid division by zero
+        const weight = subActivity.weight || 0
+
+        // B. % Terhadap section calculations (calculated first as they're used in A section)
+
+        // B1: Realisasi s/d minggu = cumulative realization week1 to chosen week
+        const realisasiSdMinggu = allWeeksUpToCurrent.reduce(
           (sum, schedule) => sum + (schedule.realization || 0),
           0
         )
 
-        // Current week values from Schedule model
-        const targetMingguIni = currentWeekSchedule?.actionPlan || 0 // TARGET MINGGU INI
-        const realisasiMingguIni = currentWeekSchedule?.realization || 0 // REALISASI MINGGU INI
+        // B4: Rencana kumulatif = cumulative action_plan week1 to chosen week
+        const rencanaKumulatif = allWeeksUpToCurrent.reduce(
+          (sum, schedule) => sum + (schedule.actionPlan || 0),
+          0
+        )
 
-        // Calculate cumulative up to current week (KUMULATIF s/d MINGGU INI)
-        const kumulatifMingguIni_volume = realisasiMinggulalu_volume + realisasiMingguIni
+        // B6: Kumulatif s/d minggu ini (this will be calculated after A5)
+        // For now, we'll use the same as realisasiSdMinggu as it represents cumulative realization
+        const kumulatifSdMingguIni = realisasiSdMinggu
 
-        // Status determination
-        const status = realisasiMingguIni >= targetMingguIni ? 'TERCAPAI' : 'TIDAK_TERCAPAI'
+        // A. Kemajuan Pekerjaan section calculations
 
-        // Calculate percentages - simplified business logic
-        const volume = subActivity.volume || 1 // Avoid division by zero
-        const persentaseItemPekerjaan = (kumulatifMingguIni_volume / volume) * 100
+        // A1: Realisasi s/d minggu lalu = B1 / (weight * volume)
+        const realisasiMinggulalu_volume = realisasiSdMinggu / (weight * volume)
+
+        // A2: Target minggu ini = action_plan * volume
+        const targetMingguIni = (currentWeekSchedule?.actionPlan || 0) * volume
+
+        // A5: Kumulatif s/d minggu ini = B6 / (weight * volume)
+        const kumulatifMingguIni_volume = kumulatifSdMingguIni / (weight * volume)
+
+        // A3: Realisasi minggu ini = A5 - A1
+        const realisasiMingguIni = kumulatifMingguIni_volume - realisasiMinggulalu_volume
+
+        // A4: Status = A3 - A2 comparison (if < 0 then "TIDAK_TERCAPAI" else "TERCAPAI")
+        const statusComparison = realisasiMingguIni - targetMingguIni
+        const status = statusComparison < 0 ? 'TIDAK_TERCAPAI' : 'TERCAPAI'
+
+        // B. % Terhadap section - continued calculations
+
+        // B2: Item pekerjaan = B6 / (weight * 100)
+        const persentaseItemPekerjaan =
+          weight > 0 ? (kumulatifSdMingguIni / (weight * 100)) * 100 : 0
+
+        // B3: Grafik pemenuhan progress (using current week realization vs action plan)
         const persentaseGrafikProgress =
           targetMingguIni > 0 ? (realisasiMingguIni / targetMingguIni) * 100 : 0
+
+        // B5: Status = B4 - B6 comparison (if > 0 then "TIDAK_TERCAPAI" else "TERCAPAI")
+        const statusKumulatifComparison = rencanaKumulatif - kumulatifSdMingguIni
+        const statusKumulatif = statusKumulatifComparison > 0 ? 'TIDAK_TERCAPAI' : 'TERCAPAI'
+
+        // B6: Seluruh pekerjaan = B1 (realisasiSdMinggu)
+        const persentaseSeluruhPekerjaan = realisasiSdMinggu
 
         await prisma.weeklyReportActivity.create({
           data: {
@@ -161,22 +196,26 @@ export async function POST(request: NextRequest) {
             // From SubActivity model (static data)
             name: subActivity.name, // URAIAN
             sat: subActivity.satuan || 'Unit', // SAT
-            volume: subActivity.volume || 0, // VOLUME
-            bobot: subActivity.weight || 0, // BOBOT (%)
+            volume: volume, // VOLUME
+            bobot: weight, // BOBOT (%)
 
-            // From Schedule model calculations (dynamic week data)
-            realisasiMinggulalu_volume: realisasiMinggulalu_volume, // REALISASI s/d MINGGU LALU
-            targetMingguIni: targetMingguIni, // TARGET MINGGU INI
-            realisasiMingguIni: realisasiMingguIni, // REALISASI MINGGU INI
-            status: status, // STATUS
-            kumulatifMingguIni_volume: kumulatifMingguIni_volume, // KUMULATIF s/d MINGGU INI
+            // A. Kemajuan Pekerjaan section (dynamic week data) - using correct field names
+            realisasiMinggulalu: realisasiMinggulalu_volume, // A1
+            targetMingguIni: targetMingguIni, // A2
+            realisasiMingguIni: realisasiMingguIni, // A3
+            statusKemajuanPekerjaan: status, // A4
+            kumulatifMingguIni: kumulatifMingguIni_volume, // A5
 
-            // Calculated percentage fields (% TERHADAP section)
-            persentaseItemPekerjaan: Math.min(persentaseItemPekerjaan, 100),
-            persentaseGrafikProgress: Math.min(persentaseGrafikProgress, 100),
-            persentaseRencanaKumulatif: Math.min(persentaseItemPekerjaan, 100),
-            statusKumulatif: status === 'TERCAPAI' ? 'Tercapai' : 'Tidak Tercapai',
-            persentaseSeluruhPekerjaan: (persentaseItemPekerjaan * (subActivity.weight || 0)) / 100,
+            // B. % Terhadap section - calculated percentage fields
+            persentaseRealisasiMingguLalu: Math.min(
+              Math.max(realisasiMinggulalu_volume * weight, 0),
+              100
+            ), // New field for weighted previous week
+            persentaseItemPekerjaan: Math.min(Math.max(persentaseItemPekerjaan, 0), 100), // B2
+            persentaseGrafikProgress: Math.min(Math.max(persentaseGrafikProgress, 0), 100), // B3
+            persentaseRencanaKumulatif: Math.min(Math.max(rencanaKumulatif, 0), 100), // B4 as percentage
+            statusKumulatif: statusKumulatif, // B5
+            persentaseSeluruhPekerjaan: persentaseSeluruhPekerjaan, // B6
 
             // Organization fields
             displayOrder: activityIndex * 1000 + subActivityIndex,

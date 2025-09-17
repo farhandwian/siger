@@ -115,6 +115,31 @@ export const ProjectOptionsResponseSchema = z.object({
 export type ProjectOptionsResponse = z.infer<typeof ProjectOptionsResponseSchema>
 
 /**
+ * Schema for detailed project information including week calculation
+ */
+export const ProjectDetailsSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  location: z.string().optional(),
+  numberOfWeeks: z.number().nullable(),
+  tanggalKontrak: z.string().nullable(),
+  tanggalSpmk: z.string().nullable(), // Added tanggalSpmk for project start date
+  akhirKontrak: z.string().nullable(),
+})
+
+export type ProjectDetails = z.infer<typeof ProjectDetailsSchema>
+
+/**
+ * Response schema for project details API
+ */
+export const ProjectDetailsResponseSchema = z.object({
+  success: z.literal(true),
+  data: ProjectDetailsSchema,
+})
+
+export type ProjectDetailsResponse = z.infer<typeof ProjectDetailsResponseSchema>
+
+/**
  * Error response schema for API endpoints
  */
 export const ErrorResponseSchema = z.object({

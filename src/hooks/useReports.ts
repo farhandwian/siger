@@ -5,6 +5,7 @@ import {
   WeeklyReportsResponse,
   ReportQuery,
   ProjectOptionsResponse,
+  ProjectDetailsResponse,
   CreateWeeklyReport,
   WeeklyReport,
   ErrorResponse,
@@ -72,9 +73,68 @@ export function useProjectOptions() {
 }
 
 /**
- * Custom hook for creating new weekly reports
+ * Custom hook for fetching detailed project information including number of weeks
+ */
+export function useProjectDetails(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', 'details', projectId],
+    queryFn: async (): Promise<ProjectDetailsResponse> => {
+      if (!projectId) throw new Error('Project ID is required')
+
+      const response = await fetch(`/api/reports/projects/${projectId}`, {
+        cache: 'no-store',
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch project details')
+      }
+
+      return response.json()
+    },
+    enabled: !!projectId, // Only run query when projectId is provided
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+  })
+}
+
+/**
+ * Custom hook for creating new weekly reports using the weekly calculation API
  */
 export function useCreateReport() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: {
+      projectId: string
+      weekNumber: number
+    }): Promise<{ success: true; data: unknown }> => {
+      const response = await fetch('/api/reports/weekly', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new Error(errorData.error || 'Failed to create report')
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      // Invalidate and refetch reports when a new one is created
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+    },
+  })
+}
+
+/**
+ * Custom hook for creating legacy weekly reports (if needed)
+ */
+export function useCreateLegacyReport() {
   const queryClient = useQueryClient()
 
   return useMutation({

@@ -383,15 +383,14 @@ model WeeklyReportActivity {
   sourceScheduleWeekNumber        Int?                     @map("source_schedule_week_number") // Which week this data comes from
   
   // KEMAJUAN PEKERJAAN section - matches sample structure
-  realisasiMinggulalu_volume      Float?                   @default(0) @map("realisasi_minggulalu_volume")
-  realisasiMinggulalu_bobot       Float?                   @default(0) @map("realisasi_minggulalu_bobot")
+  realisasiMinggulalu      Float?                   @default(0) @map("realisasi_minggulalu")
   targetMingguIni                 Float?                   @default(0) @map("target_minggu_ini")
   realisasiMingguIni              Float?                   @default(0) @map("realisasi_minggu_ini")
-  status                          WeeklyActivityStatus?    @map("status") // "Tercapai", "Tidak Tercapai", "Dalam Progress"
-  kumulatifMingguIni_volume       Float?                   @default(0) @map("kumulatif_minggu_ini_volume")
-  kumulatifMingguIni_bobot        Float?                   @default(0) @map("kumulatif_minggu_ini_bobot")
+  statusKemajuanPekerjaan                         WeeklyActivityStatus?    @map("status_kemajuan_pekerjaan") // "Tercapai", "Tidak Tercapai", "Dalam Progress"
+  kumulatifMingguIni       Float?                   @default(0) @map("kumulatif_minggu_ini_volume")
   
   // % TERHADAP section - matches sample percentage fields
+  persentaseRealisasiMingguLalu Float?                   @default(0) @map("persentase_realisasi_minggu_lalu")
   persentaseItemPekerjaan         Float?                   @default(0) @map("persentase_item_pekerjaan")
   persentaseGrafikProgress        Float?                   @default(0) @map("persentase_grafik_progress")
   persentaseRencanaKumulatif      Float?                   @default(0) @map("persentase_rencana_kumulatif")

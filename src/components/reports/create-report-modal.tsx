@@ -12,8 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useProjectOptions, useCreateReport } from '@/hooks/useReports'
-import { CreateWeeklyReport } from '@/lib/schemas/reports'
+import { useProjectOptions, useProjectDetails, useCreateReport } from '@/hooks/useReports'
 import { X, FileText } from 'lucide-react'
 
 interface CreateReportModalProps {
@@ -28,31 +27,61 @@ interface CreateReportModalProps {
  */
 export function CreateReportModal({ isOpen, onClose, onSuccess }: CreateReportModalProps) {
   const { data: projectOptions, isLoading: isLoadingProjects } = useProjectOptions()
-  const createMutation = useCreateReport()
+  const createMutation = useCreateReport() // Use the new hook
 
-  const [formData, setFormData] = useState<CreateWeeklyReport>({
+  const [formData, setFormData] = useState<{ projectId: string; weekNumber: number }>({
     projectId: '',
     weekNumber: 1,
-    startDate: '',
-    endDate: '',
-    status: 'draft',
   })
+
+  // Fetch project details when a project is selected
+  const { data: projectDetails } = useProjectDetails(formData.projectId || undefined)
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Generate week period options for the current year
+  // Generate week period options based on project dates (tanggalSpmk to akhirKontrak)
   const generateWeekPeriods = () => {
-    const currentYear = new Date().getFullYear()
-    const periods = []
+    // Type the periods array properly
+    const periods: Array<{
+      week: number
+      label: string
+      startDate: string
+      endDate: string
+    }> = []
 
-    for (let week = 1; week <= 52; week++) {
-      // Calculate start date of the week (assuming week 1 starts on January 1st)
-      const startOfYear = new Date(currentYear, 0, 1)
-      const startDate = new Date(startOfYear)
-      startDate.setDate(startDate.getDate() + (week - 1) * 7)
+    // Only generate periods if project is selected and has required dates
+    if (!projectDetails?.data?.tanggalSpmk || !projectDetails?.data?.akhirKontrak) {
+      return periods
+    }
+
+    // Parse project start date from tanggalSpmk
+    const projectStartDate = new Date(projectDetails.data.tanggalSpmk)
+    const projectEndDate = new Date(projectDetails.data.akhirKontrak)
+
+    // Calculate the total number of weeks between start and end date
+    const timeDiff = projectEndDate.getTime() - projectStartDate.getTime()
+    const totalWeeks = Math.ceil(timeDiff / (1000 * 3600 * 24 * 7))
+
+    // Use project's numberOfWeeks if available, otherwise use calculated weeks
+    const maxWeeks = projectDetails.data.numberOfWeeks || totalWeeks
+
+    for (let week = 1; week <= maxWeeks; week++) {
+      // Calculate start date of the week (week 1 starts from tanggalSpmk)
+      const startDate = new Date(projectStartDate)
+      startDate.setDate(projectStartDate.getDate() + (week - 1) * 7)
 
       const endDate = new Date(startDate)
       endDate.setDate(endDate.getDate() + 6)
+
+      // Don't allow weeks that go beyond the project end date
+      if (startDate > projectEndDate) {
+        break
+      }
+
+      // Ensure end date doesn't exceed project end date
+      if (endDate > projectEndDate) {
+        endDate.setTime(projectEndDate.getTime())
+      }
 
       const formatDate = (date: Date) => {
         return date.toLocaleDateString('id-ID', {
@@ -81,9 +110,6 @@ export function CreateReportModal({ isOpen, onClose, onSuccess }: CreateReportMo
       setFormData({
         projectId: '',
         weekNumber: 1,
-        startDate: '',
-        endDate: '',
-        status: 'draft',
       })
       setErrors({})
     }
@@ -97,8 +123,9 @@ export function CreateReportModal({ isOpen, onClose, onSuccess }: CreateReportMo
       newErrors.projectId = 'Project is required'
     }
 
-    if (formData.weekNumber < 1 || formData.weekNumber > 52) {
-      newErrors.weekNumber = 'Please select a valid week period'
+    const maxWeeks = projectDetails?.data?.numberOfWeeks || 52
+    if (formData.weekNumber < 1 || formData.weekNumber > maxWeeks) {
+      newErrors.weekNumber = `Please select a valid week period (1-${maxWeeks})`
     }
 
     setErrors(newErrors)
@@ -113,41 +140,52 @@ export function CreateReportModal({ isOpen, onClose, onSuccess }: CreateReportMo
       return
     }
 
-    // TODO: Implement actual report creation logic
-    console.log('Creating report with data:', formData)
+    try {
+      // Use the weekly reports API endpoint for creating reports with calculation logic
+      await createMutation.mutateAsync({
+        projectId: formData.projectId,
+        weekNumber: formData.weekNumber,
+      })
 
-    // For now, just close the modal and show success
-    onSuccess()
-    onClose()
+      onSuccess()
+      onClose()
+    } catch (error) {
+      // Error is handled by the mutation's error state
+      // Error will be displayed through the createMutation.isError check below
+    }
   }
 
   // Handle project selection
   const handleProjectChange = (projectId: string) => {
-    setFormData(prev => ({ ...prev, projectId }))
+    setFormData(prev => ({
+      ...prev,
+      projectId,
+      // Reset week selection when project changes
+      weekNumber: 1,
+    }))
 
-    // Clear error for this field
-    if (errors.projectId) {
-      setErrors(prev => ({ ...prev, projectId: '' }))
+    // Clear errors for project and week fields
+    if (errors.projectId || errors.weekNumber) {
+      setErrors(prev => ({
+        ...prev,
+        projectId: '',
+        weekNumber: '',
+      }))
     }
   }
 
   // Handle week period selection
   const handleWeekPeriodChange = (weekNumber: string) => {
     const week = parseInt(weekNumber)
-    const selectedPeriod = weekPeriods.find(p => p.week === week)
 
-    if (selectedPeriod) {
-      setFormData(prev => ({
-        ...prev,
-        weekNumber: week,
-        startDate: selectedPeriod.startDate,
-        endDate: selectedPeriod.endDate,
-      }))
+    setFormData(prev => ({
+      ...prev,
+      weekNumber: week,
+    }))
 
-      // Clear error for this field
-      if (errors.weekNumber) {
-        setErrors(prev => ({ ...prev, weekNumber: '' }))
-      }
+    // Clear error for this field
+    if (errors.weekNumber) {
+      setErrors(prev => ({ ...prev, weekNumber: '' }))
     }
   }
 
@@ -212,17 +250,32 @@ export function CreateReportModal({ isOpen, onClose, onSuccess }: CreateReportMo
             <div className="space-y-1">
               <Label htmlFor="weekPeriod" className="text-sm font-medium text-gray-700">
                 Periode Laporan
+                {projectDetails?.data && (
+                  <span className="ml-2 text-xs text-gray-500">
+                    (Max: {projectDetails.data.numberOfWeeks || 52} minggu)
+                  </span>
+                )}
               </Label>
-              <Select value={formData.weekNumber.toString()} onValueChange={handleWeekPeriodChange}>
+              <Select
+                value={formData.weekNumber.toString()}
+                onValueChange={handleWeekPeriodChange}
+                disabled={!formData.projectId}
+              >
                 <SelectTrigger
                   className={`w-full border-gray-200 bg-white shadow-sm ${
                     errors.weekNumber ? 'border-red-500' : ''
                   }`}
                 >
-                  <SelectValue placeholder="Pilih periode laporan..." />
+                  <SelectValue
+                    placeholder={
+                      !formData.projectId
+                        ? 'Pilih proyek terlebih dahulu...'
+                        : 'Pilih periode laporan...'
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
-                  {weekPeriods.slice(0, 20).map(period => (
+                  {weekPeriods.map(period => (
                     <SelectItem key={period.week} value={period.week.toString()}>
                       <span className="text-sm text-gray-500">{period.label}</span>
                     </SelectItem>
@@ -230,6 +283,11 @@ export function CreateReportModal({ isOpen, onClose, onSuccess }: CreateReportMo
                 </SelectContent>
               </Select>
               {errors.weekNumber && <p className="text-xs text-red-500">{errors.weekNumber}</p>}
+              {!formData.projectId && (
+                <p className="text-xs text-gray-500">
+                  Pilih proyek terlebih dahulu untuk melihat periode yang tersedia
+                </p>
+              )}
             </div>
 
             {/* Error Message */}

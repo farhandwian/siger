@@ -23,7 +23,7 @@ interface ReportPreviewModalProps {
 export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewModalProps) {
   // Get report details using React Query
   const { data: reportData, isLoading, error } = useWeeklyReportDetails(reportId || null)
-  
+
   // Extract activities directly from API response (no grouping needed as API handles this)
   const activities = reportData?.data?.activities || []
 
@@ -123,228 +123,268 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                 </div>
               </div>
 
-          {/* Table Section - Scrollable */}
-          <div className="min-h-0 flex-1 px-6 pb-6">
-            <div className="flex h-full max-h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
-              {/* Table Header - Fixed */}
-              <div className="flex-shrink-0 bg-gray-600 text-white">
-                <div className="px-4 py-3 text-center">
-                  <h3 className="text-sm font-bold">Laporan Mingguan</h3>
-                </div>
-              </div>
+              {/* Table Section - Scrollable */}
+              <div className="min-h-0 flex-1 px-6 pb-6">
+                <div className="flex h-full max-h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
+                  {/* Table Header - Fixed */}
+                  <div className="flex-shrink-0 bg-gray-600 text-white">
+                    <div className="px-4 py-3 text-center">
+                      <h3 className="text-sm font-bold">Laporan Mingguan</h3>
+                    </div>
+                  </div>
 
-              {/* Main Table Container with Scroll */}
-              <div className="max-h-[60vh] min-h-0 flex-1 overflow-auto overscroll-contain">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1400px] border-collapse text-xs">
-                    {/* Table Headers */}
-                    <thead>
-                      <tr className="border-b border-gray-300 bg-gray-100">
-                        <th
-                          rowSpan={2}
-                          className="w-12 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
-                        >
-                          NO
-                        </th>
-                        <th
-                          rowSpan={2}
-                          className="w-48 border-r border-gray-300 bg-gray-100 px-3 py-3 text-center font-bold"
-                        >
-                          URAIAN
-                        </th>
-                        <th
-                          rowSpan={2}
-                          className="w-16 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
-                        >
-                          SAT
-                        </th>
-                        <th
-                          rowSpan={2}
-                          className="w-20 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
-                        >
-                          VOLUME
-                        </th>
-                        <th
-                          rowSpan={2}
-                          className="w-20 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
-                        >
-                          BOBOT (%)
-                        </th>
-                        <th
-                          colSpan={5}
-                          className="border-r border-gray-300 bg-gray-100 px-2 py-2 text-center font-bold"
-                        >
-                          KEMAJUAN PEKERJAAN
-                        </th>
-                        <th
-                          colSpan={6}
-                          className="w-20 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
-                        >
-                          % TERHADAP
-                        </th>
-                      </tr>
-                      <tr className="border-b border-gray-300 bg-gray-100">
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          REALISASI s/d MINGGU LALU
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          TARGET MINGGU INI
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          REALISASI MINGGU INI
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          STATUS
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          KUMULATIF s/d MINGGU INI
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          REALISASI s/d MINGGU LALU
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          ITEM PEKERJAAN
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          GRAFIK PEMENUHAN PROGRESS (%)
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          RENCANA KOMULATIF PEKERJAAN
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          STATUS KOMULATIF
-                        </th>
-                        <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
-                          SELURUH PEKERJAAN
-                        </th>
-                      </tr>
-                    </thead>
-
-                    {/* Table Body */}
-                    <tbody>
-                      {activities.map((activity: WeeklyReportActivity, index: number) => (
-                        <React.Fragment key={activity.id}>
-                          {/* Single Row per Activity */}
-                          <tr className="border-b border-gray-200">
-                            <td className="border-r border-gray-200 px-2 py-3 text-center font-medium">
-                              {activity.activityType === 'MAIN_ACTIVITY' 
-                                ? activity.romanNumber || (index + 1).toString()
-                                : activity.subNumber || (index + 1)
-                              }
-                            </td>
-                            <td className={cn(
-                              "border-r border-gray-200 px-3 py-3 text-left text-sm",
-                              activity.activityType === 'MAIN_ACTIVITY' 
-                                ? "font-semibold" 
-                                : "font-normal pl-8"
-                            )}>
-                              {activity.name}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.sat || '-'}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.volume != null && activity.volume > 0
-                                ? activity.volume.toLocaleString()
-                                : '-'}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.bobot != null && activity.bobot > 0 ? activity.bobot.toFixed(3) : '-'}
-                            </td>
-
-                            {/* KEMAJUAN PEKERJAAN - Volume Columns */}
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.realisasiMinggulalu_volume != null && activity.realisasiMinggulalu_volume > 0
-                                ? activity.realisasiMinggulalu_volume.toFixed(2)
-                                : '-'}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.targetMingguIni != null && activity.targetMingguIni > 0
-                                ? activity.targetMingguIni.toFixed(2)
-                                : '-'}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.realisasiMingguIni != null && activity.realisasiMingguIni > 0
-                                ? activity.realisasiMingguIni.toFixed(2)
-                                : '-'}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.status ? (
-                                <span
-                                  className={cn(
-                                    'rounded px-2 py-1 text-xs font-medium',
-                                    activity.status === 'TERCAPAI'
-                                      ? 'bg-green-100 text-green-800'
-                                      : activity.status === 'TIDAK_TERCAPAI'
-                                        ? 'bg-red-100 text-red-800'
-                                        : 'bg-yellow-100 text-yellow-800'
-                                  )}
-                                >
-                                  {activity.status === 'TERCAPAI' ? 'Tercapai' :
-                                   activity.status === 'TIDAK_TERCAPAI' ? 'Tidak Tercapai' :
-                                   'Dalam Progress'}
-                                </span>
-                              ) : (
-                                '-'
-                              )}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.kumulatifMingguIni_volume != null && activity.kumulatifMingguIni_volume > 0
-                                ? activity.kumulatifMingguIni_volume.toFixed(2)
-                                : '-'}
-                            </td>
-
-                            {/* % TERHADAP - Percentage Columns */}
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.realisasiMinggulalu_bobot != null && activity.realisasiMinggulalu_bobot > 0
-                                ? activity.realisasiMinggulalu_bobot.toFixed(2) + '%'
-                                : '-'}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.persentaseItemPekerjaan != null && activity.persentaseItemPekerjaan > 0
-                                ? activity.persentaseItemPekerjaan.toFixed(1) + '%'
-                                : '-'}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.persentaseGrafikProgress != null && activity.persentaseGrafikProgress > 0
-                                ? activity.persentaseGrafikProgress.toFixed(1) + '%'
-                                : '-'}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.persentaseRencanaKumulatif != null && activity.persentaseRencanaKumulatif > 0
-                                ? activity.persentaseRencanaKumulatif.toFixed(1) + '%'
-                                : '-'}
-                            </td>
-                            <td className="border-r border-gray-200 px-2 py-3 text-center">
-                              {activity.statusKumulatif ? (
-                                <span
-                                  className={cn(
-                                    'rounded px-2 py-1 text-xs font-medium',
-                                    activity.statusKumulatif === 'Tercapai'
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-red-100 text-red-800'
-                                  )}
-                                >
-                                  {activity.statusKumulatif}
-                                </span>
-                              ) : (
-                                '-'
-                              )}
-                            </td>
-                            <td className="px-2 py-3 text-center">
-                              {activity.persentaseSeluruhPekerjaan != null && activity.persentaseSeluruhPekerjaan > 0
-                                ? activity.persentaseSeluruhPekerjaan.toFixed(1) + '%'
-                                : '-'}
-                            </td>
+                  {/* Main Table Container with Scroll */}
+                  <div className="max-h-[60vh] min-h-0 flex-1 overflow-auto overscroll-contain">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[1400px] border-collapse text-xs">
+                        {/* Table Headers */}
+                        <thead>
+                          <tr className="border-b border-gray-300 bg-gray-100">
+                            <th
+                              rowSpan={2}
+                              className="w-12 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
+                            >
+                              NO
+                            </th>
+                            <th
+                              rowSpan={2}
+                              className="w-48 border-r border-gray-300 bg-gray-100 px-3 py-3 text-center font-bold"
+                            >
+                              URAIAN
+                            </th>
+                            <th
+                              rowSpan={2}
+                              className="w-16 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
+                            >
+                              SAT
+                            </th>
+                            <th
+                              rowSpan={2}
+                              className="w-20 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
+                            >
+                              VOLUME
+                            </th>
+                            <th
+                              rowSpan={2}
+                              className="w-20 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
+                            >
+                              BOBOT (%)
+                            </th>
+                            <th
+                              colSpan={5}
+                              className="border-r border-gray-300 bg-gray-100 px-2 py-2 text-center font-bold"
+                            >
+                              KEMAJUAN PEKERJAAN
+                            </th>
+                            <th
+                              colSpan={6}
+                              className="w-20 border-r border-gray-300 bg-gray-100 px-2 py-3 text-center font-bold"
+                            >
+                              % TERHADAP
+                            </th>
                           </tr>
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
+                          <tr className="border-b border-gray-300 bg-gray-100">
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              REALISASI s/d MINGGU LALU
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              TARGET MINGGU INI
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              REALISASI MINGGU INI
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              STATUS
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              KUMULATIF s/d MINGGU INI
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              REALISASI s/d MINGGU LALU
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              ITEM PEKERJAAN
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              GRAFIK PEMENUHAN PROGRESS (%)
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              RENCANA KOMULATIF PEKERJAAN
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              STATUS KOMULATIF
+                            </th>
+                            <th className="border-r border-gray-300 bg-gray-200 px-2 py-2 text-center text-xs font-medium">
+                              SELURUH PEKERJAAN
+                            </th>
+                          </tr>
+                        </thead>
+
+                        {/* Table Body */}
+                        <tbody>
+                          {activities.map((activity: WeeklyReportActivity, index: number) => (
+                            <React.Fragment key={activity.id}>
+                              {/* Single Row per Activity */}
+                              <tr
+                                className={cn(
+                                  'border-b border-gray-200',
+                                  activity.activityType === 'MAIN_PEKERJAAN'
+                                    ? 'bg-gray-50' // Main activities have gray background
+                                    : 'bg-white' // Sub-activities have white background
+                                )}
+                              >
+                                <td className="border-r border-gray-200 px-2 py-3 text-center font-medium">
+                                  {activity.activityType === 'MAIN_PEKERJAAN'
+                                    ? activity.romanNumber || (index + 1).toString()
+                                    : activity.subNumber || index + 1}
+                                </td>
+                                <td
+                                  className={cn(
+                                    'border-r border-gray-200 px-3 py-3 text-left text-sm',
+                                    activity.activityType === 'MAIN_PEKERJAAN'
+                                      ? 'font-semibold' // Main activities are bold
+                                      : 'pl-8 font-normal' // Sub-activities are indented and normal weight
+                                  )}
+                                >
+                                  {activity.name}
+                                </td>
+
+                                {/* For main activities, show empty cells for all data columns */}
+                                {activity.activityType === 'MAIN_PEKERJAAN' ? (
+                                  // Main activity: all data columns are empty
+                                  <>
+                                    {Array.from({ length: 14 }).map((_, colIndex) => (
+                                      <td
+                                        key={`main-empty-${activity.id}-${colIndex}`}
+                                        className="border-r border-gray-200 px-2 py-3 text-center"
+                                      >
+                                        {/* Empty cell for main activity */}
+                                      </td>
+                                    ))}
+                                  </>
+                                ) : (
+                                  // Sub-activity: show actual data
+                                  <>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.sat || '-'}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.volume != null && activity.volume > 0
+                                        ? activity.volume.toLocaleString()
+                                        : '-'}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.bobot != null && activity.bobot > 0
+                                        ? activity.bobot.toFixed(3)
+                                        : '-'}
+                                    </td>
+
+                                    {/* KEMAJUAN PEKERJAAN - Volume Columns */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.realisasiMinggulalu_volume != null &&
+                                      activity.realisasiMinggulalu_volume > 0
+                                        ? activity.realisasiMinggulalu_volume.toFixed(2)
+                                        : '-'}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.targetMingguIni != null &&
+                                      activity.targetMingguIni > 0
+                                        ? activity.targetMingguIni.toFixed(2)
+                                        : '-'}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.realisasiMingguIni != null &&
+                                      activity.realisasiMingguIni > 0
+                                        ? activity.realisasiMingguIni.toFixed(2)
+                                        : '-'}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.status ? (
+                                        <span
+                                          className={cn(
+                                            'rounded px-2 py-1 text-xs font-medium',
+                                            activity.status === 'TERCAPAI'
+                                              ? 'bg-green-100 text-green-800'
+                                              : activity.status === 'TIDAK_TERCAPAI'
+                                                ? 'bg-red-100 text-red-800'
+                                                : 'bg-yellow-100 text-yellow-800'
+                                          )}
+                                        >
+                                          {activity.status === 'TERCAPAI'
+                                            ? 'Tercapai'
+                                            : activity.status === 'TIDAK_TERCAPAI'
+                                              ? 'Tidak Tercapai'
+                                              : 'Dalam Progress'}
+                                        </span>
+                                      ) : (
+                                        '-'
+                                      )}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.kumulatifMingguIni_volume != null &&
+                                      activity.kumulatifMingguIni_volume > 0
+                                        ? activity.kumulatifMingguIni_volume.toFixed(2)
+                                        : '-'}
+                                    </td>
+
+                                    {/* % TERHADAP - Percentage Columns */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.realisasiMinggulalu_bobot != null &&
+                                      activity.realisasiMinggulalu_bobot > 0
+                                        ? activity.realisasiMinggulalu_bobot.toFixed(2) + '%'
+                                        : '-'}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.persentaseItemPekerjaan != null &&
+                                      activity.persentaseItemPekerjaan > 0
+                                        ? activity.persentaseItemPekerjaan.toFixed(1) + '%'
+                                        : '-'}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.persentaseGrafikProgress != null &&
+                                      activity.persentaseGrafikProgress > 0
+                                        ? activity.persentaseGrafikProgress.toFixed(1) + '%'
+                                        : '-'}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.persentaseRencanaKumulatif != null &&
+                                      activity.persentaseRencanaKumulatif > 0
+                                        ? activity.persentaseRencanaKumulatif.toFixed(1) + '%'
+                                        : '-'}
+                                    </td>
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {activity.statusKumulatif ? (
+                                        <span
+                                          className={cn(
+                                            'rounded px-2 py-1 text-xs font-medium',
+                                            activity.statusKumulatif === 'Tercapai'
+                                              ? 'bg-green-100 text-green-800'
+                                              : 'bg-red-100 text-red-800'
+                                          )}
+                                        >
+                                          {activity.statusKumulatif}
+                                        </span>
+                                      ) : (
+                                        '-'
+                                      )}
+                                    </td>
+                                    <td className="px-2 py-3 text-center">
+                                      {activity.persentaseSeluruhPekerjaan != null &&
+                                      activity.persentaseSeluruhPekerjaan > 0
+                                        ? activity.persentaseSeluruhPekerjaan.toFixed(1) + '%'
+                                        : '-'}
+                                    </td>
+                                  </>
+                                )}
+                              </tr>
+                            </React.Fragment>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
             </>
           )}
         </div>
