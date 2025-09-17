@@ -230,7 +230,9 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                                   'border-b border-gray-200',
                                   activity.activityType === 'MAIN_ACTIVITY'
                                     ? 'bg-gray-50' // Main activities have gray background
-                                    : 'bg-white' // Sub-activities have white background
+                                    : activity.activityType === 'CUMULATIVE_ACTIVITY'
+                                      ? 'bg-blue-50' // Cumulative activities have light blue background
+                                      : 'bg-white' // Sub-activities have white background
                                 )}
                               >
                                 <td className="border-r border-gray-200 px-2 py-3 text-center font-medium">
@@ -243,7 +245,9 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                                     'border-r border-gray-200 px-3 py-3 text-left text-sm',
                                     activity.activityType === 'MAIN_ACTIVITY'
                                       ? 'font-semibold' // Main activities are bold
-                                      : 'pl-8 font-normal' // Sub-activities are indented and normal weight
+                                      : activity.activityType === 'CUMULATIVE_ACTIVITY'
+                                        ? 'font-semibold text-blue-900' // Cumulative activities are bold and blue
+                                        : 'pl-8 font-normal' // Sub-activities are indented and normal weight
                                   )}
                                 >
                                   {activity.name}
@@ -261,6 +265,59 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
                                         {/* Empty cell for main activity */}
                                       </td>
                                     ))}
+                                  </>
+                                ) : activity.activityType === 'CUMULATIVE_ACTIVITY' ? (
+                                  // Cumulative activity: show only specific fields, empty for others
+                                  <>
+                                    {/* SAT - Empty */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {/* Empty */}
+                                    </td>
+                                    {/* VOLUME - Empty */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {/* Empty */}
+                                    </td>
+                                    {/* BOBOT (%) - Show cumulative weight */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center font-semibold text-blue-900">
+                                      {activity.bobot?.toFixed(2) || '0.00'}%
+                                    </td>
+
+                                    {/* KEMAJUAN PEKERJAAN - All empty for cumulative */}
+                                    {Array.from({ length: 5 }).map((_, colIndex) => (
+                                      <td
+                                        key={`cumulative-kemajuan-empty-${activity.id}-${colIndex}`}
+                                        className="border-r border-gray-200 px-2 py-3 text-center"
+                                      >
+                                        {/* Empty */}
+                                      </td>
+                                    ))}
+
+                                    {/* % TERHADAP - Show specific cumulative fields */}
+                                    {/* REALISASI s/d MINGGU LALU */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center font-semibold text-blue-900">
+                                      {activity.persentaseRealisasiMingguLalu?.toFixed(2) || '0.00'}
+                                      %
+                                    </td>
+                                    {/* ITEM PEKERJAAN - Empty */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {/* Empty */}
+                                    </td>
+                                    {/* GRAFIK PEMENUHAN PROGRESS - Empty */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {/* Empty */}
+                                    </td>
+                                    {/* RENCANA KUMULATIF */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center font-semibold text-blue-900">
+                                      {activity.persentaseRencanaKumulatif?.toFixed(2) || '0.00'}%
+                                    </td>
+                                    {/* STATUS KUMULATIF - Empty */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center">
+                                      {/* Empty */}
+                                    </td>
+                                    {/* SELURUH PEKERJAAN */}
+                                    <td className="border-r border-gray-200 px-2 py-3 text-center font-semibold text-blue-900">
+                                      {activity.persentaseSeluruhPekerjaan?.toFixed(2) || '0.00'}%
+                                    </td>
                                   </>
                                 ) : (
                                   // Sub-activity: show actual data
@@ -329,9 +386,9 @@ export function ReportPreviewModal({ isOpen, onClose, reportId }: ReportPreviewM
 
                                     {/* % TERHADAP - Percentage Columns */}
                                     <td className="border-r border-gray-200 px-2 py-3 text-center">
-                                      {activity.realisasiMinggulalu_bobot != null &&
-                                      activity.realisasiMinggulalu_bobot > 0
-                                        ? activity.realisasiMinggulalu_bobot.toFixed(2) + '%'
+                                      {activity.persentaseRealisasiMingguLalu != null &&
+                                      activity.persentaseRealisasiMingguLalu > 0
+                                        ? activity.persentaseRealisasiMingguLalu.toFixed(2) + '%'
                                         : '-'}
                                     </td>
                                     <td className="border-r border-gray-200 px-2 py-3 text-center">

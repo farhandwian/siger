@@ -15,7 +15,7 @@ const ActivityImportSchema = z.object({
   parentActivity: z.string().optional(),
   satuan: z.string().optional(), // Unit field in schema
   volume: z.number().optional(),
-  weight: z.number().optional(), // Weight field
+  bobot: z.number().optional(), // Weight field (Indonesian: bobot)
   scheduleData: z.array(ScheduleDataSchema).default([]),
 })
 
@@ -82,7 +82,7 @@ function parseCsvData(csvData: string[][]): ActivityImport[] {
       type: planRow[1]?.includes('•') || planRow[1]?.startsWith('  ') ? 'subActivity' : 'activity',
       satuan: planRow[2]?.trim() || undefined,
       volume: planRow[3] ? parseFloat(planRow[3]) : undefined,
-      weight: planRow[4] ? parseFloat(planRow[4]) : undefined,
+      bobot: planRow[4] ? parseFloat(planRow[4]) : undefined,
       scheduleData,
     }
 
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
           data: {
             satuan: activityData.satuan,
             volume: activityData.volume,
-            weight: activityData.weight || 0,
+            weight: activityData.bobot || 0,
           }
         })
 
@@ -294,7 +294,7 @@ export async function POST(request: NextRequest) {
           name: activityData.name,
           satuan: activityData.satuan,
           volume: activityData.volume,
-          weight: activityData.weight || 0,
+          weight: activityData.bobot || 0,
           scheduleData: activityData.scheduleData, // Store temporarily
         })
       }

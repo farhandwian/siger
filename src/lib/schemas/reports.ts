@@ -190,7 +190,7 @@ export type PeriodResponse = z.infer<typeof PeriodResponseSchema>
 export const WeeklyReportActivitySchema = z.object({
   id: z.string(),
   name: z.string(),
-  activityType: z.enum(['MAIN_ACTIVITY', 'SUB_ACTIVITY']).optional(),
+  activityType: z.enum(['MAIN_ACTIVITY', 'SUB_ACTIVITY', 'CUMULATIVE_ACTIVITY']).optional(),
   parentActivityId: z.string().nullable(),
   romanNumber: z.string().nullable(),
   subNumber: z.number().nullable(),
@@ -205,7 +205,7 @@ export const WeeklyReportActivitySchema = z.object({
   status: z.enum(['TERCAPAI', 'TIDAK_TERCAPAI', 'DALAM_PROGRESS']).nullable(),
   kumulatifMingguIni_volume: z.number().nullable(),
   // % TERHADAP fields
-  realisasiMinggulalu_bobot: z.number().nullable(),
+  persentaseRealisasiMingguLalu: z.number().nullable(),
   persentaseItemPekerjaan: z.number().nullable(),
   persentaseGrafikProgress: z.number().nullable(),
   persentaseRencanaKumulatif: z.number().nullable(),

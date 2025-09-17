@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, WeeklyActivityType } from '@prisma/client'
 import { z } from 'zod'
 
 const prisma = new PrismaClient()
@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
       const mainActivity = await prisma.weeklyReportActivity.create({
         data: {
           weeklyReportId: weeklyReport.id,
+          activityType: WeeklyActivityType.MAIN_ACTIVITY,
           name: activity.name,
           displayOrder: activityIndex * 1000, // Leave space for sub-activities
           romanNumber: convertToRoman(activityIndex),
@@ -122,6 +123,14 @@ export async function POST(request: NextRequest) {
       })
 
       let subActivityIndex = 1
+
+      // Arrays to store cumulative data for this main activity
+      const subActivityData: {
+        weight: number
+        persentaseRealisasiMingguLalu: number
+        persentaseRencanaKumulatif: number
+        persentaseSeluruhPekerjaan: number
+      }[] = []
 
       // Create sub-activity records with actual data according to the specific calculation formulas
       for (const subActivity of activity.subActivities) {
@@ -186,9 +195,21 @@ export async function POST(request: NextRequest) {
         // B6: Seluruh pekerjaan = B1 (realisasiSdMinggu)
         const persentaseSeluruhPekerjaan = realisasiSdMinggu
 
+        // Store cumulative data for this sub-activity
+        subActivityData.push({
+          weight: weight,
+          persentaseRealisasiMingguLalu: Math.min(
+            Math.max(realisasiMinggulalu_volume * weight, 0),
+            100
+          ),
+          persentaseRencanaKumulatif: Math.min(Math.max(rencanaKumulatif, 0), 100),
+          persentaseSeluruhPekerjaan: persentaseSeluruhPekerjaan,
+        })
+
         await prisma.weeklyReportActivity.create({
           data: {
             weeklyReportId: weeklyReport.id,
+            activityType: WeeklyActivityType.SUB_ACTIVITY,
             parentActivityId: mainActivity.id,
             sourceSubActivityId: subActivity.id,
             sourceScheduleWeekNumber: weekNumber,
@@ -225,6 +246,47 @@ export async function POST(request: NextRequest) {
 
         subActivityIndex++
       }
+
+      // Create cumulative activity for this main activity
+      // Sum up all the cumulative fields from sub-activities
+      const cumulativeWeight = subActivityData.reduce((sum, data) => sum + data.weight, 0)
+      const cumulativePersentaseRealisasiMingguLalu = subActivityData.reduce(
+        (sum, data) => sum + data.persentaseRealisasiMingguLalu,
+        0
+      )
+      const cumulativePersentaseRencanaKumulatif = subActivityData.reduce(
+        (sum, data) => sum + data.persentaseRencanaKumulatif,
+        0
+      )
+      const cumulativePersentaseSeluruhPekerjaan = subActivityData.reduce(
+        (sum, data) => sum + data.persentaseSeluruhPekerjaan,
+        0
+      )
+
+      // Create the cumulative activity record
+      await prisma.weeklyReportActivity.create({
+        data: {
+          weeklyReportId: weeklyReport.id,
+          activityType: WeeklyActivityType.CUMULATIVE_ACTIVITY,
+          parentActivityId: mainActivity.id,
+          name: `Jumlah ${activity.name}`, // "Jumlah" prefix to indicate cumulative
+
+          // Cumulative fields
+          bobot: cumulativeWeight,
+          persentaseRealisasiMingguLalu: Math.min(
+            Math.max(cumulativePersentaseRealisasiMingguLalu, 0),
+            100
+          ),
+          persentaseRencanaKumulatif: Math.min(
+            Math.max(cumulativePersentaseRencanaKumulatif, 0),
+            100
+          ),
+          persentaseSeluruhPekerjaan: cumulativePersentaseSeluruhPekerjaan,
+
+          // Organization fields - place after all sub-activities
+          displayOrder: activityIndex * 1000 + 900, // Near end of this activity group
+        },
+      })
 
       activityIndex++
     }
